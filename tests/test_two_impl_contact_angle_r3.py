@@ -15,7 +15,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "xval" / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3"))
+sys.path.insert(0, str(REPO / "development" / "verification" / "contact-angle" / "round-3"))
 
 from run_r3 import (  # noqa: E402
     calibrate_synthetic,

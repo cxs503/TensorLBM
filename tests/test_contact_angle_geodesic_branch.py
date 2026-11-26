@@ -96,8 +96,10 @@ def test_lbm_convention_flag_is_deprecated_and_ignored() -> None:
 
 COMMITTED = (
     Path(__file__).resolve().parents[1]
-    / "xval"
-    / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3"
+    / "development"
+    / "verification"
+    / "contact-angle"
+    / "round-3"
     / "runs_r3"
 )
 

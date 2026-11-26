@@ -24,12 +24,18 @@
     "development/verification/contact-angle/round-4/REPORT_R4.md",
     "development/verification/contact-angle/round-5/REPORT_R5.md",
     "docs/AUDIT_XVAL_TWO_IMPL_CONTACT_ANGLE_R5.md",
-    "docs/reports/XVAL_SUMMARY.md"
+    "docs/reports/XVAL_SUMMARY.md",
+    "development/verification/contact-angle/round-2/REPORT.md",
+    "development/verification/contact-angle/round-3/REPORT_R3.md",
+    "docs/AUDIT_XVAL_TWO_IMPL_CONTACT_ANGLE_R3.md",
+    "docs/WALL-ORIENTATION-CONTACT-ANGLE-INVARIANCE.md"
   ],
   "reference_files": [
     "development/verification/contact-angle/round-5/predeclared_r5.json",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/predeclared_r3.json",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/summary_r3.json"
+    "development/verification/contact-angle/round-3/predeclared_r3.json",
+    "development/verification/contact-angle/round-3/summary_r3.json",
+    "development/verification/contact-angle/round-2/predeclared.json",
+    "development/verification/contact-angle/round-2/summary.json"
   ],
   "references": [
     {
@@ -44,15 +50,38 @@
   ],
   "evidence": [
     "docs/architecture/migrations/contact-angle-r4-r5-retirement-2026-11-25.json",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th045.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th070.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th090.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th110.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th135.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th045.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th070.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th090.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th110.0__baseline__xi3.npz",
-    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th135.0__baseline__xi3.npz"
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th045.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th070.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th090.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th110.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th135.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th045.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th070.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th090.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th110.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th135.0__baseline__xi3.npz",
+    "development/verification/contact-angle/round-3/runs_r3/dirichlet__th045.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/dirichlet__th070.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/dirichlet__th090.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/dirichlet__th110.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/dirichlet__th135.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th045.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th070.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th090.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th110.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th135.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th045.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th070.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th090.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th110.0__baseline__xi3.json",
+    "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th135.0__baseline__xi3.json",
+    "development/verification/contact-angle/wall-orientation/predeclared.json",
+    "development/verification/contact-angle/wall-orientation/summary.json",
+    "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__bottom/phi.npz",
+    "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__bottom/result.json",
+    "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__left/phi.npz",
+    "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__left/result.json",
+    "development/verification/contact-angle/wall-orientation/runs_112/wall_order__th090.0__bottom/phi.npz",
+    "development/verification/contact-angle/wall-orientation/runs_112/wall_order__th090.0__bottom/result.json"
   ]
 }

@@ -1,0 +1,515 @@
+{
+  "source_commit": "881e15324d7439edfec5c0c580d36024e68d90a5",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 39
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+    "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/REPORT_R3.md",
+      "new_path": "development/verification/contact-angle/round-3/REPORT_R3.md",
+      "git_mode": "100644",
+      "original_git_blob": "ec04eba6350fcc3d13adb9a278bc9462e990545c",
+      "size_bytes": 4765,
+      "original_sha256": "de0b146dffddb5e6951270cfb852e922d34c565b414df2cbbb930943323a9b43",
+      "new_sha256": "de0b146dffddb5e6951270cfb852e922d34c565b414df2cbbb930943323a9b43"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/predeclared_r3.json",
+      "new_path": "development/verification/contact-angle/round-3/predeclared_r3.json",
+      "git_mode": "100644",
+      "original_git_blob": "4ffbf9cac398f45adb3e4af164c87a676a0a3392",
+      "size_bytes": 5166,
+      "original_sha256": "a4d4cee3daf58c5b12b9f474cbe3412c698e86b2787f6808c50d8b5f280c3a38",
+      "new_sha256": "a4d4cee3daf58c5b12b9f474cbe3412c698e86b2787f6808c50d8b5f280c3a38"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/run_r3.py",
+      "new_path": "development/verification/contact-angle/round-3/run_r3.py",
+      "git_mode": "100644",
+      "original_git_blob": "f830a3483b3a9753b94dec5ed2f7b2956db7e23c",
+      "size_bytes": 30892,
+      "original_sha256": "70004b2f0a6e6589a4c221acb403623c8ecdd1cd76431be64c0c9f8dcda58a6a",
+      "new_sha256": "1fc3a43bb6d720deb5636674cb568b2c3e1280e0fbd6f46ffa572ccf12b63e23"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/dirichlet__th045.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/dirichlet__th045.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "9a9eb409ba101dc7c88700035a5a92f7dea2df4d",
+      "size_bytes": 1653,
+      "original_sha256": "b3572b68d34ed82fba192e749bb28c3a750c043b03af19c24e02e6241de033b5",
+      "new_sha256": "b3572b68d34ed82fba192e749bb28c3a750c043b03af19c24e02e6241de033b5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/dirichlet__th070.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/dirichlet__th070.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "502f54690f312a6673d4dde6072cbcfd910cacf4",
+      "size_bytes": 1640,
+      "original_sha256": "9a1530e9c30f3da0f41d827c95bc98dcc6d34505f1ae085dd372ffb6e2aa178b",
+      "new_sha256": "9a1530e9c30f3da0f41d827c95bc98dcc6d34505f1ae085dd372ffb6e2aa178b"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/dirichlet__th090.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/dirichlet__th090.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "505ff21aed21fa43b504e3c7e25a3fdbd9f2a041",
+      "size_bytes": 2220,
+      "original_sha256": "0845581525ad7968adf344362c833343162f04649747fdbed5b06d76f3b68a3c",
+      "new_sha256": "0845581525ad7968adf344362c833343162f04649747fdbed5b06d76f3b68a3c"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/dirichlet__th110.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/dirichlet__th110.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "caa65f044abfd6ecc30ab99ef78cae1e3d6491a9",
+      "size_bytes": 2228,
+      "original_sha256": "ef1d7a1f0d8af1177e1c092482e30ae804190405db1149282c8a7f83e0c4f4a5",
+      "new_sha256": "ef1d7a1f0d8af1177e1c092482e30ae804190405db1149282c8a7f83e0c4f4a5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/dirichlet__th135.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/dirichlet__th135.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "723ee52fe5ba09a2ad3107444d50fc799b7eb01b",
+      "size_bytes": 2140,
+      "original_sha256": "998be44af0d2f9c293adb0822f73a78d2c9a3b54993dc4823196472b93ab90f1",
+      "new_sha256": "998be44af0d2f9c293adb0822f73a78d2c9a3b54993dc4823196472b93ab90f1"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th045.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th045.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "9a2ea41de147cfa4476df9df0455d836ff088c49",
+      "size_bytes": 1619,
+      "original_sha256": "cffcccb1dbac388b2ff33cd4b88a19473c24c23097ee81032eb7a6eb3d30b904",
+      "new_sha256": "cffcccb1dbac388b2ff33cd4b88a19473c24c23097ee81032eb7a6eb3d30b904"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th045.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th045.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "09ab057cf3147c10759fc28ed7162166cb6544ce",
+      "size_bytes": 564,
+      "original_sha256": "e1283a5d3255d591983344243775290a8bb7a3b3b401af3139ac5bf2afdad772",
+      "new_sha256": "e1283a5d3255d591983344243775290a8bb7a3b3b401af3139ac5bf2afdad772"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th070.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th070.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "ae03af830e773c7864a36d232b143cedb6cf5e3c",
+      "size_bytes": 2247,
+      "original_sha256": "fc6152890423e3d40a8a5dbc8c8ffd95b2c87c7e51505803cb3f876433366fc6",
+      "new_sha256": "fc6152890423e3d40a8a5dbc8c8ffd95b2c87c7e51505803cb3f876433366fc6"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th070.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th070.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "5ca7b677e7c598321ad2199588622ae83e769004",
+      "size_bytes": 16257,
+      "original_sha256": "9bd8a097a1099f9d22a72a44ed5945cdb7069ea19379bab1ab95f38d598db39a",
+      "new_sha256": "9bd8a097a1099f9d22a72a44ed5945cdb7069ea19379bab1ab95f38d598db39a"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th090.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th090.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "2032320abbc17a8cf7259f02095b5bc122b57824",
+      "size_bytes": 2238,
+      "original_sha256": "79170df2454b1196100b89f45d496945e68fd1ccbe0f8bb08f3d813ded941aa1",
+      "new_sha256": "79170df2454b1196100b89f45d496945e68fd1ccbe0f8bb08f3d813ded941aa1"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th090.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th090.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "dc0e7664dd4fecb5f24cbc58b1c7aaa2434d509e",
+      "size_bytes": 17858,
+      "original_sha256": "9aec8e0a85735be9e8ba5a069f7f15e7011e3499ceee6afc5d1b6fb681d854f4",
+      "new_sha256": "9aec8e0a85735be9e8ba5a069f7f15e7011e3499ceee6afc5d1b6fb681d854f4"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th110.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th110.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "bade14fe1ef425f11e445bef9f9bbd438f1ebde9",
+      "size_bytes": 2238,
+      "original_sha256": "b630b4e9690e886a7e355c9c73260fbbdf9d97cbef5e77ca82da58825f238795",
+      "new_sha256": "b630b4e9690e886a7e355c9c73260fbbdf9d97cbef5e77ca82da58825f238795"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th110.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th110.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "54bd2270cf1e8218e83eb4a47147146834e11808",
+      "size_bytes": 18966,
+      "original_sha256": "9f9ad79d8a8093722f4922e4d2c46ae3e04d1666328b0be627f5f457fbe32bb5",
+      "new_sha256": "9f9ad79d8a8093722f4922e4d2c46ae3e04d1666328b0be627f5f457fbe32bb5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th135.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th135.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "436f1d3529ae21ebd88cc5aa745e0a24a3cc765f",
+      "size_bytes": 2237,
+      "original_sha256": "bf3bbcfbf705b6089839ba1d6d4aaa676daf985121ec4ecf72ebd1d13a49ad19",
+      "new_sha256": "bf3bbcfbf705b6089839ba1d6d4aaa676daf985121ec4ecf72ebd1d13a49ad19"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th135.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/geometric_ghost__th135.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "7659ddbeb1f91920bbfdf918de164fa7fa99f993",
+      "size_bytes": 19826,
+      "original_sha256": "ac43a3b8528e396f7376bb8b91f063a506e73610987e9bdef0f05f0488719331",
+      "new_sha256": "ac43a3b8528e396f7376bb8b91f063a506e73610987e9bdef0f05f0488719331"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th045.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th045.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "3eba064808b5f8dda7d1713ba054e0cf527fd34a",
+      "size_bytes": 1637,
+      "original_sha256": "bc7bdb3bb8e197f5a047da94c16f821c5863ab0859c0222fb9ecc93cdd8e779f",
+      "new_sha256": "bc7bdb3bb8e197f5a047da94c16f821c5863ab0859c0222fb9ecc93cdd8e779f"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th045.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th045.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "4091afd58f97b3537810b9f2eca0e22e66c14d11",
+      "size_bytes": 2530,
+      "original_sha256": "0666c64f5831deb2776f43bf1396edc21b4868b7de7a687d5cf525687901ce46",
+      "new_sha256": "0666c64f5831deb2776f43bf1396edc21b4868b7de7a687d5cf525687901ce46"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th070.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th070.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "a2a840c741063fd341cbe765dd94e229068d7f34",
+      "size_bytes": 2230,
+      "original_sha256": "a504f6a89fbb0043c05a446657b20b92c2bf5069230898559ecdd660ec92fb89",
+      "new_sha256": "a504f6a89fbb0043c05a446657b20b92c2bf5069230898559ecdd660ec92fb89"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th070.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th070.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "648531546c88ec082483e2480d967fa4c81ea30a",
+      "size_bytes": 16295,
+      "original_sha256": "9d5f3e28442862fad8fc4b4c0bdf77e5849494f1fb4b39602aa27f7c64696478",
+      "new_sha256": "9d5f3e28442862fad8fc4b4c0bdf77e5849494f1fb4b39602aa27f7c64696478"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th090.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th090.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "b9c9238c40034798130c28b3695aae57cfc39446",
+      "size_bytes": 2231,
+      "original_sha256": "f694194ee2f9eac5a4dda5949abf767a1a5322e7665bc9db77e22d9318e3c04d",
+      "new_sha256": "f694194ee2f9eac5a4dda5949abf767a1a5322e7665bc9db77e22d9318e3c04d"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th090.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th090.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "dc0e7664dd4fecb5f24cbc58b1c7aaa2434d509e",
+      "size_bytes": 17858,
+      "original_sha256": "9aec8e0a85735be9e8ba5a069f7f15e7011e3499ceee6afc5d1b6fb681d854f4",
+      "new_sha256": "9aec8e0a85735be9e8ba5a069f7f15e7011e3499ceee6afc5d1b6fb681d854f4"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th110.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th110.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "a313e09d349a81842ce9bfd679e80d0f4b355dc2",
+      "size_bytes": 2235,
+      "original_sha256": "5c84dc379b39f8381f39e13c6bc0ae630d110026552dec16df1926b4f7eeb0c0",
+      "new_sha256": "5c84dc379b39f8381f39e13c6bc0ae630d110026552dec16df1926b4f7eeb0c0"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th110.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th110.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "f6e96a6bd5d606b4c1ad878de72630374de427c2",
+      "size_bytes": 18930,
+      "original_sha256": "b3e4076be3b01cdf8fd853052525838fbb352c2d89759f5a4f65bcc830208fd5",
+      "new_sha256": "b3e4076be3b01cdf8fd853052525838fbb352c2d89759f5a4f65bcc830208fd5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th135.0__baseline__xi3.json",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th135.0__baseline__xi3.json",
+      "git_mode": "100644",
+      "original_git_blob": "65c0377650f048338876815bc57060ce7463fa54",
+      "size_bytes": 2236,
+      "original_sha256": "2df3044290424d63e0340115f08e60bbbcf0255e02c0c2efcf898b129005f691",
+      "new_sha256": "2df3044290424d63e0340115f08e60bbbcf0255e02c0c2efcf898b129005f691"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th135.0__baseline__xi3.npz",
+      "new_path": "development/verification/contact-angle/round-3/runs_r3/neumann_flux__th135.0__baseline__xi3.npz",
+      "git_mode": "100644",
+      "original_git_blob": "d82e2a8a7705cf72268ed2a29ab8ceb00264f9c6",
+      "size_bytes": 19590,
+      "original_sha256": "51ac64d0078119a58379f0fbadf97ce41a666d810b85fbd976ebab2e8678300a",
+      "new_sha256": "51ac64d0078119a58379f0fbadf97ce41a666d810b85fbd976ebab2e8678300a"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/summary_r3.json",
+      "new_path": "development/verification/contact-angle/round-3/summary_r3.json",
+      "git_mode": "100644",
+      "original_git_blob": "73a27c5d137df461d112a468ae3c23444fa2a6d3",
+      "size_bytes": 26327,
+      "original_sha256": "394a801f42944504577f1c7847ca86c78fc3b2fea25047a00937a1f2ea9e7417",
+      "new_sha256": "394a801f42944504577f1c7847ca86c78fc3b2fea25047a00937a1f2ea9e7417"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/REPORT.md",
+      "new_path": "development/verification/contact-angle/round-2/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "0029b4d5cab6c4dcd7c05816cf0bd104008b0a88",
+      "size_bytes": 12646,
+      "original_sha256": "0df83f6c81ba40025590a020377a2dded926e4cb2abddd763cac6f241b4687c5",
+      "new_sha256": "0df83f6c81ba40025590a020377a2dded926e4cb2abddd763cac6f241b4687c5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/make_report.py",
+      "new_path": "development/verification/contact-angle/round-2/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "d3fd0767a29fbd25ea289d52868de51dd406d6c9",
+      "size_bytes": 21487,
+      "original_sha256": "7b8baf30aad81d5face02251e638f63219900aed5712a773645375cfb2eba077",
+      "new_sha256": "e71f83fe41f72412e4a384bfdf4010eb1e878e43757b20d35cb947a3fcf8d588"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/predeclared.json",
+      "new_path": "development/verification/contact-angle/round-2/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "8f3cb6fd59521db920e5d1207efab532670990b8",
+      "size_bytes": 2964,
+      "original_sha256": "16a6cf1207f2607b0236b8c29205922a8850c6b921d7e9192e6beec536c5c6f0",
+      "new_sha256": "16a6cf1207f2607b0236b8c29205922a8850c6b921d7e9192e6beec536c5c6f0"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/run_xval.py",
+      "new_path": "development/verification/contact-angle/round-2/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "e8917d198475fc41bf206e5f57835c3e1bed08e0",
+      "size_bytes": 11836,
+      "original_sha256": "ef7cf89f8179f2f8b487d40352a57e8090702e1f3f7d17381b75b366c35d8d2c",
+      "new_sha256": "859d0ca67c31aca05e3d8e9d4d38acf32b6b49256d54d5ef3430b8ed8f3d4454"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/summary.json",
+      "new_path": "development/verification/contact-angle/round-2/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "19dff3d4b53eacedc58222e063cf614534a3c126",
+      "size_bytes": 31213,
+      "original_sha256": "8d3865083c93d2c15dfe0ffa71b1c63f0cfa5d148e785491b3d6834c99e3f970",
+      "new_sha256": "8d3865083c93d2c15dfe0ffa71b1c63f0cfa5d148e785491b3d6834c99e3f970"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/make_report.py",
+      "new_path": "development/verification/contact-angle/wall-orientation/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "156941a16b79a1a6377b306d4d578cf07b0bd114",
+      "size_bytes": 15888,
+      "original_sha256": "2db918cd89ffa154c34bd8c96190b21ee6a3d0dd0aa3f440899628f063bf6f82",
+      "new_sha256": "7ddc5b82f1c8448993d506b1eee9304012f1d50be40cd2b301fab1f157e833d4"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/predeclared.json",
+      "new_path": "development/verification/contact-angle/wall-orientation/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "b5cc49261d7e8841441131ea95868c0471d6d349",
+      "size_bytes": 3426,
+      "original_sha256": "850ba845dc7d473058f3cdcc0c443d33d14129856b885c3545a8f41ed0f7cc44",
+      "new_sha256": "850ba845dc7d473058f3cdcc0c443d33d14129856b885c3545a8f41ed0f7cc44"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/run_xval.py",
+      "new_path": "development/verification/contact-angle/wall-orientation/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "a7a08e7213166966356e866f0fb3b1a8791c79d4",
+      "size_bytes": 15237,
+      "original_sha256": "e1096f3660cc85c4a43083355a7d7c5cb741cde8f1e94bff2a2e0c2661e74d6e",
+      "new_sha256": "fcc14f771bba39b663c2021655d08d0aa812ee2db8f7bf5dbf5d273af1ba2853"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/runs_112/contact__th090.0__bottom/phi.npz",
+      "new_path": "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__bottom/phi.npz",
+      "git_mode": "100644",
+      "original_git_blob": "226ff031286a5d95ca76eac33a09e401077fbbb3",
+      "size_bytes": 53857,
+      "original_sha256": "d35de42491ef6ce766eeb90d8f89abaff86c149755b9d7ff6d65404795342e98",
+      "new_sha256": "d35de42491ef6ce766eeb90d8f89abaff86c149755b9d7ff6d65404795342e98"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/runs_112/contact__th090.0__bottom/result.json",
+      "new_path": "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__bottom/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "6653e3d9bd5423900d8165e4d98feeca80f914c5",
+      "size_bytes": 1238,
+      "original_sha256": "9b7223f3fc39cdc2e6279568c7480856668413eb523de45996fbc199dbe18800",
+      "new_sha256": "9b7223f3fc39cdc2e6279568c7480856668413eb523de45996fbc199dbe18800"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/runs_112/contact__th090.0__left/phi.npz",
+      "new_path": "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__left/phi.npz",
+      "git_mode": "100644",
+      "original_git_blob": "83bf7a9de7a05568deb82b3bd9c44520c57fb4e1",
+      "size_bytes": 55282,
+      "original_sha256": "786bc8bb5e29e869fe6fc391d5ac40885e4df13d44eaee46a1f57d838f544618",
+      "new_sha256": "786bc8bb5e29e869fe6fc391d5ac40885e4df13d44eaee46a1f57d838f544618"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/runs_112/contact__th090.0__left/result.json",
+      "new_path": "development/verification/contact-angle/wall-orientation/runs_112/contact__th090.0__left/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "4602841bda43007299ac7ba9937f3010142ca207",
+      "size_bytes": 1230,
+      "original_sha256": "b376760c771026509709fff604d7830febbd0d544c0f9532e39128fcc743f9dd",
+      "new_sha256": "b376760c771026509709fff604d7830febbd0d544c0f9532e39128fcc743f9dd"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/runs_112/wall_order__th090.0__bottom/phi.npz",
+      "new_path": "development/verification/contact-angle/wall-orientation/runs_112/wall_order__th090.0__bottom/phi.npz",
+      "git_mode": "100644",
+      "original_git_blob": "226ff031286a5d95ca76eac33a09e401077fbbb3",
+      "size_bytes": 53857,
+      "original_sha256": "d35de42491ef6ce766eeb90d8f89abaff86c149755b9d7ff6d65404795342e98",
+      "new_sha256": "d35de42491ef6ce766eeb90d8f89abaff86c149755b9d7ff6d65404795342e98"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/runs_112/wall_order__th090.0__bottom/result.json",
+      "new_path": "development/verification/contact-angle/wall-orientation/runs_112/wall_order__th090.0__bottom/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "c9350909472d99b7202c444840d828089d510487",
+      "size_bytes": 1264,
+      "original_sha256": "236b3b5bea77c8d1b2fb138c519dc032a01fb19fa91378b00e09450db4d6858e",
+      "new_sha256": "236b3b5bea77c8d1b2fb138c519dc032a01fb19fa91378b00e09450db4d6858e"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE/summary.json",
+      "new_path": "development/verification/contact-angle/wall-orientation/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "14f4134ff704cb2f64f22bf63651e524ed58746c",
+      "size_bytes": 40000,
+      "original_sha256": "1654bacc8d9b46c890bc72bd48828cee16871c94c22005b35a104c829ab91ffe",
+      "new_sha256": "1654bacc8d9b46c890bc72bd48828cee16871c94c22005b35a104c829ab91ffe"
+    }
+  ],
+  "verification": [
+    "Before and after final path correction: python -m pytest -q tests/test_contact_angle_geodesic_branch.py tests/test_two_impl_contact_angle_r3.py tests/test_xval_wall_orientation_contact_angle.py -> 56 passed (4.48s before and 3.94s after). Initial relocated R3 failed to load sibling R2 preregistration; fixed its actual path, reran all 56.",
+    "Existing R5 run_r5.py measure succeeded both times; result JSON byte-identical. 8 committed measurable rows audited; local offline calibration/field gates PASS, max measured field error 5.384330199957503%. This does not rerun full scientific solver campaigns.",
+    "All 44 old/new hashes verified; R2, R3 and wall-orientation CLI help and archive compileall passed. 13 archive navigation links resolve. Registry retains same case ID, thresholds, results and exposes R2/R3/orientation evidence. Dedicated registry regression test passed.",
+    "88 repository governance tests passed, 227 registry entries, 35 tutorial cases, 33 PDF and 33 Word manuals, no hard status-ledger violations, 16 pre-existing soft violations. Aggregate Ruff metrics unchanged from main (3021/2198, format ceiling 2195), #3048 required; no baseline relaxations."
+  ],
+  "reference_scan": "Checked tracked exact and split paths in source, tests, tools, workflows, case pool, registered case, published reports and historical audit records. R5 measure and figures consume R2/R3; update both sibling directory lookups. Three test modules import or read R3/orientation evidence. Existing registered ID and criteria unchanged; link R2, R3 JSON/NPZ and orientation artifact files as supporting historical evidence. Existing R5 preregistration/result and audit provenance paths frozen.",
+  "compatibility": "Six published report URLs remain; add links to current locations. Runner flags unchanged and tracked report/results unchanged. Original Git revision available for old paths. Retired-directory guard prevents reintroduction; no production module changes.",
+  "scientific_scope": "Relocation only; no full numerical campaign or new scientific verdict. Offline R5 records remeasurement of existing fields and the original analytic calibration separately.",
+  "remaining_blockers": [
+    "Some historical generated figure paths in the quick/orientation reports had no tracked image in source revision; preserve published report and explicitly leave full figure restoration for evidence-verified follow-up.",
+    "Orientation archive has 24-row summary but only partial tracked individual field artifacts; do not claim full evidence or new acceptance.",
+    "Full external/scientific campaign deferred."
+  ],
+  "file_counts": {
+    "moved": 44,
+    "byte_identical": 39,
+    "path_only_edited": 5
+  },
+  "offline_r5_replay": {
+    "before_after_sha256": "7d61c9a36bbfed21872ad15989663fac59ee44b7d281e7c43660d1a7626630bc",
+    "gate_result": "PASS",
+    "gates": {
+      "G1_analytic_physical": true,
+      "G2_analytic_cross_estimator": true,
+      "G3_mislabel_recovery": true,
+      "G4_committed_fields_accept": true,
+      "G5_mirror_identity": true,
+      "G6_offline_reproduction": true
+    },
+    "committed_fields_audited": 8,
+    "max_error_pct": 5.384330199957503,
+    "scope": "Existing R5 offline estimator remeasurement and analytic calibration only; not fresh solver/domain validation."
+  },
+  "compatibility_edits": [
+    {
+      "path": "benchmarks/cross_validation/contact_angle_geodesic/benchmark_case.json",
+      "original_sha256": "1d8abe550639aa7aec2276621685cfd76629b00cc82e4944f96881c2bc63f9a5",
+      "new_sha256": "74fcebcaa21c7c4344b9f5a2dac3d8b151a4317e1bc321b84c7ea9869091bb60"
+    },
+    {
+      "path": "development/verification/contact-angle/round-5/run_r5.py",
+      "original_sha256": "76fa098fc4f38d1a64fcdd3e2543ca12f2366730e6fd619a10baeec68bf0afc9",
+      "new_sha256": "d7f9bb701e09435dbab1f781d554fd8d1d0bc605ed6c12d842250b729acb2efa"
+    },
+    {
+      "path": "docs/AUDIT_XVAL_TWO_IMPL_CONTACT_ANGLE_R3.md",
+      "original_sha256": "37fcec5260877e096a17da55aa7a47a096afae8ee1d5a7c2543b42330c4eebbe",
+      "new_sha256": "60990988fb737f027eecb5cd1232c6d119f979f4985f4832dc38b3e999235fb9"
+    },
+    {
+      "path": "docs/AUDIT_XVAL_TWO_IMPL_CONTACT_ANGLE_R5.md",
+      "original_sha256": "efca3ecd85e315895076973c66f42d49d607bf4ea912aa1ec1340bb7497e14ea",
+      "new_sha256": "af4583702b4da67f78905214da01492fce26767522659959aee9d799ee368a7f"
+    },
+    {
+      "path": "docs/WALL-ORIENTATION-CONTACT-ANGLE-INVARIANCE.md",
+      "original_sha256": "c11757aa8dbe4769c288f45781c7a8abd3dffd10aa4f3dac1d284f13896d25ed",
+      "new_sha256": "7403e59b103bc402f44b19128ef4da4b22ce462aa00cbeed1863a3e6f25a3a3d"
+    },
+    {
+      "path": "docs/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-QUICK.md",
+      "original_sha256": "1ab6c1513f17d9d06afaaa0babd4063a82feebad5353ee8f387c0ab644924e99",
+      "new_sha256": "2f2e88c5db6d6265c44fa41f1dddf320a9ffdd6f93e0188d9133a4c109f11879"
+    },
+    {
+      "path": "docs/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3.md",
+      "original_sha256": "1e33e5ca9d938901b7024d51e4e52560df309cc87f45393049a850ac25a0e796",
+      "new_sha256": "7a9bc3b86bb6e964afa5cbe543b971fa7a2c7437398668991e45dc4da2bb4660"
+    },
+    {
+      "path": "docs/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS.md",
+      "original_sha256": "ea6283a3fecffc39920ff42cdd4aa9d7729f1575a91d4cf7a9a3fe100baaf445",
+      "new_sha256": "ee199d8b702532c6a18044967f7d1b0cb4c805466ffcc518b3b365d58549005b"
+    },
+    {
+      "path": "tests/test_benchmark_registry.py",
+      "original_sha256": "afaabf1fbc09e2680e763715d855d39e72401d2a97e218770d0d3f74d743908a",
+      "new_sha256": "0bb1a8b5b3d0b6d44974859b41aea137aa863173b3d0b7e593688ce21f92ca42"
+    },
+    {
+      "path": "tests/test_contact_angle_geodesic_branch.py",
+      "original_sha256": "268d8fa2103ed928b52022f78f87611d3103f763aff6e4a83adb3c1feeaf2652",
+      "new_sha256": "74a3e07437a1275164f5be4ceb7ad2c6cae523450c54ec420011943f23b1a1ae"
+    },
+    {
+      "path": "tests/test_two_impl_contact_angle_r3.py",
+      "original_sha256": "94efbb71ccc4d6badab7b098e561fc13f5997f4dc8fbb6fe5bd8062230d3c9f6",
+      "new_sha256": "4cca0461ab4e3876721282af4e53dc870b0f0a8c7652bf64c761bfeeac607bdb"
+    },
+    {
+      "path": "tests/test_xval_wall_orientation_contact_angle.py",
+      "original_sha256": "a44e555c88dafa58830e84a1f966b7c74bc0446d0b4a0181e2eb5dcb3922d059",
+      "new_sha256": "5077d270f69da841198a4c3c2045280cc81d450289658f445e7562b316980c46"
+    },
+    {
+      "path": "tools/check_repository_layout.py",
+      "original_sha256": "fd88b0a859cf5361a3bb38f3a538f24a25cf1382091afa5811636fc8827db3d4",
+      "new_sha256": "646f13c053c6f9e841835cd2fbf1749c9fe86a242e42b7dc68182578e1ab6462"
+    }
+  ]
+}

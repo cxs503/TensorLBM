@@ -46,7 +46,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 PREDECLARED = json.loads((HERE / "predeclared.json").read_text())

@@ -1,5 +1,7 @@
 # XVAL — wall-orientation invariance of the contact-angle wall condition
 
+> Repository migration note: archived campaign assets now live at [development/verification/contact-angle/wall-orientation](../development/verification/contact-angle/wall-orientation/). Historical mission paths and verdicts remain tied to the original revision.
+
 **Anchor**: `XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS` (round 3).  **Verdict: PASS**
 (`summary.json`, machine-evaluated; no number below is hand copied).
 

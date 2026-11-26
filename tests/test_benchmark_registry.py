@@ -144,6 +144,17 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertIn(f"{archive}/cmb5_verdict.json", variant["evidence"])
         self.assertIn(f"{archive}/arms/cmb5_parity/result.json.gz", variant["evidence"])
 
+    def test_contact_angle_case_retains_all_archived_round_dependencies(self):
+        (record,) = self.registry("--case", "xval:contact_angle_geodesic")
+        variant = record["variants"][0]
+        root = "development/verification/contact-angle"
+        self.assertIn(f"{root}/round-2/predeclared.json", variant["reference_files"])
+        self.assertIn(f"{root}/round-3/summary_r3.json", variant["reference_files"])
+        self.assertIn(f"{root}/round-3/runs_r3/geometric_ghost__th070.0__baseline__xi3.npz", variant["evidence"])
+        self.assertIn(f"{root}/wall-orientation/summary.json", variant["evidence"])
+        self.assertIn(f"{root}/round-5/results_r5.json", variant["results"])
+        self.assertEqual(record["current_acceptance"], "not_evaluated")
+
     def test_find_archived_assets_by_path(self):
         result = subprocess.run(
             [sys.executable, "tools/benchmark_registry.py", "--find-asset", "M17444/AKAI2018_REPRO"],

@@ -1,5 +1,7 @@
 # XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS — 两套独立接触角实现的交叉验证（第 2 轮）
 
+> Repository migration note: archived campaign assets now live at [development/verification/contact-angle/round-2](../development/verification/contact-angle/round-2/). Historical mission paths and verdicts remain tied to the original revision.
+
 **入口**：`xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/`（`predeclared.json` 预注册判据、
 `run_xval.py` 矩阵 + 汇总、`make_report.py` 图与报告、`runs/*/result.json` 原始数据、
 `REPORT.md` 六段论文级报告；本文件只是指针，不复制任何测量数字）。
@@ -38,8 +40,8 @@
 ## 复现
 
 ```bash
-python3 xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/run_xval.py sweep
-python3 xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/run_xval.py summarize
-python3 xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/make_report.py
+python3 development/verification/contact-angle/round-2/run_xval.py sweep
+python3 development/verification/contact-angle/round-2/run_xval.py summarize
+python3 development/verification/contact-angle/round-2/make_report.py
 python3 -m pytest tests/test_two_impl_contact_angle.py -q
 ```

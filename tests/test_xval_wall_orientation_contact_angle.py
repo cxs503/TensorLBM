@@ -1,6 +1,6 @@
 """Invariant tests for the wall-orientation cross-validation of the contact-angle BC.
 
-``xval/XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE`` asks a question the
+``development/verification/contact-angle/wall-orientation`` asks a question the
 horizontal-plate matrix of ``XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS``
 cannot answer: is the discretised Young wall condition of the production solver
 (:mod:`tensorlbm.cac_lbm2d`) independent of which side of the box the wall sits
@@ -29,14 +29,14 @@ import pytest
 import torch
 
 REPO = Path(__file__).resolve().parents[1]
-XVAL = REPO / "xval" / "XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE"
+XVAL = REPO / "development" / "verification" / "contact-angle" / "wall-orientation"
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO))
 
 from tensorlbm import cac_lbm2d as cac  # noqa: E402
 from tensorlbm.wetting import metrics as M  # noqa: E402
 
-X = import_module(f"xval.{XVAL.name}.run_xval")
+X = import_module("development.verification.contact-angle.wall-orientation.run_xval")
 
 SHAPE = (64, 64)
 THICK = 2

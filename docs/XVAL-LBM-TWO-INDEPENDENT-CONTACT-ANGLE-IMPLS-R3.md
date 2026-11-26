@@ -1,5 +1,7 @@
 # XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS — 第 3 轮交叉验证（全角度扫描）
 
+> Repository migration note: archived campaign assets now live at [development/verification/contact-angle/round-3](../development/verification/contact-angle/round-3/). Historical mission paths and verdicts remain tied to the original revision.
+
 **锚点**: `XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS`
 **入口**: `benchmarks/case_pool/two_impl_contact_angle/` + `runs/two_impl_contact_angle/`
 **本轮新增**: 全 4 角度 (60°/90°/110°/135°) × 3 臂 (dirichlet/neumann_flux/geometric_ghost) 完整扫描，

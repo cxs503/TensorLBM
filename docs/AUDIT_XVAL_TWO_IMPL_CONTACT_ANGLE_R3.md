@@ -1,5 +1,7 @@
 # Adversarial audit — XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS (round 2 PASS)
 
+> Repository migration note: archived campaign assets now live at [development/verification/contact-angle/round-2](../development/verification/contact-angle/round-2/), [development/verification/contact-angle/round-3](../development/verification/contact-angle/round-3/). Historical mission paths and verdicts remain tied to the original revision.
+
 Seat: `tp-ver-2` (verifier). Round-3 audit of the merged round-2 deliverable
 (`xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/`, `src/tensorlbm/wetting/two_impl_contact_angle.py`).
 
