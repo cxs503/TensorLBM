@@ -36,6 +36,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -46,7 +47,7 @@ import torch
 # ---------------------------------------------------------------------------
 CX = np.array([0, 1, 0, -1, 0, 1, -1, -1, 1])
 CY = np.array([0, 0, 1, 0, -1, 1, 1, -1, -1])
-W = np.array([4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36])
+W = np.array([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36])
 CS2 = 1.0 / 3.0
 CS = math.sqrt(CS2)
 
@@ -66,9 +67,9 @@ DIR_SE = 8
 # Analytical stratified Poiseuille solution
 # ---------------------------------------------------------------------------
 
+
 def analytical_stratified_poiseuille(
-    ny: int, H: float, h: float, G_x: float,
-    nu_lower: float, nu_upper: float
+    ny: int, H: float, h: float, G_x: float, nu_lower: float, nu_upper: float
 ) -> dict:
     """Exact two-layer Poiseuille profile.
 
@@ -97,11 +98,7 @@ def analytical_stratified_poiseuille(
         profile.append(u)
 
     Q_lower = a_low * h**3 / 3.0 + b_low * h**2 / 2.0
-    Q_upper = (
-        a_up * (H**3 - h**3) / 3.0
-        + b_up * (H * H - h * h) / 2.0
-        + c_up * (H - h)
-    )
+    Q_upper = a_up * (H**3 - h**3) / 3.0 + b_up * (H * H - h * h) / 2.0 + c_up * (H - h)
     return {
         "profile": profile,
         "Q_lower": Q_lower,
@@ -115,6 +112,7 @@ def analytical_stratified_poiseuille(
 # SOY Free-Energy D2Q9 LBM — PyTorch (faithful to OSS algorithm)
 # ---------------------------------------------------------------------------
 
+
 class SOYFreeEnergyLBM:
     """Swift-Osborn-Yeomans free-energy D2Q9 LBM (PyTorch).
 
@@ -125,13 +123,23 @@ class SOYFreeEnergyLBM:
     instead of CuPy.
     """
 
-    def __init__(self, ny: int, nx: int, *, sigma: float, xi: float,
-                 tau_f: float, tau_g: float, gamma: float,
-                 device: str = "cpu", dtype: torch.dtype = torch.float64):
+    def __init__(
+        self,
+        ny: int,
+        nx: int,
+        *,
+        sigma: float,
+        xi: float,
+        tau_f: float,
+        tau_g: float,
+        gamma: float,
+        device: str = "cpu",
+        dtype: torch.dtype = torch.float64,
+    ):
         self.ny, self.nx = ny, nx
         self.sigma, self.xi = sigma, xi
         self.kappa = 0.75 * sigma * xi
-        self.a = -2.0 * self.kappa / (xi ** 2)
+        self.a = -2.0 * self.kappa / (xi**2)
         self.tau_f, self.tau_g, self.gamma = tau_f, tau_g, gamma
         self.device, self.dtype = torch.device(device), dtype
         self.w0 = float(W[0])
@@ -156,8 +164,10 @@ class SOYFreeEnergyLBM:
 
     def init_droplet(self, R: float, cx: float = None, cy: float = None):
         """Initialize a circular droplet (for Laplace pressure test)."""
-        if cx is None: cx = self.nx / 2.0
-        if cy is None: cy = self.ny / 2.0
+        if cx is None:
+            cx = self.nx / 2.0
+        if cy is None:
+            cy = self.ny / 2.0
         y = torch.arange(self.ny, dtype=self.dtype, device=self.device).view(self.ny, 1)
         x = torch.arange(self.nx, dtype=self.dtype, device=self.device).view(1, self.nx)
         dist = torch.sqrt((x - cx) ** 2 + (y - cy) ** 2)
@@ -173,20 +183,19 @@ class SOYFreeEnergyLBM:
         p = self._pressure(rho, self.psi, mu)
 
         cu = self.cx_t * ux.unsqueeze(0) + self.cy_t * uy.unsqueeze(0)
-        usq = (ux ** 2 + uy ** 2).unsqueeze(0)
+        usq = (ux**2 + uy**2).unsqueeze(0)
 
         A = torch.empty((9, self.ny, self.nx), dtype=self.dtype, device=self.device)
         A[0] = (rho - 3.0 * (1.0 - self.w0) * p) / self.w0
         A[1:] = 3.0 * p.unsqueeze(0).expand(8, self.ny, self.nx)
-        self.f = self.w_t * (A + rho.unsqueeze(0) * (3.0 * cu + 4.5 * cu ** 2 - 1.5 * usq))
+        self.f = self.w_t * (A + rho.unsqueeze(0) * (3.0 * cu + 4.5 * cu**2 - 1.5 * usq))
 
         B = torch.empty((9, self.ny, self.nx), dtype=self.dtype, device=self.device)
         B[0] = (self.psi - 3.0 * (1.0 - self.w0) * self.gamma * mu) / self.w0
         B[1:] = 3.0 * self.gamma * mu.unsqueeze(0).expand(8, self.ny, self.nx)
-        self.g = self.w_t * (B + self.psi.unsqueeze(0) * (3.0 * cu + 4.5 * cu ** 2 - 1.5 * usq))
+        self.g = self.w_t * (B + self.psi.unsqueeze(0) * (3.0 * cu + 4.5 * cu**2 - 1.5 * usq))
 
-    def init_poiseuille(self, h_frac: float = 0.5, psi_wall: float = 0.0,
-                        Gx: float = 1e-5):
+    def init_poiseuille(self, h_frac: float = 0.5, psi_wall: float = 0.0, Gx: float = 1e-5):
         """Initialize a two-layer stratified channel for Poiseuille flow.
 
         Args:
@@ -195,7 +204,7 @@ class SOYFreeEnergyLBM:
             Gx: Body force per unit volume driving the flow
         """
         H = self.ny - 2  # fluid rows (rows 1..ny-2)
-        h = h_frac * H   # interface position from bottom wall
+        h = h_frac * H  # interface position from bottom wall
 
         # Initialize psi: +1 in lower layer, -1 in upper layer, tanh transition
         y = torch.arange(self.ny, dtype=self.dtype, device=self.device).view(self.ny, 1)
@@ -224,17 +233,17 @@ class SOYFreeEnergyLBM:
         p = self._pressure(rho, self.psi, mu)
 
         cu = self.cx_t * ux.unsqueeze(0) + self.cy_t * uy.unsqueeze(0)
-        usq = (ux ** 2 + uy ** 2).unsqueeze(0)
+        usq = (ux**2 + uy**2).unsqueeze(0)
 
         A = torch.empty((9, self.ny, self.nx), dtype=self.dtype, device=self.device)
         A[0] = (rho - 3.0 * (1.0 - self.w0) * p) / self.w0
         A[1:] = 3.0 * p.unsqueeze(0).expand(8, self.ny, self.nx)
-        self.f = self.w_t * (A + rho.unsqueeze(0) * (3.0 * cu + 4.5 * cu ** 2 - 1.5 * usq))
+        self.f = self.w_t * (A + rho.unsqueeze(0) * (3.0 * cu + 4.5 * cu**2 - 1.5 * usq))
 
         B = torch.empty((9, self.ny, self.nx), dtype=self.dtype, device=self.device)
         B[0] = (self.psi - 3.0 * (1.0 - self.w0) * self.gamma * mu) / self.w0
         B[1:] = 3.0 * self.gamma * mu.unsqueeze(0).expand(8, self.ny, self.nx)
-        self.g = self.w_t * (B + self.psi.unsqueeze(0) * (3.0 * cu + 4.5 * cu ** 2 - 1.5 * usq))
+        self.g = self.w_t * (B + self.psi.unsqueeze(0) * (3.0 * cu + 4.5 * cu**2 - 1.5 * usq))
 
     def _compute_gradients(self, psi):
         """Isotropic D2Q9 stencil for gradients and Laplacian."""
@@ -251,7 +260,7 @@ class SOYFreeEnergyLBM:
         return grad_x, grad_y, lap
 
     def _chemical_potential(self, psi, lap_psi):
-        return self.a * psi * (1.0 - psi ** 2) - self.kappa * lap_psi
+        return self.a * psi * (1.0 - psi**2) - self.kappa * lap_psi
 
     def _pressure(self, rho, psi, mu):
         return rho / 3.0 + psi * mu / 3.0
@@ -282,8 +291,12 @@ class SOYFreeEnergyLBM:
 
             # Unknown populations
             self.f[1, j, 0] = f3 + (2.0 / 3.0) * rho_in * ux
-            self.f[5, j, 0] = f7 - 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux + (1.0 / 2.0) * rho_in * uy
-            self.f[8, j, 0] = f6 + 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux - (1.0 / 2.0) * rho_in * uy
+            self.f[5, j, 0] = (
+                f7 - 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux + (1.0 / 2.0) * rho_in * uy
+            )
+            self.f[8, j, 0] = (
+                f6 + 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux - (1.0 / 2.0) * rho_in * uy
+            )
 
             # Also update g populations for order parameter
             g0 = self.g[0, j, 0]
@@ -321,8 +334,12 @@ class SOYFreeEnergyLBM:
 
             # Unknown populations
             self.f[2, j, nx - 1] = f4 + (2.0 / 3.0) * rho_out * uy
-            self.f[5, j, nx - 1] = f8 - 0.5 * (f1 - f3) + (1.0 / 6.0) * rho_out * ux + (1.0 / 2.0) * rho_out * uy
-            self.f[6, j, nx - 1] = f7 + 0.5 * (f1 - f3) + (1.0 / 6.0) * rho_out * ux - (1.0 / 2.0) * rho_out * uy
+            self.f[5, j, nx - 1] = (
+                f8 - 0.5 * (f1 - f3) + (1.0 / 6.0) * rho_out * ux + (1.0 / 2.0) * rho_out * uy
+            )
+            self.f[6, j, nx - 1] = (
+                f7 + 0.5 * (f1 - f3) + (1.0 / 6.0) * rho_out * ux - (1.0 / 2.0) * rho_out * uy
+            )
 
             # Also update g populations
             g0 = self.g[0, j, nx - 1]
@@ -373,7 +390,7 @@ class SOYFreeEnergyLBM:
         p = self._pressure(rho, self.psi, mu)
 
         cu = self.cx_t * ux.unsqueeze(0) + self.cy_t * uy.unsqueeze(0)
-        usq = (ux ** 2 + uy ** 2).unsqueeze(0)
+        usq = (ux**2 + uy**2).unsqueeze(0)
         ci_dot_F = self.cx_t * Fx.unsqueeze(0) + self.cy_t * Fy.unsqueeze(0)
         u_dot_F = (ux * Fx + uy * Fy).unsqueeze(0)
 
@@ -381,11 +398,13 @@ class SOYFreeEnergyLBM:
         A = torch.empty((9, self.ny, self.nx), dtype=self.dtype, device=self.device)
         A[0] = (rho - 3.0 * (1.0 - self.w0) * p) / self.w0
         A[1:] = 3.0 * p.unsqueeze(0).expand(8, self.ny, self.nx)
-        feq = self.w_t * (A + rho.unsqueeze(0) * (3.0 * cu + 4.5 * cu ** 2 - 1.5 * usq))
+        feq = self.w_t * (A + rho.unsqueeze(0) * (3.0 * cu + 4.5 * cu**2 - 1.5 * usq))
 
         # Guo forcing
-        Si = (1.0 - 0.5 / self.tau_f) * self.w_t * (
-            3.0 * ci_dot_F + 9.0 * cu * ci_dot_F - 3.0 * u_dot_F
+        Si = (
+            (1.0 - 0.5 / self.tau_f)
+            * self.w_t
+            * (3.0 * ci_dot_F + 9.0 * cu * ci_dot_F - 3.0 * u_dot_F)
         )
         self.f = self.f - (self.f - feq) / self.tau_f + Si
 
@@ -393,7 +412,7 @@ class SOYFreeEnergyLBM:
         B = torch.empty((9, self.ny, self.nx), dtype=self.dtype, device=self.device)
         B[0] = (self.psi - 3.0 * (1.0 - self.w0) * self.gamma * mu) / self.w0
         B[1:] = 3.0 * self.gamma * mu.unsqueeze(0).expand(8, self.ny, self.nx)
-        geq = self.w_t * (B + self.psi.unsqueeze(0) * (3.0 * cu + 4.5 * cu ** 2 - 1.5 * usq))
+        geq = self.w_t * (B + self.psi.unsqueeze(0) * (3.0 * cu + 4.5 * cu**2 - 1.5 * usq))
         self.g = self.g - (self.g - geq) / self.tau_g
 
         # Streaming
@@ -418,7 +437,7 @@ class SOYFreeEnergyLBM:
         self.psi = self.g.sum(dim=0)
 
         # Re-apply wall psi
-        if hasattr(self, '_psi_wall') and self._psi_wall is not None:
+        if hasattr(self, "_psi_wall") and self._psi_wall is not None:
             self.psi[0, :] = self._psi_wall
             self.psi[-1, :] = self._psi_wall
 
@@ -465,7 +484,7 @@ class SOYFreeEnergyLBM:
             interface_idx = psi_cross[0] + 1
             interface_y = float(interface_idx)
         else:
-            interface_y = float(self._h) if hasattr(self, '_h') else float(self.ny) / 2.0
+            interface_y = float(self._h) if hasattr(self, "_h") else float(self.ny) / 2.0
 
         return {
             "u_max": u_max,
@@ -482,17 +501,18 @@ class SOYFreeEnergyLBM:
 # Poiseuille cross-validation runner
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PoiseuilleConfig:
-    ny: int = 64           # channel height + 2 wall rows
-    nx: int = 16           # streamwise length
-    h_frac: float = 0.5    # interface position as fraction of H
-    sigma: float = 0.01    # surface tension
-    xi: float = 4.0        # interface width
-    tau_f: float = 1.0     # flow relaxation time
-    tau_g: float = 0.8     # order parameter relaxation time
-    Gx: float = 1e-5       # body force
-    n_steps: int = 30000   # simulation steps
+    ny: int = 64  # channel height + 2 wall rows
+    nx: int = 16  # streamwise length
+    h_frac: float = 0.5  # interface position as fraction of H
+    sigma: float = 0.01  # surface tension
+    xi: float = 4.0  # interface width
+    tau_f: float = 1.0  # flow relaxation time
+    tau_g: float = 0.8  # order parameter relaxation time
+    Gx: float = 1e-5  # body force
+    n_steps: int = 30000  # simulation steps
     sample_every: int = 1000
     psi_wall: float = 0.0  # wall wetting (0 = neutral)
     use_zou_he: bool = False  # use Zou-He boundaries (False = periodic)
@@ -511,11 +531,21 @@ def run_poiseuille_xval(cfg: PoiseuilleConfig = None) -> dict:
 
     results = {
         "config": {
-            "ny": cfg.ny, "nx": cfg.nx, "H": H, "h": h,
-            "sigma": cfg.sigma, "xi": cfg.xi, "kappa": kappa,
-            "tau_f": cfg.tau_f, "tau_g": cfg.tau_g, "gamma": gamma_mob,
-            "Gx": cfg.Gx, "nu": nu, "n_steps": cfg.n_steps,
-            "psi_wall": cfg.psi_wall, "use_zou_he": cfg.use_zou_he,
+            "ny": cfg.ny,
+            "nx": cfg.nx,
+            "H": H,
+            "h": h,
+            "sigma": cfg.sigma,
+            "xi": cfg.xi,
+            "kappa": kappa,
+            "tau_f": cfg.tau_f,
+            "tau_g": cfg.tau_g,
+            "gamma": gamma_mob,
+            "Gx": cfg.Gx,
+            "nu": nu,
+            "n_steps": cfg.n_steps,
+            "psi_wall": cfg.psi_wall,
+            "use_zou_he": cfg.use_zou_he,
         },
         "dimensionless": {},
     }
@@ -524,9 +554,14 @@ def run_poiseuille_xval(cfg: PoiseuilleConfig = None) -> dict:
     print("Running SOY PyTorch Poiseuille (OSS algorithm)...")
     t0 = time.time()
     sim = SOYFreeEnergyLBM(
-        cfg.ny, cfg.nx, sigma=cfg.sigma, xi=cfg.xi,
-        tau_f=cfg.tau_f, tau_g=cfg.tau_g, gamma=gamma_mob,
-        dtype=torch.float64
+        cfg.ny,
+        cfg.nx,
+        sigma=cfg.sigma,
+        xi=cfg.xi,
+        tau_f=cfg.tau_f,
+        tau_g=cfg.tau_g,
+        gamma=gamma_mob,
+        dtype=torch.float64,
     )
     sim._psi_wall = cfg.psi_wall if cfg.psi_wall != 0.0 else None
     sim.init_poiseuille(h_frac=cfg.h_frac, psi_wall=cfg.psi_wall, Gx=cfg.Gx)
@@ -537,8 +572,10 @@ def run_poiseuille_xval(cfg: PoiseuilleConfig = None) -> dict:
         if step % cfg.sample_every == 0 or step == cfg.n_steps - 1:
             m = sim.measure_poiseuille()
             history.append((step, m))
-            print(f"  step {step}: u_max={m['u_max']:.6e}, "
-                  f"psi=[{m['psi_min']:.4f},{m['psi_max']:.4f}]")
+            print(
+                f"  step {step}: u_max={m['u_max']:.6e}, "
+                f"psi=[{m['psi_min']:.4f},{m['psi_max']:.4f}]"
+            )
 
     t_soy = time.time() - t0
 
@@ -551,7 +588,7 @@ def run_poiseuille_xval(cfg: PoiseuilleConfig = None) -> dict:
     u_profile_ana = np.array(ana["profile"][1:-1])  # skip walls
 
     # L2 error
-    norm_ana = np.sqrt(np.sum(u_profile_ana ** 2))
+    norm_ana = np.sqrt(np.sum(u_profile_ana**2))
     if norm_ana > 1e-300:
         l2_error = np.sqrt(np.sum((u_profile_sim - u_profile_ana) ** 2)) / norm_ana
     else:
@@ -565,8 +602,12 @@ def run_poiseuille_xval(cfg: PoiseuilleConfig = None) -> dict:
     Ma = u_max / CS
 
     results["dimensionless"] = {
-        "Re": Re, "Ca": Ca, "Cn": Cn, "Ma": Ma,
-        "u_max": u_max, "u_mean": m_final["u_mean"],
+        "Re": Re,
+        "Ca": Ca,
+        "Cn": Cn,
+        "Ma": Ma,
+        "u_max": u_max,
+        "u_mean": m_final["u_mean"],
     }
 
     results["soy_pytorch"] = {
@@ -583,8 +624,10 @@ def run_poiseuille_xval(cfg: PoiseuilleConfig = None) -> dict:
         "pass": l2_error < 0.15,
     }
 
-    print(f"  SOY: u_max = {u_max:.6e}, analytical = {ana['u_max']:.6e}, "
-          f"L2 error = {l2_error:.4%}, {'PASS' if l2_error < 0.15 else 'FAIL'}")
+    print(
+        f"  SOY: u_max = {u_max:.6e}, analytical = {ana['u_max']:.6e}, "
+        f"L2 error = {l2_error:.4%}, {'PASS' if l2_error < 0.15 else 'FAIL'}"
+    )
 
     return results
 
@@ -592,6 +635,7 @@ def run_poiseuille_xval(cfg: PoiseuilleConfig = None) -> dict:
 # ---------------------------------------------------------------------------
 # Convergence study (varying resolution)
 # ---------------------------------------------------------------------------
+
 
 def run_convergence_study(cfg_base: PoiseuilleConfig = None) -> dict:
     """Run convergence study with varying channel heights."""
@@ -605,10 +649,15 @@ def run_convergence_study(cfg_base: PoiseuilleConfig = None) -> dict:
         ny = H + 2
         nx = max(8, H // 4)
         cfg = PoiseuilleConfig(
-            ny=ny, nx=nx, h_frac=cfg_base.h_frac,
-            sigma=cfg_base.sigma, xi=cfg_base.xi,
-            tau_f=cfg_base.tau_f, tau_g=cfg_base.tau_g,
-            Gx=cfg_base.Gx, n_steps=cfg_base.n_steps,
+            ny=ny,
+            nx=nx,
+            h_frac=cfg_base.h_frac,
+            sigma=cfg_base.sigma,
+            xi=cfg_base.xi,
+            tau_f=cfg_base.tau_f,
+            tau_g=cfg_base.tau_g,
+            Gx=cfg_base.Gx,
+            n_steps=cfg_base.n_steps,
             sample_every=cfg_base.sample_every,
         )
         r = run_poiseuille_xval(cfg)
@@ -625,6 +674,7 @@ def run_convergence_study(cfg_base: PoiseuilleConfig = None) -> dict:
 # Sensitivity study
 # ---------------------------------------------------------------------------
 
+
 def run_sensitivity_study(cfg_base: PoiseuilleConfig = None) -> dict:
     """Run sensitivity study on key parameters."""
     if cfg_base is None:
@@ -635,10 +685,15 @@ def run_sensitivity_study(cfg_base: PoiseuilleConfig = None) -> dict:
     # Vary tau_f (viscosity)
     for tau_f in [0.7, 0.8, 1.0, 1.2, 1.5]:
         cfg = PoiseuilleConfig(
-            ny=cfg_base.ny, nx=cfg_base.nx, h_frac=cfg_base.h_frac,
-            sigma=cfg_base.sigma, xi=cfg_base.xi,
-            tau_f=tau_f, tau_g=cfg_base.tau_g,
-            Gx=cfg_base.Gx, n_steps=cfg_base.n_steps,
+            ny=cfg_base.ny,
+            nx=cfg_base.nx,
+            h_frac=cfg_base.h_frac,
+            sigma=cfg_base.sigma,
+            xi=cfg_base.xi,
+            tau_f=tau_f,
+            tau_g=cfg_base.tau_g,
+            Gx=cfg_base.Gx,
+            n_steps=cfg_base.n_steps,
             sample_every=cfg_base.sample_every,
         )
         r = run_poiseuille_xval(cfg)
@@ -651,10 +706,15 @@ def run_sensitivity_study(cfg_base: PoiseuilleConfig = None) -> dict:
     # Vary xi (interface width)
     for xi in [2.0, 3.0, 4.0, 5.0, 6.0]:
         cfg = PoiseuilleConfig(
-            ny=cfg_base.ny, nx=cfg_base.nx, h_frac=cfg_base.h_frac,
-            sigma=cfg_base.sigma, xi=xi,
-            tau_f=cfg_base.tau_f, tau_g=cfg_base.tau_g,
-            Gx=cfg_base.Gx, n_steps=cfg_base.n_steps,
+            ny=cfg_base.ny,
+            nx=cfg_base.nx,
+            h_frac=cfg_base.h_frac,
+            sigma=cfg_base.sigma,
+            xi=xi,
+            tau_f=cfg_base.tau_f,
+            tau_g=cfg_base.tau_g,
+            Gx=cfg_base.Gx,
+            n_steps=cfg_base.n_steps,
             sample_every=cfg_base.sample_every,
         )
         r = run_poiseuille_xval(cfg)
@@ -667,10 +727,15 @@ def run_sensitivity_study(cfg_base: PoiseuilleConfig = None) -> dict:
     # Vary Gx (body force)
     for Gx in [5e-6, 1e-5, 2e-5, 5e-5]:
         cfg = PoiseuilleConfig(
-            ny=cfg_base.ny, nx=cfg_base.nx, h_frac=cfg_base.h_frac,
-            sigma=cfg_base.sigma, xi=cfg_base.xi,
-            tau_f=cfg_base.tau_f, tau_g=cfg_base.tau_g,
-            Gx=Gx, n_steps=cfg_base.n_steps,
+            ny=cfg_base.ny,
+            nx=cfg_base.nx,
+            h_frac=cfg_base.h_frac,
+            sigma=cfg_base.sigma,
+            xi=cfg_base.xi,
+            tau_f=cfg_base.tau_f,
+            tau_g=cfg_base.tau_g,
+            Gx=Gx,
+            n_steps=cfg_base.n_steps,
             sample_every=cfg_base.sample_every,
         )
         r = run_poiseuille_xval(cfg)
@@ -687,6 +752,7 @@ def run_sensitivity_study(cfg_base: PoiseuilleConfig = None) -> dict:
 # Plotting
 # ---------------------------------------------------------------------------
 
+
 def plot_results(results: dict, out_dir: Path):
     """Generate comparison figures."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -697,13 +763,18 @@ def plot_results(results: dict, out_dir: Path):
         r = results["soy_pytorch"]
         H = results["config"]["H"]
         y = np.arange(1, results["config"]["ny"] - 1, dtype=float)
-        ax.plot(r["u_profile"], y, "o-", label="SOY PyTorch (OSS algorithm)",
-                markersize=4, color="C0")
+        ax.plot(
+            r["u_profile"], y, "o-", label="SOY PyTorch (OSS algorithm)", markersize=4, color="C0"
+        )
 
         # Analytical profile
         ana = analytical_stratified_poiseuille(
-            results["config"]["ny"], H, results["config"]["h"],
-            results["config"]["Gx"], results["config"]["nu"], results["config"]["nu"]
+            results["config"]["ny"],
+            H,
+            results["config"]["h"],
+            results["config"]["Gx"],
+            results["config"]["nu"],
+            results["config"]["nu"],
         )
         u_ana = np.array(ana["profile"][1:-1])
         ax.plot(u_ana, y, "k--", lw=2, label="Analytical (piecewise parabolic)")
@@ -722,11 +793,15 @@ def plot_results(results: dict, out_dir: Path):
     if "soy_pytorch" in results:
         r = results["soy_pytorch"]
         y = np.arange(1, results["config"]["ny"] - 1, dtype=float)
-        ax.plot(r["psi_profile"], y, "o-", label="ψ (order parameter)",
-                markersize=4, color="C1")
+        ax.plot(r["psi_profile"], y, "o-", label="ψ (order parameter)", markersize=4, color="C1")
         ax.axvline(0, color="k", ls="--", lw=1, alpha=0.5)
-        ax.axhline(results["config"]["h"], color="r", ls=":", lw=1,
-                    label=f"Interface (h={results['config']['h']:.1f})")
+        ax.axhline(
+            results["config"]["h"],
+            color="r",
+            ls=":",
+            lw=1,
+            label=f"Interface (h={results['config']['h']:.1f})",
+        )
 
     ax.set_xlabel("ψ (order parameter)")
     ax.set_ylabel("y (lattice units)")
@@ -802,7 +877,7 @@ def plot_results(results: dict, out_dir: Path):
 if __name__ == "__main__":
     import json
 
-    out_dir = Path(__file__).resolve().parents[1] / "outputs" / "phasefield_mcmp_poiseuille"
+    out_dir = Path(__file__).resolve().parents[3] / "outputs" / "phasefield_mcmp_poiseuille"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 70)
@@ -850,8 +925,10 @@ if __name__ == "__main__":
     if "soy_pytorch" in results:
         r = results["soy_pytorch"]
         status = "✓ PASS" if r.get("pass") else "✗ FAIL"
-        print(f"  SOY PyTorch (OSS algorithm): u_max = {r['u_max']:.6e}, "
-              f"L2 error = {r['l2_error']:.4%} {status}")
+        print(
+            f"  SOY PyTorch (OSS algorithm): u_max = {r['u_max']:.6e}, "
+            f"L2 error = {r['l2_error']:.4%} {status}"
+        )
 
     if "convergence" in results:
         c = results["convergence"]

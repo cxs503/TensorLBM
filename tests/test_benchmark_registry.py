@@ -172,6 +172,16 @@ class BenchmarkRegistryTests(unittest.TestCase):
             comparison = entry["archived_comparison"]
             self.assertEqual(None if comparison is None else comparison["status"], reported.get(entry["id"]))
 
+    def test_phasefield_poiseuille_uses_existing_case_and_decoded_figures(self):
+        (case,) = self.registry("--case", "campaign:phasefield_mcmp_poiseuille")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        base = "benchmarks/phasefield_mcmp_poiseuille"
+        variant = case["variants"][0]
+        self.assertIn(f"{base}/reference/round1.py", variant["source"])
+        self.assertIn(f"{base}/evidence/m18190/xval_poiseuille_results.json",
+                      variant["results"])
+        self.assertEqual(sum(p.endswith(".png") for p in variant["evidence"]), 4)
+
     def test_xval_registration_preserves_archived_and_replayed_results(self):
         (case,) = self.registry("--case", "xval:ludwig_fe_stress")
         self.assertEqual(case["current_acceptance"], "not_evaluated")

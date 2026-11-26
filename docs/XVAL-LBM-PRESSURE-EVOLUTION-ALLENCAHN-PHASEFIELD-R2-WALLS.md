@@ -73,7 +73,7 @@ C3 无量纲数：Re_H = u_max·H/ν ≈ 0.0088×28/0.05 ≈ 4.9；毛细数 Ca 
 
 **结论（本轮最实质的一条）**：离散模型复现的是**动力黏性连续**口径（`ρν ∂_y u` 跨界面连续，误差 2.2%），
 而不是逐相加速度口径（20.5%）。这条决定了该公式做分层流基准时"等效黏性"该怎么写，也解释了
-第 1 轮 `xval/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md` 里 MCMP 口径 `μ_ratio=ν_h/ν_l` 的差异来源。
+第 1 轮 `benchmarks/phasefield_mcmp_poiseuille/reference/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md` 里 MCMP 口径 `μ_ratio=ν_h/ν_l` 的差异来源。
 
 ## ④ 结果图
 

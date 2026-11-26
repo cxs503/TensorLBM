@@ -4,20 +4,36 @@
     "metric": "Relative L2 error of the streamwise velocity on the fluid rows.",
     "historical_threshold": "Strictly less than 0.15."
   },
-  "source": ["xval/xval_phasefield_mcmp_poiseuille.py"],
-  "config": ["benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json"],
+  "source": [
+    "benchmarks/phasefield_mcmp_poiseuille/reference/round1.py"
+  ],
+  "config": [
+    "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json"
+  ],
   "documentation": [
     "benchmarks/phasefield_mcmp_poiseuille/README.md",
-    "xval/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md",
+    "benchmarks/phasefield_mcmp_poiseuille/reference/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md",
     "development/audit/m18190/AUDIT_M18190.md"
   ],
-  "reference_files": ["xval/xval_phasefield_mcmp_poiseuille.py"],
+  "reference_files": [
+    "benchmarks/phasefield_mcmp_poiseuille/reference/round1.py"
+  ],
   "references": [
     {
-      "source": "xval/xval_phasefield_mcmp_poiseuille.py",
+      "source": "benchmarks/phasefield_mcmp_poiseuille/reference/round1.py",
       "field": "analytical_stratified_poiseuille",
       "value": "Piecewise parabolic velocity with wall no-slip and continuous velocity and shear stress at the interface."
     }
   ],
-  "results": ["benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json"]
+  "results": [
+    "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json"
+  ],
+  "evidence": [
+    "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures_b64.json",
+    "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig1_velocity_profile.png",
+    "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig2_psi_profile.png",
+    "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig3_convergence.png",
+    "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig4_sensitivity.png",
+    "docs/architecture/migrations/phasefield-mcmp-published-case-2026-11-27.json"
+  ]
 }
