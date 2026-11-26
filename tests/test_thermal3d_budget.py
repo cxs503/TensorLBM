@@ -342,6 +342,7 @@ def test_harmonic_walls_recover_temperature_and_link_flux_phasors(record_propert
 
 
 def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
+    from scipy.integrate import quad
     from scipy.optimize import brentq
     from tensorlbm.thermal_common import thermal_link_fluxes_3d
 
@@ -370,6 +371,14 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
         return brentq(lambda t: (step_flux(t)-step_flux(t-shutoff))[col].item()-level,
                       start, end, xtol=1e-14)
     reference_times = [[reference_time(col, level) for level in levels] for col in range(len(probes))]
+    def reference_excess(col, level, crossing):
+        def excess(t):
+            return (step_flux(t)-step_flux(t-shutoff))[col].item()-level
+        return quad(excess, crossing, end, epsabs=1e-20, epsrel=1e-12)[0]
+    excess_reference = [[reference_excess(col, level, crossing)
+                         for level, crossing in zip(levels, crossings)]
+                        for col, crossings in enumerate(reference_times)]
+    previous_excess_errors = None
     previous_arrival_errors = None
     previous_probe_errors = None
     for n in (16, 32, 48, 64, 80):
@@ -432,6 +441,7 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
             sample_times = torch.cat((x.new_tensor([start]), (torch.arange(start_step, end_step,
                                       dtype=x.dtype)+.5)*dt, x.new_tensor([end])))
             arrival_errors = []
+            excess_errors = []
             for col, numerator in enumerate((29, 31)):
                 signal = history[:, col]
                 times = []
@@ -453,7 +463,20 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
                     record_property(f"{key}_s", duration)
                     record_property(f"{key}_error_s", abs(duration-expected))
                     arrival_errors.append(abs(duration-expected))
+                    # Each crossing splits a linear sample interval exactly at zero excess.
+                    excess = (signal-level).clamp_min(0)
+                    widths = sample_times.diff()
+                    areas = .5*widths*(excess[:-1]+excess[1:])
+                    areas[j] *= torch.where(above[j], fraction, 1-fraction)
+                    total_excess = areas.sum().item()
+                    target = excess_reference[col][level_index]
+                    relative_error = abs(total_excess/target-1)
+                    record_property(f"{key}_excess_J_m2", total_excess)
+                    record_property(f"{key}_reference_excess_J_m2", target)
+                    record_property(f"{key}_relative_excess_error", relative_error)
+                    excess_errors.append(relative_error)
                     if len(falls):
+                        record_property(f"{key}_first_excess_J_m2", areas[j[0]:j[1]+1].sum().item())
                         record_property(f"{key}_first_excursion_s", spans[0].item())
                         record_property(f"{key}_first_gap_s", (rises[1]-falls[0]).item())
                 arrival = times[1]
@@ -472,6 +495,9 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
             if previous_arrival_errors is not None:
                 assert all(fine < coarse for fine, coarse in zip(arrival_errors, previous_arrival_errors))
             previous_arrival_errors = arrival_errors
+            if previous_excess_errors is not None:
+                assert all(fine < coarse for fine, coarse in zip(excess_errors, previous_excess_errors))
+            previous_excess_errors = excess_errors
             endpoint_relative = (torch.stack(endpoint_fluxes)[:, indices]/flux_reference-1).abs()
             for row, label in enumerate(("start", "end")):
                 for col, numerator in enumerate((29, 31)):
