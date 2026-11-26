@@ -75,6 +75,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "audit_runtest_r6"),
     ("scripts", "xval_yml_xml_pipeline"),
     ("docs", "history"),
+    ("docs", "m23012"),
+    ("docs", "m23170"),
     ("scripts", "data"),
     ("docs", "m23777"),
     ("docs", "m23124"),

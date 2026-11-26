@@ -1,0 +1,181 @@
+{
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "BB",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 84
+  },
+  "candidate_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 84
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 82
+  },
+  "retired_second_level_directories": [
+    "docs/m23012",
+    "docs/m23170"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/m23012/PREREG.json",
+      "new_path": "development/verification/cac_gravity/m23012/PREREG.json",
+      "git_mode": "100644",
+      "original_git_blob": "6c16e6411927e8030edb690c9228824e2fdfe8e2",
+      "original_sha256": "361e426c38305a921049f99fd68face10e0a6f25d238548ce5dd5b91bf683c70",
+      "size_bytes": 2353,
+      "current_sha256": "361e426c38305a921049f99fd68face10e0a6f25d238548ce5dd5b91bf683c70",
+      "current_size_bytes": 2353,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23012/REPORT.md",
+      "new_path": "development/verification/cac_gravity/m23012/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "a9395010ef9030b9465e0fbc03f98ad852fe12cf",
+      "original_sha256": "74e6ba9a865c9abecd20b1defdd79c5a2a825c2f3cb868097fe38c7d6abb81d4",
+      "size_bytes": 5130,
+      "current_sha256": "74e6ba9a865c9abecd20b1defdd79c5a2a825c2f3cb868097fe38c7d6abb81d4",
+      "current_size_bytes": 5130,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23012/results.json",
+      "new_path": "development/verification/cac_gravity/m23012/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "bffaff55f2a526a62c593bd90e9be801c6c986dc",
+      "original_sha256": "812b0e619004d3d09363b9f535d72f4473f674207da7ecbcc36d66986c264b31",
+      "size_bytes": 7067,
+      "current_sha256": "812b0e619004d3d09363b9f535d72f4473f674207da7ecbcc36d66986c264b31",
+      "current_size_bytes": 7067,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23170/PHASE_A_DERIVATION.md",
+      "new_path": "development/verification/cac_gravity/m23170/PHASE_A_DERIVATION.md",
+      "git_mode": "100644",
+      "original_git_blob": "43fa294973625fd355cfb8514b4a72b06d4e8261",
+      "original_sha256": "b91202fca58708d3f2b928dced0338043ae265d93634914bf5e7f7150415e545",
+      "size_bytes": 7510,
+      "current_sha256": "b91202fca58708d3f2b928dced0338043ae265d93634914bf5e7f7150415e545",
+      "current_size_bytes": 7510,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23170/PHASE_A_REPORT.md",
+      "new_path": "development/verification/cac_gravity/m23170/PHASE_A_REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "f4c6386ea815b074321d705657432da189edc2d7",
+      "original_sha256": "f3b260225e379020396c8b0be6925a377c6a877cab5f060586e0689c33969768",
+      "size_bytes": 5237,
+      "current_sha256": "f3b260225e379020396c8b0be6925a377c6a877cab5f060586e0689c33969768",
+      "current_size_bytes": 5237,
+      "byte_identical": true
+    }
+  ],
+  "historical_source_snapshots": [
+    {
+      "old_path": "development/legacy/TensorLBM/src/tensorlbm/cac_lbm3d.py",
+      "new_path": "development/legacy/TensorLBM/src/tensorlbm/cac_lbm3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "800ed63ca54050513c13584d4c529bf00ceb02ec",
+      "original_sha256": "afeea55987c869b5cf6c9d680cd06f4e2f6f3696fd3ea3d6dc698e84cf6e8f81",
+      "size_bytes": 25386,
+      "current_sha256": "afeea55987c869b5cf6c9d680cd06f4e2f6f3696fd3ea3d6dc698e84cf6e8f81",
+      "current_size_bytes": 25386,
+      "byte_identical": true,
+      "historical_report_path": "src/tensorlbm/cac_lbm3d.py"
+    },
+    {
+      "old_path": "development/legacy/TensorLBM/scripts/verify_cac_hydrostatic_mass.py",
+      "new_path": "development/legacy/TensorLBM/scripts/verify_cac_hydrostatic_mass.py",
+      "git_mode": "100644",
+      "original_git_blob": "b9a11bcc3fcc9397d0c68b04725ace831b4a22c1",
+      "original_sha256": "1093254cb7802cb3209cce27cea4b2dcb635694a8358591aa4546e0866f0c2ab",
+      "size_bytes": 10565,
+      "current_sha256": "1093254cb7802cb3209cce27cea4b2dcb635694a8358591aa4546e0866f0c2ab",
+      "current_size_bytes": 10565,
+      "byte_identical": true,
+      "historical_report_path": "scripts/verify_cac_hydrostatic_mass.py"
+    }
+  ],
+  "compatibility": {
+    "incoming_tracked_references_outside_missions_and_frozen_checkout": 0,
+    "scan": "git grep -l -E m23012|m23170 excluding both mission directories and development/legacy at candidate base; no consumer found. Original historical inline paths and claims are immutable. Archive README supplies path map; no formal user manual moved.",
+    "external_bookmarks": "Unknown; original objects remain retrievable from source_commit.",
+    "registry_id": "xval:cac_gravity_historical"
+  },
+  "science": {
+    "current_acceptance": "not_evaluated",
+    "rerun_performed": false,
+    "m23012_archived_verdict": {
+      "overall_pass": false,
+      "pass_hydrostatic": false,
+      "pass_mass": false,
+      "pass_phase": false,
+      "hydrostatic_error_early_pct": 788.6509817760314,
+      "hydrostatic_error_late_pct": 788.6509817760314
+    },
+    "m23012_nonfinite_phase_drift": true,
+    "m23170_archived_report_only_claim": "Phase A BGK PASS asserted; no independent machine-readable result in the mission directory. Not a fresh scientific acceptance."
+  },
+  "deferred": [
+    {
+      "path": "docs/m23186",
+      "reason": "Active capability registry consumers; baseline tests/test_capability_registry.py 9 passed, 1 failed (test_import_mode_matches_static_mode, Triton unavailable). No migration."
+    },
+    {
+      "path": "docs/m23039 and docs/m23153",
+      "reason": "Active collision-matrix report writers, historical frozen-source dependency. No migration."
+    },
+    {
+      "path": "docs/m23154",
+      "reason": "Active claim ledger consumer; required run artifacts unavailable. No migration."
+    },
+    {
+      "path": "docs/m23013",
+      "reason": "Active droplet analysis report output; separate case ownership migration needed."
+    }
+  ]
+}

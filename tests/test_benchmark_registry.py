@@ -103,6 +103,18 @@ class BenchmarkRegistryTests(unittest.TestCase):
         )
         self.assertIn(f"](../../{directory}/README.md)", (ROOT / report).read_text())
 
+    def test_cac_gravity_archives_keep_failed_result_distinct_from_report(self):
+        (case,) = self.registry("--case", "xval:cac_gravity_historical")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        (variant,) = case["variants"]
+        archive = "development/verification/cac_gravity"
+        self.assertEqual(variant["results"], [f"{archive}/m23012/results.json"])
+        self.assertIn(f"{archive}/m23012/PREREG.json", variant["config"])
+        self.assertIn(f"{archive}/m23170/PHASE_A_REPORT.md", variant["documentation"])
+        self.assertTrue(all(path.startswith("development/legacy/") for path in variant["source"]))
+        result = json.loads((ROOT / variant["results"][0]).read_text())
+        self.assertFalse(result["verdict"]["overall_pass"])
+
     def test_case_lookup_links_nested_evidence_to_the_owning_variant(self):
         path = "benchmarks/verified/cavity/re400"
         (case,) = self.registry("--case", path)
