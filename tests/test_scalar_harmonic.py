@@ -92,12 +92,12 @@ def test_oblique_periodic_decay_converges(direction):
     assert errors[-1] < 0.001
 
 
-@pytest.mark.parametrize("omega", [0.0, 0.27])
-def test_volume_heat_increment_matches_population_step_and_local_balance(omega):
+@pytest.mark.parametrize("omega,insulated", [(0.0, False), (0.27, False), (0.27, True), (3.1, True)])
+def test_volume_heat_increment_matches_population_step_and_local_balance(omega, insulated):
     from tensorlbm.scalar import scalar_equilibrium
 
     source = torch.arange(15, dtype=torch.float64).reshape(3, 5).sin() + 0.37j
-    west = torch.tensor([1.0, 2.0, -0.4], dtype=torch.float64)
+    west = None if insulated else torch.tensor([1.0, 2.0, -0.4], dtype=torch.float64)
     solution = solve_harmonic_scalar_slab(5, 3, 0.83, omega, west, None, source=source)
     phase = complex(math.cos(0.6), math.sin(0.6))
     mid = phase * complex(math.cos(omega / 2), math.sin(omega / 2))
@@ -105,7 +105,7 @@ def test_volume_heat_increment_matches_population_step_and_local_balance(omega):
     g = (phase * solution.populations).real
     zero = torch.zeros_like(g[0])
     post = scalar_collide_bgk(g, g.sum(0), zero, zero, 0.83)
-    new, _ = scalar_stream_slab(post, (mid * west).real, None)
+    new, _ = scalar_stream_slab(post, None if insulated else (mid * west).real, None)
     new += scalar_equilibrium((mid * source).real, zero, zero)
     torch.testing.assert_close(new, (end * solution.populations).real, rtol=0, atol=2e-14)
     div = solution.x_transfer.diff(dim=1) + solution.y_transfer - solution.y_transfer.roll(1, 0)
@@ -155,3 +155,26 @@ def test_insulated_dc_mean_and_source_compatibility():
         solve_harmonic_scalar_slab(4, 3, .85, 0., None, None, source=1j, mean_temperature=0.)
     with pytest.raises(ValueError, match="only"):
         solve_harmonic_scalar_slab(4, 3, .85, .2, None, None, mean_temperature=2.)
+
+
+@pytest.mark.parametrize("omega", [1e-12, 1e-18])
+def test_slow_insulated_response_separates_mean_storage_and_link_transfer(omega, record_property):
+    # Constant source fills the entire insulated slab. On top of it, a
+    # balanced source/sink sends heat across the interior toward increasing x.
+    uniform = .75-.25j
+    perturbation = torch.tensor([.125, .125, 0., 0., -.125, -.125], dtype=torch.float64)
+    source = uniform + perturbation
+    sol = solve_harmonic_scalar_slab(6, 3, .85, omega, None, None, source=source)
+    storage = 2j*math.sin(omega/2)
+    mean_error = abs(storage*sol.scalar.mean().item()-uniform)/abs(uniform)
+    # At these frequencies the nonuniform storage correction is O(omega).
+    dc_transfer = torch.cat((perturbation.new_zeros(1), perturbation.cumsum(0)))
+    flux_error = (sol.x_transfer-dc_transfer).abs().max().item()
+    div = sol.x_transfer.diff(dim=1) + sol.y_transfer-sol.y_transfer.roll(1, 0)
+    residual = (storage*sol.scalar+div-source).abs().max().item()
+    record_property("relative_mean_storage_error", mean_error)
+    record_property("max_transfer_difference_from_dc", flux_error)
+    record_property("max_cell_balance_error", residual)
+    assert mean_error < 1e-14
+    assert flux_error < 20*omega+5e-15
+    assert residual < 1e-14

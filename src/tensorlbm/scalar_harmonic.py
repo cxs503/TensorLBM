@@ -55,7 +55,8 @@ def solve_harmonic_scalar_slab(
         raise ValueError("tau must be finite and greater than 0.5")
     if not 0 <= frequency < math.pi:
         raise ValueError("frequency must lie in [0, pi)")
-    insulated_dc = frequency == 0 and west is None and east is None
+    insulated = west is None and east is None
+    insulated_dc = frequency == 0 and insulated
     if insulated_dc and mean_temperature is None:
         raise ValueError("steady insulated diffusion requires a temperature reference")
     if mean_temperature is not None:
@@ -95,12 +96,21 @@ def solve_harmonic_scalar_slab(
     for wall, q, col in ((west, 1, 0), (east, 3, -1)):
         if wall is not None:
             forcing[q, :, col] = 2 * weights[q] * midpoint * np.fft.fft(wall)
+    uniform_response = complex(mean_temperature) if insulated_dc else 0j
     if source is not None:
         increment = np.broadcast_to(np.asarray(source, dtype=complex), (ny, nx))
         if not np.isfinite(increment).all():
             raise ValueError("source phasors must be finite")
-        if insulated_dc and abs(increment.mean()) > 64*np.finfo(float).eps*np.abs(increment).mean():
-            raise ValueError("the steady insulated slab requires zero net source")
+        if insulated:
+            average = increment.mean()
+            if insulated_dc:
+                if abs(average) > 64*np.finfo(float).eps*np.abs(increment).mean():
+                    raise ValueError("the steady insulated slab requires zero net source")
+            else:
+                # The sum of the midpoint population equations gives the
+                # exact mean response even when the frequency is near zero.
+                uniform_response = average / (2j*math.sin(frequency/2))
+            increment = increment - average
         forcing += weights[:, None, None] * midpoint * np.fft.fft(increment, axis=0)
     modes = np.zeros_like(forcing)
     for j in range(ny):
@@ -116,12 +126,11 @@ def solve_harmonic_scalar_slab(
             (factors.ravel(), columns.ravel(), np.arange(5 * nx + 1)), shape=identity.shape
         )
         system = phase * identity - (stream @ collide).tocsc()
-        if insulated_dc and j == 0:
-            # Conservation makes one population equation redundant. Pin one
-            # rest population while solving for the nonuniform response.
+        if insulated and j == 0:
+            # The remaining response has zero total population. Enforce its
+            # known mean in place of the redundant global balance.
             system = system.tolil()
-            system[0, :] = 0.
-            system[0, 0] = 1.
+            system[0, :] = 1.
             system = system.tocsc()
             rhs = rhs.copy()
             rhs[0] = 0.
@@ -134,9 +143,8 @@ def solve_harmonic_scalar_slab(
     x_transfer = torch.cat(
         (exchange[0, :, None], scalar_link_transfer(post, "x"), -exchange[1, :, None]), dim=1
     )
-    if insulated_dc:
-        shift = complex(mean_temperature) - populations.sum(dim=0).mean()
-        populations = populations + torch.from_numpy(weights)[:, None, None]*shift
+    if insulated:
+        populations = populations + torch.from_numpy(weights)[:, None, None]*uniform_response
     return HarmonicScalarSlab(
         populations, x_transfer, scalar_link_transfer(post, "y", periodic=True)
     )
