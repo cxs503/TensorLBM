@@ -3,7 +3,7 @@
 The contract under test: :class:`tensorlbm.fused_push_pull.FusedPushPullStepper`
 reproduces, to floating-point round-off, (a) the upstream
 ``lbm-principles-practice/code`` chapter-13 fused kernel (transliterated in
-``xval/fused_push_pull_aa_pattern/oss_port.py``) and (b) this repository's own
+``benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/oss_port.py``) and (b) this repository's own
 AB-pattern reference (``solver.stream`` + ``collide_bgk``), and its
 Taylor-Green decay passes the owner's 15 % gate while a deliberately broken
 convention (West/East swap) does not.
@@ -21,7 +21,7 @@ import torch
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "xval" / "fused_push_pull_aa_pattern"))
+sys.path.insert(0, str(REPO / "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839"))
 
 from oss_port import OSSFusedStepper, taylor_green_eval  # noqa: E402
 

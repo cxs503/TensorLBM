@@ -128,6 +128,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN"),
     ("xval", "XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY"),
     ("xval", "XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY"),
+    ("xval", "fused_push_pull_aa_pattern"),
 }
 
 

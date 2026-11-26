@@ -1,5 +1,7 @@
 # Board audit m17884 — m17839 `XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN` (TensorLBM)
 
+> Current [archive entry](../../../benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/README.md). The historical checkout and commands below describe the audit as performed.
+
 Auditor mission: **17884** · verdict_by `board-audit` · audited commit **eee0988a6de3c7122fe4a4cf30b3f185d87277a7**
 (`XVAL: cross-validate fused push-pull (upstream OSS ch.13) against OSS port and AB reference`,
 worktree `/srv/tensor/agent/work/m17839`, mission 17839 status `succeeded`, platform report id 16786).

@@ -1,5 +1,7 @@
 # Verified: fused push-pull AA pattern (anchor `XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN`)
 
+[Historical m17839 cross-validation](evidence/m17839/README.md) includes the upstream source snapshot, replay driver, and original result.
+
 Reference practice: ``lbm-principles-practice/code`` chapter 13 GPU kernel
 ``gpu_stream_collide_save`` (MIT).  It fuses streaming and collision into one
 pass: pull the eight shifted neighbours of the *post-collision* field, rebuild

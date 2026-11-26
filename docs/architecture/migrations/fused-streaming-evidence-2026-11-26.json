@@ -1,0 +1,144 @@
+{
+  "source_commit": "8ab77f0828b136292101658203af6d5221c7c080",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 55,
+      "after": 54
+    }
+  },
+  "retired_paths": [
+    "xval/fused_push_pull_aa_pattern"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/figure_captions.json",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/figure_captions.json",
+      "git_mode": "100644",
+      "original_git_blob": "7d7ef674a7331c51b653ec75fb6a2fa4e0e66c32",
+      "original_sha256": "6b55a3eeced45e68be036070f94a5837387cd8a8115478fad6e102efdd281154",
+      "original_size_bytes": 473,
+      "current_sha256": "6b55a3eeced45e68be036070f94a5837387cd8a8115478fad6e102efdd281154",
+      "current_size_bytes": 473,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/figures/index.json",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/figures/index.json",
+      "git_mode": "100644",
+      "original_git_blob": "5e768539d4298dbd439e4ec2c1fc88d1815222c8",
+      "original_sha256": "9e5fe8da2c5f146105ec79af4bbe7fba8c64186775d94bed4138b13df709ce23",
+      "original_size_bytes": 137,
+      "current_sha256": "9e5fe8da2c5f146105ec79af4bbe7fba8c64186775d94bed4138b13df709ce23",
+      "current_size_bytes": 137,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/make_report.py",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "698b2ec343fab48778992f026dee959f5ee08791",
+      "original_sha256": "f415294e68983210e3cad6ad6e34a43da75d21555bb5780142b4bbb48b48775c",
+      "original_size_bytes": 21269,
+      "current_sha256": "192dcc348978da11061f04fda2e6f492e84011fb952d1623fb7b5cd4d1cc8e84",
+      "current_size_bytes": 21462,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/oss_port.py",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/oss_port.py",
+      "git_mode": "100644",
+      "original_git_blob": "d58e36025ff3e33bd2dd2d174ceb60a4627e25e4",
+      "original_sha256": "b8d8e4a091256511223cae9298b326f3a06c07e961494e2978b245136e5d7ae3",
+      "original_size_bytes": 5426,
+      "current_sha256": "b8d8e4a091256511223cae9298b326f3a06c07e961494e2978b245136e5d7ae3",
+      "current_size_bytes": 5426,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/ref/LBM.cu",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/ref/LBM.cu",
+      "git_mode": "100644",
+      "original_git_blob": "53ca66b7a5a3a7585356197469b9a6be3d55cc9b",
+      "original_sha256": "0c9854fa353b62415bda2ff29fef890ece9254617990d7f94a2313537d0feb0c",
+      "original_size_bytes": 13686,
+      "current_sha256": "0c9854fa353b62415bda2ff29fef890ece9254617990d7f94a2313537d0feb0c",
+      "current_size_bytes": 13686,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/ref/LBM.h",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/ref/LBM.h",
+      "git_mode": "100644",
+      "original_git_blob": "185d149c02bd7d71a7fe5b51406bdd0bcc593469",
+      "original_sha256": "0bc95be600f9416e58b70455ef756dea2875a14077e4dcddd4addb24b2ec0920",
+      "original_size_bytes": 1747,
+      "current_sha256": "0bc95be600f9416e58b70455ef756dea2875a14077e4dcddd4addb24b2ec0920",
+      "current_size_bytes": 1747,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/ref/PROVENANCE.json",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/ref/PROVENANCE.json",
+      "git_mode": "100644",
+      "original_git_blob": "7aa4993089315e77eae182903ea46fef12ce3e5b",
+      "original_sha256": "46996d3302b87ab91bc036d40acd940b1d95d0c0fe7dbbb6e82a20093e00a5a5",
+      "original_size_bytes": 555,
+      "current_sha256": "46996d3302b87ab91bc036d40acd940b1d95d0c0fe7dbbb6e82a20093e00a5a5",
+      "current_size_bytes": 555,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/ref/main.cu",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/ref/main.cu",
+      "git_mode": "100644",
+      "original_git_blob": "021ad7bd91864e6ad1c28f8c6d782db35d4dc85f",
+      "original_sha256": "ebbb847c12b4d52495bef359c44bf0a1d802a6b1c2047377dc8eed9e3e5af98e",
+      "original_size_bytes": 6622,
+      "current_sha256": "ebbb847c12b4d52495bef359c44bf0a1d802a6b1c2047377dc8eed9e3e5af98e",
+      "current_size_bytes": 6622,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/result.json",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "ac357575e0bc00a80802c4b0d16e07d6fee84302",
+      "original_sha256": "32cdd1b42aed2329fdcca523885090eaa91b92b68534085817ae1ce15517fbb5",
+      "original_size_bytes": 45601,
+      "current_sha256": "32cdd1b42aed2329fdcca523885090eaa91b92b68534085817ae1ce15517fbb5",
+      "current_size_bytes": 45601,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fused_push_pull_aa_pattern/run.py",
+      "new_path": "benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "f74b885c6a02adcc4a0c9808ca2c9b98886b4d02",
+      "original_sha256": "6b2bffde0ed2bc7e12a97d579d12deb9d60d13986e04059870c22e5c1c4d2e80",
+      "original_size_bytes": 21268,
+      "current_sha256": "c00a2803681f26c9de948207d2af9b5ceadaa6bd4d2102f3766b66b5d2fa53a8",
+      "current_size_bytes": 21397,
+      "byte_identical": false
+    }
+  ],
+  "case_id": "benchmarks/verified/fused_push_pull_aa_pattern",
+  "dependencies": {
+    "runner": "Uses this checkout's src/tensorlbm and the sibling OSS transliteration and provenance. Omitted --out writes to the ignored outputs/historical_xval tree.",
+    "renderer": "Reads the archived result. Use an isolated checkout because the renderer updates Markdown and figures. The original tracked index names four PNGs absent from the source tree.",
+    "tests": "The active fused push\u2013pull regression imports the relocated OSS transliteration. Formatting that test file keeps its AST unchanged after the path update.",
+    "public_links": "Retain the published report and board audit paths. The case index and related reports link to the relocated archive. Historical audit material retains its original checkout paths."
+  },
+  "verification": {
+    "quick_replay": {
+      "command": "OMP_NUM_THREADS=1 python <old-or-new>/run.py --quick --out <temporary-json>",
+      "result": "Real CPU runs from outside the checkout match after excluding only wall_s timing fields.",
+      "normalized_json_sha256": "6c1ae74fc032544a337d45c76ae81789eb820b34fd39032e7f2212d787f249af"
+    },
+    "report_renderer": "Generated four PNGs from the exact original result in a disposable checkout hierarchy and verified all four Markdown image paths.",
+    "focused_regression": "12 passed in tests/test_fused_push_pull_xval.py.",
+    "governance": "86 tests passed, including archive ownership on the canonical case. Registry lists 226 cases and 33 PDF manuals. Ruff 0.15.0 and 10 archive-navigation links passed."
+  },
+  "scope": "Structural and executable compatibility. Original numeric findings, historical verdicts and tests' physical thresholds are unchanged. The current registry verdict remains not_evaluated."
+}

@@ -1,5 +1,7 @@
 # XVAL-LBM-AA-PATTERN-FUSED-STREAM-COLLIDE — 交叉验证报告
 
+> Current [m17839 reference result](../../benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/result.json). The paths in the original report refer to its historical checkout.
+
 **Anchor**: XVAL-LBM-AA-PATTERN-FUSED-STREAM-COLLIDE  
 **Mission**: m22139 (第2轮·调研结合)  
 **Date**: 2026-11-15  
