@@ -231,7 +231,7 @@ def test_solver_layer_caller_returns_laplace_diagnostics():
 # external reference arm
 # ---------------------------------------------------------------------------
 def _oss_adapter():
-    path = pathlib.Path(__file__).resolve().parents[1] / "xval" / "cupy_dropin_no_kernel_fusion"
+    path = pathlib.Path(__file__).resolve().parents[1] / "development" / "verification" / "cupy_dropin_no_kernel_fusion"
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
     return importlib.import_module("oss_adapter")

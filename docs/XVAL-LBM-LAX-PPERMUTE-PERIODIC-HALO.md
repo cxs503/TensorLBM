@@ -1,5 +1,7 @@
 # XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO —— 与 vivsim `stream_cross_devices` 的交叉对标
 
+> Repository migration note: current archived campaign files are at [development/verification/ppermute_periodic_halo](../development/verification/ppermute_periodic_halo/). Historical results remain tied to the recorded original revision; they are not a new scientific acceptance.
+
 * 仓：TensorLBM ｜ 单号：m18112（返修轮 1，原单 m17868）｜ 锚点：`XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO`
 * 对标 ref（OSS）：`haimingz/vivsim` @ `fb84b12f02e18f3b9dfdf738d6a1a318d81539f9`（2026-06-28），
   `vivsim/multidevice.py::stream_cross_devices`（39 行，MIT，Copyright (c) 2024 Haiming Zhu）

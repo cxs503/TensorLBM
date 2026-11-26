@@ -1,7 +1,7 @@
 """Orchestrator for XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO.
 
 Usage:
-    python xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/run_xval.py [--quick]
+    python development/verification/ppermute_periodic_halo/run_xval.py [--quick]
 
 Writes ``artifacts/result.json`` (every arm, every configuration) and prints a
 compact table.  Nothing in the report is hand-copied from here on: the report
@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 
 import numpy as np  # noqa: E402

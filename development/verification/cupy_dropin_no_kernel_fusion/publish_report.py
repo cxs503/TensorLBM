@@ -20,6 +20,6 @@ def call(path, payload=None, token=None):
 st, d = call("/auth/login", {"username": USER, "password": PASS})
 tok = d.get("access_token", "")
 print("login", st, "token_len", len(tok))
-payload = json.load(open("xval/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json"))
+payload = json.load(open("development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json"))
 st2, out = call("/tensor/reports", payload, tok)
 print("report", st2, json.dumps(out)[:400])

@@ -26,9 +26,9 @@ backends must additionally agree to ``< 1e-6`` relative (drop-in equivalence).
 
 Usage
 -----
-    python xval/cupy_dropin_no_kernel_fusion/run_xval.py                # full study
-    python xval/cupy_dropin_no_kernel_fusion/run_xval.py --quick        # smoke (~1 min)
-    python xval/cupy_dropin_no_kernel_fusion/run_xval.py --no-oss       # skip OSS arm
+    python development/verification/cupy_dropin_no_kernel_fusion/run_xval.py                # full study
+    python development/verification/cupy_dropin_no_kernel_fusion/run_xval.py --quick        # smoke (~1 min)
+    python development/verification/cupy_dropin_no_kernel_fusion/run_xval.py --no-oss       # skip OSS arm
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 
