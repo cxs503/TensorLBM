@@ -597,7 +597,27 @@ def test_fixed_wall_pulse_interior_peak_flux(record_property):
         clipped = torch.cat((boundary, signal[above], boundary))
         total_heat = torch.trapezoid(clipped, times).item()
         excess_heat = torch.trapezoid(clipped-threshold, times).item()
-        for label, value, target in (("total", total_heat, total_ref), ("excess", excess_heat, excess_ref)):
+        # Integrate the same interpolant over the continuum crossing times.
+        sample_times = (first+torch.arange(len(signal), dtype=signal.dtype)-.5)*dt
+        bounds = signal.new_tensor([entry_ref, exit_ref])
+        right_index = torch.searchsorted(sample_times, bounds)
+        assert torch.all((right_index > 0) & (right_index < len(signal)))
+        left_index = right_index-1
+        weight = (bounds-sample_times[left_index])/(sample_times[right_index]-sample_times[left_index])
+        bound_flux = torch.lerp(signal[left_index], signal[right_index], weight)
+        inside = (sample_times > entry_ref) & (sample_times < exit_ref)
+        fixed_times = torch.cat((bounds[:1], sample_times[inside], bounds[1:]))
+        fixed_flux = torch.cat((bound_flux[:1], signal[inside], bound_flux[1:]))
+        fixed_total = torch.trapezoid(fixed_flux, fixed_times).item()
+        fixed_excess = torch.trapezoid(fixed_flux-threshold, fixed_times).item()
+        for label, value, fixed, target in (("total", total_heat, fixed_total, total_ref),
+                                            ("excess", excess_heat, fixed_excess, excess_ref)):
+            curve_error = fixed-target
+            window_shift = value-fixed
+            record_property(f"n{n}_{label}_fixed_window_J_m2", fixed)
+            record_property(f"n{n}_{label}_curve_error_J_m2", curve_error)
+            record_property(f"n{n}_{label}_window_shift_J_m2", window_shift)
+            errors += (abs(curve_error), abs(window_shift))
             relative_error = abs(value/target-1)
             record_property(f"n{n}_{label}_heat_J_m2", value)
             record_property(f"n{n}_{label}_heat_relative_error", relative_error)
