@@ -1,0 +1,24 @@
+{
+  "source_commit": "72e74b6dd5d76d1fc5b2b333f6e3852d73e3f1b0",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_peak.xml",
+  "tests": 9,
+  "failures": 0,
+  "errors": 0,
+  "reference": "Unit slab with a unit wall pulse lasting 1/16 s. At x/L=11/32 find the cooling-window flux maximum from the temporal derivative of its continuous 80-mode Fourier representation. Estimate the measured peak by a three-point quadratic interpolation on kinetic link half-step samples; compare n=16,48,80 and dt=1/n².",
+  "measurements": {
+    "peak_reference_s": 0.17997448332226104,
+    "peak_reference_W_m2": 0.057616459300811176,
+    "n16_peak_s": 0.17142871451999164,
+    "n16_peak_W_m2": 0.062251664238107095,
+    "n16_time_error_s": 0.008545768802269399,
+    "n16_flux_error_W_m2": 0.004635204937295918,
+    "n48_peak_s": 0.17900675922664444,
+    "n48_peak_W_m2": 0.0580447297089635,
+    "n48_time_error_s": 0.0009677240956166011,
+    "n48_flux_error_W_m2": 0.00042827040815232587,
+    "n80_peak_s": 0.17962383012696936,
+    "n80_peak_W_m2": 0.05776498349793715,
+    "n80_time_error_s": 0.00035065319529167804,
+    "n80_flux_error_W_m2": 0.00014852419712597237
+  }
+}
