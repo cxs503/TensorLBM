@@ -26,7 +26,7 @@
 
 新建 4 件产物，全部在本仓内、无外部服务依赖：
 
-1. `xval/gitlab_ci_staged_gates/stage_semantics.py` —— **独立第二解析器**（直接读原始 YAML，
+1. `development/verification/gitlab_ci_staged_gates/stage_semantics.py` —— **独立第二解析器**（直接读原始 YAML，
    不走 `ci_spec` 的规范化模型；两个独立实现对不上本身就是一条发现）+ 执行语义模型：
    - 事件上下文：`mr / branch_push / main_push / schedule`，用合成变量表求值 `rules: if`；
    - 无法判定的表达式（如 `=~` 正则）抛 `UnverifiableCondition`，记为 **WITHHELD**，绝不猜测；

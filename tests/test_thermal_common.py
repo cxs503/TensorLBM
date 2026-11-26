@@ -933,7 +933,7 @@ def test_reversing_heat_flux_against_travelling_thermal_wave(record_property):
 
 
 def test_internal_link_flux_is_conservative_for_arbitrary_populations():
-    from tensorlbm.thermal_common import thermal_link_fluxes_3d, thermal_flux_wall_pair_3d
+    from tensorlbm.thermal_common import thermal_flux_wall_pair_3d, thermal_link_fluxes_3d
 
     post = torch.randn(
         (7, 3, 1, 4), generator=torch.Generator().manual_seed(41), dtype=torch.float64

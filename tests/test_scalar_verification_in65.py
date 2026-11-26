@@ -14,14 +14,18 @@ Plus unit tests for D2Q5 lattice, scalar operations, and Boussinesq coupling.
 from __future__ import annotations
 
 import math
+import sys
+from pathlib import Path
 
 import pytest
 import torch
 
-import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from tensorlbm.boussinesq import (
+    compute_buoyancy_force,
+    fit_plume_exponent,
+)
 from tensorlbm.scalar_transport import (
     C5,
     CS2_D2Q5,
@@ -35,20 +39,15 @@ from tensorlbm.scalar_transport import (
     scalar_stream,
     tau_from_diffusivity,
 )
-from tensorlbm.boussinesq import (
-    compute_buoyancy_force,
-    fit_plume_exponent,
-)
 from tensorlbm.scalar_verification_in65 import (
     run_1d_advection_diffusion,
-    run_mass_conservation_test,
-    run_buoyant_plume_self_similarity,
     run_buoyant_plume_lbm_check,
-    run_negative_control_no_buoyancy,
-    run_lfl_wind_speed_sweep,
+    run_buoyant_plume_self_similarity,
     run_lfl_grid_convergence,
+    run_lfl_wind_speed_sweep,
+    run_mass_conservation_test,
+    run_negative_control_no_buoyancy,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # D2Q5 Lattice Tests

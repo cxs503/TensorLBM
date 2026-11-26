@@ -27,7 +27,7 @@ What these tests pin -- and what they deliberately do *not* pin:
   parabola at two grid sizes.
 
 The heavy sweeps (grid ladder, tau sweep, force sweep, Stokes layer) live in
-``xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py``.
+``development/verification/regularised_bc_noneq_stress/run_xval_r5.py``.
 """
 
 from __future__ import annotations

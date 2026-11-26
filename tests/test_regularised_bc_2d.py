@@ -1,7 +1,7 @@
 """Cross-validation tests for the ported regularised D2Q9 boundary condition.
 
 Reference: joconnor22/LIFE ``src/Grid.cpp::regularisedBC``; the per-node
-transcription lives in ``xval/XVAL-LBM-REG-BC-NEQ-STRESS/reference.py`` and the
+transcription lives in ``development/verification/regularised_bc_2d_reference/reference.py`` and the
 upstream snapshot in ``.../oss_src/Grid.cpp`` (md5 pinned in PROVENANCE.json).
 
 Invariants checked here (see the anchor report
@@ -32,8 +32,9 @@ from tensorlbm.boundary.solver2d import equilibrium2d, macroscopic2d
 
 REF_PATH = (
     Path(__file__).resolve().parents[1]
-    / "xval"
-    / "XVAL-LBM-REG-BC-NEQ-STRESS"
+    / "development"
+    / "verification"
+    / "regularised_bc_2d_reference"
     / "reference.py"
 )
 

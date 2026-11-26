@@ -5,7 +5,7 @@ Two independent oracles are used for the segmentation:
 * a **brute-force distance oracle** (explicit minimum over all pore voxels on a
   small grid) — checks that the two-segment split really is the exact-EDT
   partition and not an approximate/structure-element shell; and
-* the **upstream reference** ``xval/.../oss_reference.py`` (verbatim
+* the **upstream reference** ``development/verification/edt_two_segment_geometry_tag_compression/oss_reference.py`` (verbatim
   ``je-santos/MPLBM-UT`` ``create_geom_edist``) — checks bit-for-bit tag parity
   on the knobs the reference exposes (padding, swap, non-wetting back-fill).
 
@@ -38,7 +38,7 @@ from tensorlbm.geom_edt_tag import (
 )
 
 REPO = Path(__file__).resolve().parents[1]
-REF_DIR = REPO / "xval" / "edt_two_segment_geometry_tag_compression"
+REF_DIR = REPO / "development/verification/edt_two_segment_geometry_tag_compression"
 
 
 # --------------------------------------------------------------------------

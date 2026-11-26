@@ -1,5 +1,7 @@
 # XVAL: TensorLBM regularised D2Q9 boundary condition vs joconnor22/LIFE
 
+> Repository migration note: current campaign files are at [development/verification/regularised_bc_2d_reference](../../development/verification/regularised_bc_2d_reference/). Original mission paths in the narrative refer to the frozen historical revision. Historical verdicts are not current acceptance.
+
 Anchor `XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-RECON` (mission 18240, repo TensorLBM).
 Protocol frozen before the production runs: `xval/XVAL-LBM-REG-BC-NEQ-STRESS/predeclared.json`.
 

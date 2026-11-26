@@ -1,6 +1,6 @@
 """Pytest front end for the shell-driven instruction-DSL conformance suite.
 
-``xval/XVAL-LBM-INSTRUCTION-DSL-TESTS-SH/dsl_shell_suite/run_cases.sh`` is the
+``development/verification/instruction_dsl/dsl_shell_suite/run_cases.sh`` is the
 ``XVAL-LBM-INSTRUCTION-DSL-TESTS-SH``: TCLB-style *shell* tests that drive the
 CLI, judge its exit status and streams, and need no Python test framework.  A
 shell suite is worthless if it cannot fail, so this module does two things:
@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SUITE = REPO / "xval" / "XVAL-LBM-INSTRUCTION-DSL-TESTS-SH" / "dsl_shell_suite"
+SUITE = REPO / "development/verification/instruction_dsl" / "dsl_shell_suite"
 RUNNER = SUITE / "run_cases.sh"
 CASES = SUITE / "cases"
 

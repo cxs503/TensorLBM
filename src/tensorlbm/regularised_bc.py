@@ -25,7 +25,7 @@ populations from the *second moment* of the distribution instead:
 
 Step 4 is a projection: it keeps the density, the momentum and ``S`` exactly
 and removes all higher-order (ghost) content.  *Measured* (xval R4, see
-``xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/REPORT_R4.md``): the
+``development/verification/regularised_bc_noneq_stress/REPORT_R4.md``): the
 wall error of the oscillating Stokes layer is second order in ``Delta_x/delta``
 (measured exponent 1.81-2.00 over tau in {0.8, 1.0, 1.5}), 0.20 % at
 ``delta = 10`` cells; the closure is *not* relaxation-rate independent -- at
@@ -37,7 +37,7 @@ is a semantics transplant of ``src/Grid.cpp:386-466`` (``regularisedBC``) and
 its call sites (``src/Grid.cpp:321/333/351/368`` for ``eWall`` / ``eVelocity``
 / ``eFreeSlip`` / ``ePressure``); the OSS C++ code was read, not copied, and
 the differences are listed in
-``xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/OSS_DIFF.md``.
+``development/verification/regularised_bc_noneq_stress/OSS_DIFF.md``.
 
 Public surface
 --------------

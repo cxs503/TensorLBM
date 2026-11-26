@@ -62,6 +62,9 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-MASK-INDEXED-BOUNCEBACK"),
     ("xval", "XVAL-LBM-MOVING-WALL-HALFWAY-BB-D2Q9-BGK"),
     ("xval", "XVAL-LBM-MOVING-WALL-WALL-SHEAR-ME-D2Q9-BGK"),
+    ("xval", "XVAL-LBM-REG-BC-NEQ-STRESS"),
+    ("xval", "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC"),
+    ("xval", "XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64"),
     ("scripts", "verification"),
     ("scripts", "audit_m18430"),
     ("scripts", "w26_ghia"),
@@ -93,6 +96,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "sdaa"),
     ("xval", "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT"),
     ("scripts", "in25_t6"),
+    ("xval", "fill_gradient_normal"),
+    ("xval", "edt_two_segment_geometry_tag_compression"),
     ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
     ("xval", "fluctuating_lbm_ghost_modes"),
@@ -124,6 +129,9 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("benchmarks", "xval_free_energy_binary_equilibrium"),
     ("xval", "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4"),
     ("xval", "round2_method_selection_3d"),
+    ("xval", "oracle_minimal_d2q9_fs"),
+    ("xval", "mass_exchange_selector"),
+    ("xval", "XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE"),
     ("xval", "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5"),
     ("xval", "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN"),
     ("xval", "XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY"),
@@ -131,6 +139,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "fused_push_pull_aa_pattern"),
     ("xval", "XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT"),
     ("xval", "XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT"),
+    ("xval", "gitlab_ci_staged_gates"),
+    ("xval", "XVAL-LBM-INSTRUCTION-DSL-TESTS-SH"),
 }
 
 

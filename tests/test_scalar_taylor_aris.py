@@ -33,8 +33,8 @@ from tensorlbm.scalar import (
     scalar_diffusivity,
     scalar_macroscopic,
     second_moment_x,
-    taylor_aris_deff,
     tau_from_diffusivity,
+    taylor_aris_deff,
 )
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

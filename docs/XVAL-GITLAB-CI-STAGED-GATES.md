@@ -1,5 +1,7 @@
 # XVAL-LBM-GITLAB-CI-STAGED-GATES — TensorLBM 门禁策略 vs lbmpy 分阶段门禁（开源对标）
 
+> [Current archive and reproduction instructions](../development/verification/gitlab_ci_staged_gates/README.md). The historical report retains its original delivery paths.
+
 任务：m17842 · 锚点 `XVAL-LBM-GITLAB-CI-STAGED-GATES` · 仓 TensorLBM · 分支 `agent/m17842`
 对标对象：`lssfau/lbmpy` 的 `gitlab-ci-staged-gates`（`oss_solutions` row 117）
 交付：`xval/gitlab_ci_staged_gates/`（可执行入口 + 上游原始字节 + 实测数据）、`tests/test_ci_staged_gates_xval.py`

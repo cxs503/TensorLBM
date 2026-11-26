@@ -61,7 +61,7 @@ _SCRIPT_DIR = str(Path(__file__).resolve().parent)
 sys.path[:] = [p for p in sys.path if p not in (_SCRIPT_DIR, "", ".")]
 sys.path.insert(0, str(REPO_ROOT))
 
-from xval.gitlab_ci_staged_gates.stage_semantics import Pipeline, summarize  # noqa: E402
+from development.verification.gitlab_ci_staged_gates.stage_semantics import Pipeline, summarize  # noqa: E402
 
 #: Local probes for the blocking gates that are cheap to run hermetically.
 #: Each entry is (argv, per-step timeout seconds).  Anything absent is not_run.

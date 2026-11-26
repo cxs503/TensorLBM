@@ -74,6 +74,10 @@ moves the registered case into `benchmarks/cross_validation/` with the same
 `xval:ludwig_fe_stress` case ID. Use that directory for registered
 cross-validations and keep historical supporting material in development.
 
+The [geometry verification ledger](migrations/geometry-xval-2026-11-26.json)
+records the archived [fill-gradient normal](../../development/verification/fill_gradient_normal/README.md)
+and [EDT geometry tagging](../../development/verification/edt_two_segment_geometry_tag_compression/README.md) studies.
+
 The [kernel and preprocessing ledger](migrations/kernel-preprocess-xval-2026-11-26.json)
 records the archived [warp-shift streaming](../../development/verification/warp_shift_streaming/README.md)
 and [voxel porosity](../../development/verification/voxel_porosity/README.md) studies.
