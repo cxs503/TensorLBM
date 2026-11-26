@@ -36,7 +36,12 @@ system along x and returns complex populations plus midpoint link transfers.
 It runs on CPU with NumPy, SciPy and PyTorch; multiply transfers by dx/dt
 for flux at unit capacity. For zero frequency with two insulated walls, pass a finite
 `mean_temperature` to fix the spatial mean. Any volumetric source must
-then sum to zero over the lattice.
+then sum to zero over the lattice. Both the streaming and harmonic operators
+accept `wall_transfer=(west_in, east_in)` for specified inward transfers.
+Use a scalar or one value per row and set that wall's temperature to `None`.
+A physical inward heat flux density q corresponds to q·dt/(ρcp·dx) per link.
+With two flux walls at zero frequency, the sum of both wall inputs and all
+volume increments must vanish.
 
 Run the oscillating slab command with `--periodic-start` to start the
 time march from the real part of those populations. Every grid passes the

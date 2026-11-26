@@ -221,12 +221,14 @@ def scalar_wall_step_means(step_edges, switch_times, levels, *, interpolation="c
     return integral / np.diff(edges).reshape((-1,) + trailing)
 
 
-def scalar_stream_slab(g: torch.Tensor, west, east) -> tuple[torch.Tensor, torch.Tensor]:
+def scalar_stream_slab(g: torch.Tensor, west, east, *, wall_transfer=(None, None)) -> tuple[torch.Tensor, torch.Tensor]:
     """Stream post-collision D2Q5 populations with halfway walls in x and periodic y.
 
     For a stationary wall, a scalar or (ny,) value prescribes the diffusing
     field by anti-bounce-back. None reflects the outgoing population for zero
-    normal flux. The second return has shape (2, ny): incoming minus outgoing
+    normal flux by default. A wall_transfer entry adds the prescribed inward
+    population per step to that reflected population (scalar or per row).
+    The second return has shape (2, ny): incoming minus outgoing
     population per wall link, ordered west then east. Multiply by cell volume
     and capacity to obtain heat supplied over the step.
     """
@@ -234,7 +236,9 @@ def scalar_stream_slab(g: torch.Tensor, west, east) -> tuple[torch.Tensor, torch
         raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
     streamed = scalar_stream(g)
     transfers = []
-    for wall, incoming, outgoing, col in ((west, 1, 3, 0), (east, 3, 1, -1)):
+    if len(wall_transfer) != 2:
+        raise ValueError("supply a transfer entry for each wall")
+    for flux, (wall, incoming, outgoing, col) in zip(wall_transfer, ((west, 1, 3, 0), (east, 3, 1, -1))):
         leaving = g[outgoing, :, col]
         arriving = leaving
         if wall is not None:
@@ -242,8 +246,18 @@ def scalar_stream_slab(g: torch.Tensor, west, east) -> tuple[torch.Tensor, torch
             if value.ndim and value.shape != leaving.shape:
                 raise ValueError("wall scalar must be uniform or have one value per row")
             arriving = 2 * _W5_EXACT[incoming] * value - leaving
+        if flux is not None:
+            if wall is not None:
+                raise ValueError("a wall cannot prescribe both temperature and transfer")
+            amount = torch.as_tensor(flux, dtype=g.dtype, device=g.device)
+            if (amount.ndim and amount.shape != leaving.shape) or not torch.isfinite(amount).all():
+                raise ValueError("wall transfer must be finite and uniform or per row")
+            amount = amount.expand_as(leaving)
+            arriving = leaving + amount
+        else:
+            amount = arriving - leaving
         streamed[incoming, :, col] = arriving
-        transfers.append(arriving - leaving)
+        transfers.append(amount)
     return streamed, torch.stack(transfers)
 
 

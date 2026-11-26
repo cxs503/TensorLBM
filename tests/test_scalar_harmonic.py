@@ -178,3 +178,68 @@ def test_slow_insulated_response_separates_mean_storage_and_link_transfer(omega,
     assert mean_error < 1e-14
     assert flux_error < 20*omega+5e-15
     assert residual < 1e-14
+
+
+@pytest.mark.parametrize("fixed", [None, "west", "east"])
+def test_prescribed_wall_transfer_recovers_steady_gradient(fixed, record_property):
+    nx, tau, slope = 12, .9, -.125
+    mean = 2.5
+    transfer = -(tau-.5)*slope/3
+    west = mean-slope*nx/2 if fixed == "west" else None
+    east = mean+slope*nx/2 if fixed == "east" else None
+    flux = (transfer if west is None else None, -transfer if east is None else None)
+    sol = solve_harmonic_scalar_slab(nx, 3, tau, 0., west, east, wall_transfer=flux,
+                                     mean_temperature=mean if fixed is None else None)
+    exact = mean + slope*(torch.arange(nx, dtype=torch.float64)+.5-nx/2)
+    field_error = (sol.scalar-exact).abs().max().item()
+    rate_error = (sol.x_transfer-transfer).abs().max().item()
+    record_property("max_temperature_error_K", field_error)
+    record_property("max_link_transfer_error", rate_error)
+    assert field_error < 2e-13
+    assert rate_error < 3e-15
+
+
+def test_rowwise_wall_flux_closes_harmonic_storage_and_time_update(record_property):
+    from tensorlbm.scalar import scalar_equilibrium
+
+    nx, ny, omega, tau = 4, 3, .19, .87
+    west = torch.tensor([.1j, .3, -.4], dtype=torch.complex128)
+    east = -.02+.1j
+    source = .03+.04j
+    sol = solve_harmonic_scalar_slab(nx, ny, tau, omega, None, None, source=source,
+                                     wall_transfer=(west, east))
+    div = sol.x_transfer.diff(dim=1)+sol.y_transfer-sol.y_transfer.roll(1, 0)
+    storage = 2j*math.sin(omega/2)*sol.scalar
+    residual = (storage+div-source).abs().max().item()
+    assert abs(storage.mean()-(source+(west.mean()+east)/nx)) < 1e-14
+    mid = complex(math.cos(omega/2), math.sin(omega/2))
+    end = mid**2
+    g = sol.populations.real
+    zero = torch.zeros_like(g[0])
+    post = scalar_collide_bgk(g, g.sum(0), zero, zero, tau)
+    streamed, _ = scalar_stream_slab(post, None, None, wall_transfer=((mid*west).real, (mid*east).real))
+    streamed += scalar_equilibrium(zero+(mid*source).real, zero, zero)
+    update_error = (streamed-(end*sol.populations).real).abs().max().item()
+    record_property("max_cell_balance_error", residual)
+    record_property("max_population_step_error", update_error)
+    assert max(residual, update_error) < 1e-14
+
+
+def test_flux_wall_rejects_inconsistent_data():
+    with pytest.raises(ValueError, match="both"):
+        solve_harmonic_scalar_slab(3, 1, .9, .2, 0., None, wall_transfer=(1., None))
+    with pytest.raises(ValueError, match="zero net"):
+        solve_harmonic_scalar_slab(3, 1, .9, 0., None, None, mean_temperature=0.,
+                                   wall_transfer=(1., None))
+
+
+def test_steady_wall_input_balances_uniform_volume_sink(record_property):
+    source = -.0625
+    nx = 7
+    sol = solve_harmonic_scalar_slab(nx, 2, .87, 0., None, None, source=source,
+                                     wall_transfer=(-nx*source, None), mean_temperature=4.)
+    expected = (torch.arange(nx+1, dtype=torch.float64)-nx)*source
+    error = (sol.x_transfer-expected).abs().max().item()
+    record_property("max_link_transfer_error", error)
+    assert error < 5e-15
+    assert abs(sol.scalar.mean()-4.) < 1e-14
