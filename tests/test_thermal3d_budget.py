@@ -342,6 +342,8 @@ def test_harmonic_walls_recover_temperature_and_link_flux_phasors(record_propert
 
 
 def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
     # Difference of delayed unit wall steps in a unit slab, initially at zero.
     # After shutoff both walls are cold and the constant-in-time lift cancels.
     tau, shutoff, end = .8, 1/16, 1/4
@@ -349,6 +351,9 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
     wave = math.pi*torch.arange(1, 81, dtype=torch.float64)
     rate = alpha*wave.square()
     amplitude = 2*torch.exp(-rate*(end-shutoff))*(-torch.expm1(-rate*shutoff))/wave
+    start, capacity = 1/8, 2.3
+    start_amplitude = 2*torch.exp(-rate*(start-shutoff))*(-torch.expm1(-rate*shutoff))/wave
+    integrated = start_amplitude*(-torch.expm1(-rate*(end-start)))/rate
     previous = None
     for n in (16, 32, 64):
         dt = 1/n**2
@@ -356,13 +361,31 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
         initial = torch.zeros((3, 4, n+1), dtype=x.dtype)
         g = equilibrium_thermal_3d(initial, initial, initial, initial)
         g = apply_bc(g, 1., 0.)
+        heat = torch.zeros_like(x[:-1])
         for step in range(1, round(end/dt)+1):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), initial, initial, initial, tau)
+            if step > round(start/dt):
+                qx, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=1/n, volumetric_heat_capacity=capacity)
+                heat += dt*qx.mean((0, 1))
             g = apply_bc(stream_thermal_3d(post), float(step*dt < shutoff), 0.)
+            if step == round(start/dt):
+                start_field = macroscopic_thermal_3d(g).mean((0, 1))
         measured = macroscopic_thermal_3d(g).mean((0, 1))
         exact = torch.sin(x[:, None]*wave) @ amplitude
         error = (measured-exact).abs().max().item()
         record_property(f"n{n}_temperature_error_K", error)
+        faces = .5*(x[:-1]+x[1:])
+        exact_heat = -capacity*alpha*(torch.cos(faces[:, None]*wave) @ (wave*integrated))
+        link_error = (heat-exact_heat).abs().max().item()
+        stored = capacity*(measured-start_field)[1:-1].sum()/n
+        balance = abs((stored-heat[0]+heat[-1]).item())
+        record_property(f"n{n}_link_heat_error_J_m2", link_error)
+        record_property(f"n{n}_storage_balance_J_m2", balance)
+        record_property(f"n{n}_east_link_J_m2", heat[-1].item())
+        record_property(f"n{n}_exact_east_link_J_m2", exact_heat[-1].item())
+        assert heat[0] < 0 and balance < 1e-12
+        if n == 64:
+            assert heat[-1] > 0
         if previous is not None:
-            assert previous/error > 3.5
-        previous = error
+            assert previous[0]/error > 3.5 and previous[1]/link_error > 2.5
+        previous = error, link_error
