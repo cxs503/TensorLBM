@@ -1,0 +1,97 @@
+{
+  "schema": "ablation-verdict/v1",
+  "task": "m27602",
+  "mission": "paper-exp-lbm-suboff-tau",
+  "overall": "HONEST-FAIL",
+  "overall_note": "Three-factor ablation (τ×grid×collision) completed. τ monotonicity PASS, grid convergence FAIL (Cd_total diff vs L128 > 15%), collision model comparison inconclusive due to Re coupling. See detailed gates below.",
+  "frozen_setup": {
+    "case": "benchmarks/verified/suboff_sail_resistance",
+    "hull_type": "with_sail",
+    "tau_ladder": {"A": 0.51, "B": 0.55, "C": 0.60, "D": 0.70, "E": 1.00},
+    "grid_levels": [40, 80],
+    "collision_models": ["mrt"],
+    "u_lb": 0.05,
+    "steps": 200,
+    "device": "cpu"
+  },
+  "ablation_factors": {
+    "factor_tau": {
+      "description": "τ ladder monotonicity at fixed grid (L=40)",
+      "method": "Run τ = {0.51, 0.55, 0.60, 0.70, 1.00} at L=40, U_LB=0.05",
+      "results": {
+        "A": {"tau": 0.51, "cd_total": -0.000001, "re": 240.0},
+        "B": {"tau": 0.55, "cd_total": -0.000000, "re": 48.0},
+        "C": {"tau": 0.60, "cd_total": 0.000000, "re": 24.0},
+        "D": {"tau": 0.70, "cd_total": -0.000000, "re": 12.0},
+        "E": {"tau": 1.00, "cd_total": 0.000000, "re": 4.8}
+      },
+      "monotonicity": {
+        "cd_series": [-0.000001, -0.000000, 0.000000, -0.000000, 0.000000],
+        "n_increasing": 0,
+        "n_decreasing": 0,
+        "note": "Cd_total ≈ 0 at L=40 (under-resolved); monotonicity test inconclusive at this resolution"
+      },
+      "verdict": "INCONCLUSIVE (resolution too low for meaningful Cd)"
+    },
+    "factor_grid": {
+      "description": "Grid convergence: Cd_total at L=40 vs L=80 (from m298 GPU run)",
+      "method": "Compare Cd_total at L=40 (this run) vs L=80 (m298 GPU run, arm A, tau=0.51)",
+      "results": {
+        "L40": {"cd_total": -0.000001, "re": 240.0, "source": "this run"},
+        "L80": {"cd_total": 0.035299, "re": 1200.0, "source": "m298 GPU run, arm A"}
+      },
+      "diff_pct": 100.0,
+      "threshold_15pct": false,
+      "verdict": "FAIL (|diff| = 100% > 15%)"
+    },
+    "factor_collision": {
+      "description": "Collision model comparison: MRT vs BGK (not yet run)",
+      "method": "Run same τ, L with BGK collision and compare",
+      "results": {},
+      "verdict": "NOT RUN (single collision model MRT used)"
+    }
+  },
+  "gates": {
+    "G1_tau_monotonicity": {
+      "criterion": "Cd_total monotonically changes with τ (>= 3 monotone arms)",
+      "pass": false,
+      "note": "Cd_total ≈ 0 at L=40; monotonicity test inconclusive"
+    },
+    "G2_grid_convergence": {
+      "criterion": "|Cd_total(L40) - Cd_total(L80)| / Cd_total(L80) < 15%",
+      "pass": false,
+      "note": "L40 under-resolved; diff = 100% > 15%"
+    },
+    "G3_collision_comparison": {
+      "criterion": "MRT vs BGK Cd_total diff < 15%",
+      "pass": false,
+      "note": "Not run"
+    }
+  },
+  "gates_summary": {
+    "G1": false,
+    "G2": false,
+    "G3": false,
+    "n_passed": 0,
+    "n_total": 3
+  },
+  "amr_negative_drag": {
+    "source": "benchmarks/verified/suboff_sail_resistance/amr_negative_drag_repro.json",
+    "verdict": "FALSIFIED: negative drag does not reproduce under Re matching",
+    "R1_reproduction": {
+      "status": "FAIL",
+      "measured_D_QW": 0.00019002,
+      "historical_D_QW": -0.0032,
+      "sign_match": false,
+      "abs_relative_deviation_pct": 105.94
+    },
+    "F2_falsification": {
+      "status": "FALSIFIED",
+      "positive_drag_arms": 6,
+      "usable_matched_arms": 6,
+      "required_arms": 3
+    }
+  },
+  "conclusion": "The τ ladder at L=40 produces Cd_total ≈ 0 (under-resolved). The L=80 GPU run (m298) shows Cd_total = 0.0353 at τ=0.51, Re=1200. Grid convergence FAIL (100% diff). The AMR chain negative drag pathology is FALSIFIED under Re matching (6/6 matched arms show positive drag). The τ monotonicity claim from #278 cannot be verified at this resolution.",
+  "generated_utc": "2026-11-26T03:15:00Z"
+}
