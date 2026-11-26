@@ -1,0 +1,30 @@
+{
+  "arm": "E",
+  "tau_target": 1.0,
+  "tau_actual": 1.0,
+  "nu_lb_actual": 0.16666666666666666,
+  "u_lb_actual": 0.05,
+  "re_lattice_actual": 4.800000000000001,
+  "cd_pressure": 0.0,
+  "cd_friction": 0.0,
+  "cd_total": 1.8626451492309568e-07,
+  "cd_total_last500": 1.8626451492309568e-07,
+  "convergence_windows": {
+    "25%": 3.7252902984619135e-07,
+    "50%": 0.0,
+    "75%": 3.7252902984619135e-07,
+    "100%": 0.0
+  },
+  "finite": true,
+  "diverged": false,
+  "n_steps_done": 200,
+  "ms_per_step": 55.976322889328,
+  "elapsed_s": 11.1952645778656,
+  "domain_lu": 16,
+  "solid_cells": 17,
+  "err_vs_frozen_pct": -99.9995564607572,
+  "err_vs_rematched_pct": -99.99996927069985,
+  "blasius_cf_at_re": 0.6061462969723838,
+  "status": "ok",
+  "wall_s": 11.2
+}
