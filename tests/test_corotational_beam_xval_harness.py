@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-XVAL = REPO / "xval" / "corotational_beam_newmark"
+XVAL = REPO / "development" / "verification" / "corotational_beam_newmark"
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(XVAL))
 

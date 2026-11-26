@@ -18,7 +18,7 @@ Outputs (all programmatic, nothing typed by hand):
   summary.json           KPI-level pass/fail against the 15 % owner criterion
 
 Usage:
-  python xval/corotational_beam_newmark/run_xval.py [--quick]
+  python development/verification/corotational_beam_newmark/run_xval.py [--quick]
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ import warnings
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 

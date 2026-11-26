@@ -441,6 +441,25 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             report = json.loads((REPO / f"development/audit/m{mission}/report.json").read_text())
             self.assertEqual(int(report["mission_id"]), mission)
 
+    def test_trt_beam_archive_preserves_all_original_files(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "trt-beam-xval-2026-11-26.json").read_text()
+        )
+        self.assertEqual(len(ledger["entries"]), 96)
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["new_sha256"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["new_git_blob"]])
+                if item["old_path"].endswith((".dat", ".npz", ".json", ".csv")):
+                    self.assertEqual(item["original_sha256"], item["new_sha256"])
+
     def test_reused_tmp_report_preserves_both_mission_versions(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "m26843-root-report-2026-11-21.json").read_text()

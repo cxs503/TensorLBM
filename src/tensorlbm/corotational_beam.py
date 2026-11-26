@@ -641,7 +641,7 @@ class CorotationalBeam2D:
         newtonRaphsonDynamic / finishNewmark + 2nd order predictor), re-used
         unchanged by both formulations, with three deviations that restore the
         second-order accuracy of the scheme (each one measured in
-        ``xval/corotational_beam_newmark/run_torder.py``):
+        ``development/verification/corotational_beam_newmark/run_torder.py``):
 
         * ``load_time_level`` -- the equilibrium is enforced at ``t_{n+1}``, so
           the external load is sampled at ``t_{n+1}`` (``"t"``, default).  The

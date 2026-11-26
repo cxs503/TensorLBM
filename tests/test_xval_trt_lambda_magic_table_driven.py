@@ -1,7 +1,7 @@
 """XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN -- acceptance tests (mission 18452).
 
 The OSS reference (``lbm-principles-practice/code`` @ 6e2c592, MIT) numbers are the
-fields committed under ``xval/XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN/
+fields committed under ``development/verification/trt_lambda_magic/
 gaussian_1d_magic{12,6}_hi/`` (the ``precision(17)`` instrumented build recorded in
 the R1 report), so the assertions compare against numbers the reference binary
 produced itself.  The OSS C++ sources and the R1 driver were never merged; round 2
@@ -30,7 +30,7 @@ import pytest
 import torch
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-XV = os.path.join(REPO, "xval", "XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN")
+XV = os.path.join(REPO, "development", "verification", "trt_lambda_magic")
 sys.path.insert(0, os.path.join(REPO, "src"))
 
 from tensorlbm import scalar_transport as st  # noqa: E402

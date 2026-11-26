@@ -30,7 +30,7 @@ import sys
 import numpy as np
 
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1] / "src"))
+sys.path.insert(0, str(HERE.parents[2] / "src"))
 
 from tensorlbm.corotational_beam import (  # noqa: E402
     euler_bernoulli_frequency,

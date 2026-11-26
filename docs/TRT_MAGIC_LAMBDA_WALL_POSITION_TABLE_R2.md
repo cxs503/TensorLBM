@@ -1,7 +1,7 @@
 # XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN — 第 2 轮：magic Lambda 的壁面位置标定（R1 未覆盖的 D-6）
 
 **仓** TensorLBM ｜ mission 23150 ｜ 分支 `agent/m23150` ｜ 锚点 `XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN`（open）
-**轮次** 2 ｜ 预注册 `predeclared_r2.json`（跑前写入，阈值跑后未改）｜ 复现：`PYTHONPATH=src python3 xval/XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN/xval_trt_wall_lambda.py`
+**轮次** 2 ｜ 预注册 `predeclared_r2.json`（跑前写入，阈值跑后未改）｜ 复现：`PYTHONPATH=src python3 development/verification/trt_lambda_magic/xval_trt_wall_lambda.py`
 
 ## 1 案例介绍
 
@@ -91,3 +91,6 @@ tau=0.55 正面对决（该 tau 下 3/16 给出 tau-=4.25，落在选择器「�
 | R1 K4 场级 relL2 | 周期热核解析解 | 4.03% | **否**（与 R1 原判一致：粗格 dx=1；细化到 1/4 为 0.09%） |
 
 **结论**：magic Lambda 表格化做法在标量侧逐位可复现（本轮重建 harness 复核 5.6e-16）；在壁面侧，Lambda=3/16 是所扫 6 个 Lambda 中 tau=0.7-1.3 的最优取值（H4 PASS）、偏差代价随 |Lambda-3/16| 单调（H2 PASS），但「消除壁面误差」的强表述被本轮数据证伪（H1 FAIL）；tau 相关残差与 O(H^-2) 离散误差混在一起，H=64 分离作业排队中——如实登记。
+
+
+Repository relocation: [canonical case index and historical evidence](../benchmarks/cross_validation/trt_lambda_magic/README.md). The original reference fields and archived reports are unchanged.

@@ -2,7 +2,7 @@
 
 **Cross-validation of a corotational 2-node planar beam element (Newmark-beta + Newton-Raphson)
 against the mature OSS implementation `joconnor22/LIFE` and against external analytic
-references.** Mission 17723 · repo `TensorLBM` · predeclaration: `xval/corotational_beam_newmark/predeclared.json`.
+references.** Mission 17723 · repo `TensorLBM` · predeclaration: `development/verification/corotational_beam_newmark/predeclared.json`.
 
 ---
 
@@ -57,7 +57,7 @@ consistent mass matrix, BC elimination, Newmark update, Newton loop, post-proces
 * **LIFE (transplant)**: the OSS formulas above, including the `(M1+M2)/L0` denominator and the
   `K_L+K_NL` approximate tangent.
 
-**References are external to both arms** (`xval/corotational_beam_newmark/elastica_reference.py`):
+**References are external to both arms** (`development/verification/corotational_beam_newmark/elastica_reference.py`):
 (i) exact planar **elastica** for the tip-load case, obtained twice — elliptic-type 1-D quadrature
 and ODE shooting of $EI\theta''=-P\cos\theta$ — and required to agree before being used;
 (ii) exact **circular arc** for the pure-moment case ($R=EI/M$);
@@ -277,22 +277,22 @@ energy-consistent variant and the exact tangent, at no KPI cost.
 ## 7. Artifacts (reproduce)
 
 ```
-python xval/corotational_beam_newmark/run_xval.py --stage statics
-python xval/corotational_beam_newmark/run_xval.py --stage d1
-python xval/corotational_beam_newmark/run_xval.py --stage d2
-python xval/corotational_beam_newmark/run_xval.py --stage d3
-python xval/corotational_beam_newmark/run_xval.py --stage cons
-python xval/corotational_beam_newmark/run_xval.py --stage assemble
-python xval/corotational_beam_newmark/make_report.py
+python development/verification/corotational_beam_newmark/run_xval.py --stage statics
+python development/verification/corotational_beam_newmark/run_xval.py --stage d1
+python development/verification/corotational_beam_newmark/run_xval.py --stage d2
+python development/verification/corotational_beam_newmark/run_xval.py --stage d3
+python development/verification/corotational_beam_newmark/run_xval.py --stage cons
+python development/verification/corotational_beam_newmark/run_xval.py --stage assemble
+python development/verification/corotational_beam_newmark/make_report.py
 python -m pytest tests/test_corotational_beam.py -q
 ```
 
 * `src/tensorlbm/corotational_beam.py` — the new capability (both formulations, Newmark, Newton).
-* `xval/corotational_beam_newmark/predeclared.json` — decision, thresholds, ladders, stopping rule.
-* `xval/corotational_beam_newmark/elastica_reference.py` — independent external references.
-* `xval/corotational_beam_newmark/run_xval.py`, `make_report.py` — runners.
-* `xval/corotational_beam_newmark/table.csv`, `summary.json`, `runs/raw/*.json` — raw KPI data.
-* `xval/corotational_beam_newmark/figures/` — figures.
+* `development/verification/corotational_beam_newmark/predeclared.json` — decision, thresholds, ladders, stopping rule.
+* `development/verification/corotational_beam_newmark/elastica_reference.py` — independent external references.
+* `development/verification/corotational_beam_newmark/run_xval.py`, `make_report.py` — runners.
+* `development/verification/corotational_beam_newmark/table.csv`, `summary.json`, `runs/raw/*.json` — raw KPI data.
+* `development/verification/corotational_beam_newmark/figures/` — figures.
 * `tests/test_corotational_beam.py` — element/gradient/tangent/Newmark regression tests.
 
 Mesh-convergence deltas (predeclared rule: `<1 %` between $n=16$ and $n=32$ for S2/S3):
@@ -336,7 +336,7 @@ All four were real findings; two of them are defects in the library, two in the 
 
 ### R2.3.1 Corrected modal arm (T1)
 
-`xval/corotational_beam_newmark/run_torder.py` -> `torder.csv` (`T1_MODAL`):
+`development/verification/corotational_beam_newmark/run_torder.py` -> `torder.csv` (`T1_MODAL`):
 
 | mode | tabulated $(kL)^2$ | FE, $n=32$ | FE err | legacy reference | legacy err |
 |---|---|---|---|---|---|
@@ -392,5 +392,8 @@ first-order in time, and neither of the two defects shows up in an amplitude or 
 
 ```
 python -m pytest tests/test_corotational_beam.py -q          # 19 passed
-python xval/corotational_beam_newmark/run_torder.py          # torder.csv, torder_summary.json, figures/
+python development/verification/corotational_beam_newmark/run_torder.py          # torder.csv, torder_summary.json, figures/
 ```
+
+
+Repository relocation: [canonical case index and historical evidence](../benchmarks/cross_validation/corotational_beam_newmark/README.md). The independent review and its limitations remain unchanged.
