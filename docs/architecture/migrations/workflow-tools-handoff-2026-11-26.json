@@ -1,0 +1,48 @@
+{
+  "source_commit": "632cd8ca36ac28d4b8709453af6653ac0224cc98",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "entries": [
+    {
+      "old_path": "scripts/check_platform_docs_consistency.py",
+      "new_path": "tools/check_platform_docs_consistency.py",
+      "git_mode": "100644",
+      "original_git_blob": "2d0de5845e3dee03388aee36a3034a3cf8c6293e",
+      "original_sha256": "6529729e595fcd723e79cb03bb7087c79befd647c9a5aa247597873d860f631e",
+      "original_size_bytes": 1169,
+      "byte_identical": true,
+      "compatibility_entry": "scripts/check_platform_docs_consistency.py",
+      "compatibility_sha256": "049acea144c433b149f5098195e2328cdbefd812d9380b161ca2b22f6e1696ff"
+    },
+    {
+      "old_path": "scripts/model_matrix_integration.py",
+      "new_path": "tools/model_matrix_integration.py",
+      "git_mode": "100644",
+      "original_git_blob": "a5df18f98910af49a1e89319c0109383ffd47cb1",
+      "original_sha256": "5a8bfbc8527b99ff04b33423e69ee13c4cfc415a72346f2878cbcdf072f106f8",
+      "original_size_bytes": 5278,
+      "byte_identical": true,
+      "compatibility_entry": "scripts/model_matrix_integration.py",
+      "compatibility_sha256": "c166dc71f3db35fe6eab78bb1293b1ab055d47f6c1bf4761d4fbb45ad5624b93"
+    }
+  ],
+  "active_consumers": {
+    ".github/workflows/ci.yml": "Existing docs consistency step now invokes the tools implementation.",
+    ".github/workflows/model-matrix-ci.yml": "Existing model integration step now invokes the tools implementation. Push and PR filters both watch the implementation and the compatibility entry.",
+    "docs/MODEL_MATRIX_CI.md": "Existing published documentation shows the canonical command."
+  },
+  "compatibility": "Both scripts/ paths remain CLI-only delegates. They keep interpreter arguments, cwd, output paths and return codes. No active Python import consumers of the old files were found. Published historical references keep working.",
+  "verification": {
+    "runtime": {
+      "machine": "x86_64",
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu"
+    },
+    "check_platform_docs_consistency_stdout_sha256": "9bee24b1f2f36dfa38bf1f0d8c633e362ad474a88a85bbbf88270f0fe5042ee3",
+    "model_matrix_integration_json_sha256": "edffdbc1e51b3ed3236dadb65912234106e56d5e73416ca5a275563b6ec95d35",
+    "result": "Before, canonical and compatibility paths all ran successfully with the same interpreter from outside the checkout. The docs-check stdout and default 80-step model integration JSON match byte for byte. BGK, MRT and TRT registry-key runs are each bit-identical to their legacy raw-call runs.",
+    "governance": "84 governance tests and Ruff 0.15.0 passed.",
+    "model_matrix_tests": "54 tests passed after updating the pre-existing stale coverage assertion to require both named wall cells. The baseline reported seven covered cells while the old test expected five. Numerical acceptance thresholds remain unchanged."
+  },
+  "scope": "Workflow and command compatibility. Solver code, test criteria and previous scientific verdicts are unchanged."
+}
