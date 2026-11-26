@@ -254,13 +254,6 @@ def _apply_temperature_boundaries_3d(
     """
     w = W_D3Q7.to(device=g.device, dtype=g.dtype)
     w1, w2 = float(w[1]), float(w[2])
-    # non-equilibrium carried by the pointing population at the first fluid
-    # column (read from the pre-BC field; that column is untouched by every
-    # wall rule below)
-    T1 = g[:, :, :, 1].sum(dim=0)
-    Tn2 = g[:, :, :, -2].sum(dim=0)
-    neq_left = g[1, :, :, 1] - w1 * T1
-    neq_right = g[2, :, :, -2] - w2 * Tn2
     g = g.clone()
     # unwrap: the wall's own outgoing distribution after the periodic stream
     # wrapped it around to the opposite wall -- snapshot before any write
@@ -273,6 +266,12 @@ def _apply_temperature_boundaries_3d(
     g[6, -1, :, :] = refl_zn
     g[3, :, 0, :] = refl_y0
     g[4, :, -1, :] = refl_yn
+    # At the intersections with insulated walls the first fluid column
+    # must use reflected arrivals when recovering its non-equilibrium.
+    T1 = g[:, :, :, 1].sum(dim=0)
+    Tn2 = g[:, :, :, -2].sum(dim=0)
+    neq_left = g[1, :, :, 1] - w1 * T1
+    neq_right = g[2, :, :, -2] - w2 * Tn2
     # isothermal slabs: u=0 equilibrium for every population
     g[:, :, :, 0] = w.view(7, 1, 1) * T_hot
     g[:, :, :, -1] = w.view(7, 1, 1) * T_cold

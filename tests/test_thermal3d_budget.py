@@ -121,3 +121,49 @@ def test_3d_uniform_field_is_fixed_point():
     assert torch.equal(g, equilibrium_thermal_3d(T0, zeros, zeros, zeros)), (
         "uniform pure-diffusion state must stay bit-identical"
     )
+
+
+def test_transient_slab_with_isothermal_and_insulated_walls(record_property):
+    # Isothermal x surfaces pass through nodes; transverse insulating walls
+    # lie half a lattice link beyond the first and last nodes.
+    tau, time = .8, 1/32
+    alpha = (tau-.5)/4
+    hot, cold = 1.2, .4
+    wave = (math.pi, 2*math.pi, 4*math.pi/3)
+    decay = math.exp(-alpha*sum(k*k for k in wave)*time)
+    previous = None
+    for n in (16, 32, 64):
+        z, y, x = torch.meshgrid(
+            (torch.arange(3*n//4, dtype=torch.float64)+.5)/n,
+            (torch.arange(n//2, dtype=torch.float64)+.5)/n,
+            torch.arange(n+1, dtype=torch.float64)/n, indexing="ij")
+        transverse = torch.cos(wave[1]*y)*torch.cos(wave[2]*z)
+        perturbation = .3*torch.sin(wave[0]*x)*transverse
+        baseline = hot+(cold-hot)*x
+        initial = baseline+perturbation
+        zero = torch.zeros_like(initial)
+        g = equilibrium_thermal_3d(initial, zero, zero, zero)
+        for _ in range(int(time*n*n)):
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
+            g = apply_bc(stream_thermal_3d(post), hot, cold)
+        field = macroscopic_thermal_3d(g)
+        # Second-order one-sided Fourier estimates, both positive toward +x.
+        left = -alpha*n*(-3*field[..., 0]+4*field[..., 1]-field[..., 2])/2
+        right = -alpha*n*(3*field[..., -1]-4*field[..., -2]+field[..., -3])/2
+        varying = .3*wave[0]*decay*transverse[..., 0]
+        errors = dict(field=(field-baseline-decay*perturbation).abs().max().item(),
+                      left_flux=(left+alpha*(cold-hot+varying)).abs().max().item(),
+                      right_flux=(right+alpha*(cold-hot-varying)).abs().max().item())
+        boundary = max((field[..., 0]-hot).abs().max().item(), (field[..., -1]-cold).abs().max().item())
+        record_property(f"n{n}_wall_temperature_error", boundary)
+        assert boundary < 1e-14
+        for name, error in errors.items():
+            record_property(f"n{n}_{name}_error", error)
+            if previous is not None:
+                order = math.log2(previous[name]/error)
+                record_property(f"n{n}_{name}_order", order)
+                if name == "field":
+                    assert order > 1.9
+                else:
+                    assert order > (1.65 if n == 64 else 1.3)
+        previous = errors
