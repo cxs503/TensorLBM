@@ -126,6 +126,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "round2_method_selection_3d"),
     ("xval", "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5"),
     ("xval", "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN"),
+    ("xval", "XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY"),
+    ("xval", "XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY"),
 }
 
 

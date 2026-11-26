@@ -26,7 +26,7 @@ from pathlib import Path
 import torch
 
 _HERE = Path(__file__).resolve().parent
-_REPO = _HERE.parent.parent
+_REPO = _HERE.parents[3]
 sys.path.insert(0, str(_REPO / "src"))
 
 from tensorlbm.thermal import simulate_natural_convection  # noqa: E402

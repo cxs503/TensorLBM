@@ -1,6 +1,6 @@
 """Regression pins for the literature-anchored DEM validation (XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY).
 
-The OSS cache holds no DEM twin (see ``xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/survey_oss.md``),
+The historical OSS inventory found no DEM twin (see the archived survey),
 so the DEM leg is pinned against closed-form references instead:
 
 * restitution and contact duration of the Kelvin-Voigt contact must stay inside the
@@ -23,7 +23,7 @@ import pytest
 import torch
 
 _REPO = Path(__file__).resolve().parents[1]
-_DRIVER = _REPO / "xval" / "XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY" / "run_xval.py"
+_DRIVER = _REPO / "development/verification/oss_inventory/dem_literature_anchors/run_xval.py"
 
 if str(_REPO / "src") not in sys.path:
     sys.path.insert(0, str(_REPO / "src"))

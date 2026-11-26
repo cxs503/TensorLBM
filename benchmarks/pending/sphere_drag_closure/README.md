@@ -1,5 +1,7 @@
 # Sphere drag closure from the Stokes limit to `Re = 50` (node P54-W3-N11)
 
+Related historical evidence: [DEM literature-anchor campaign](../../../development/verification/oss_inventory/README.md#dem). Its conclusions apply to the original campaign.
+
 LBM measurement of the sphere drag coefficient at `Re = 1 … 50`, the analytic
 bridge that makes that range usable in a DEM code, and the DEM-coupling
 verification.  Companion module: `src/tensorlbm/drag_closure.py`; report:

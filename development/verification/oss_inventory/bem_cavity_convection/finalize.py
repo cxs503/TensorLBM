@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[3]
 RUNS = HERE / "runs"
 ART = HERE / "artifacts"
 DEADLINE_S = float(os.environ.get("FINALIZE_DEADLINE_S", "2700"))

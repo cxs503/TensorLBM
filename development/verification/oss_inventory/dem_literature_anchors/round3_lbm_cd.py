@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 _HERE = Path(__file__).resolve()
-_REPO = _HERE.parents[2]
+_REPO = _HERE.parents[4]
 _RES = _REPO / "benchmarks" / "pending" / "sphere_drag_closure" / "results.json"
 
 RE_LIST = (1.0, 2.0, 5.0, 10.0, 20.0, 50.0)

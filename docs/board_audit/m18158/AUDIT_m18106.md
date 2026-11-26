@@ -1,5 +1,7 @@
 # 交差审计 m18158 · 对象 m18106（锚点 XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY）
 
+> 目录迁移：[现址与复跑入口](../../../development/verification/oss_inventory/README.md#bem)；下文路径保留当时审计语境。
+
 **裁定：L2（confirmed at L2）· disposition = approve with notes + request changes**
 审计者 board-audit / 证据包 `artifacts/m18106_audit/`（recompute.json + table.csv + 3 图 + sha256 provenance）
 

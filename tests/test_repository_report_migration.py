@@ -73,6 +73,37 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     REPO / item["new_path"], item["original_sha256"], item["size_bytes"]
                 )
 
+    def test_oss_inventory_archives_preserve_evidence_and_navigation(self):
+        ledger_path = LEDGER_PATH.parent / "oss-inventory-studies-2026-11-26.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (ledger_path.parent.parent / "migration_manifest.csv").open(newline="") as source:
+            recorded = [
+                (row["old_path"], row["new_path"]) for row in csv.DictReader(source)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            ]
+        self.assertCountEqual(recorded, [
+            (item["old_path"], item["new_path"]) for item in ledger["entries"]
+        ])
+        for directory in ledger["retired_paths"]:
+            self.assertFalse((REPO / directory).exists(), directory)
+        for item in ledger["entries"]:
+            if item["byte_identical"]:
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["original_sha256"], item["original_size_bytes"]
+                )
+            else:
+                self.assertTrue((REPO / item["new_path"]).is_file())
+        archive = REPO / "development/verification/oss_inventory/README.md"
+        for report, section in (
+            ("docs/board_audit/m18158/AUDIT_m18106.md", "bem"),
+            ("docs/REPORT_XVAL_LBM_NO_DEM_REPO_FINAL.md", "dem"),
+            ("benchmarks/verified/cavity_natural_convection/README.md", "bem"),
+            ("benchmarks/pending/sphere_drag_closure/README.md", "dem"),
+        ):
+            report_path = REPO / report
+            target = os.path.relpath(archive, report_path.parent)
+            self.assertIn(f"]({target}#{section})", report_path.read_text(encoding="utf-8"))
+
     def assert_fingerprint(self, path: Path, sha256: str, size: int):
         raw = path.read_bytes()
         self.assertEqual(len(raw), size, str(path))

@@ -1,5 +1,7 @@
 # XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY 最终验收报告（第 4 轮：缺陷修复）
 
+> 目录迁移：[现址与复跑入口](../development/verification/oss_inventory/README.md#dem)；下文路径与验收措辞保留当时报告语境。
+
 `repo TensorLBM · mission 21498 · anchor XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY · 2026-11-15`
 
 **一句话**：修复了 `LinearSpringDashpot` 接触模型的无张力限幅缺陷（`max(0, F_total)` → `overlap > 0` 检查），

@@ -39,7 +39,7 @@ from pathlib import Path
 import torch
 
 _HERE = Path(__file__).resolve()
-_REPO = _HERE.parents[2]
+_REPO = _HERE.parents[4]
 if str(_REPO / "src") not in sys.path:
     sys.path.insert(0, str(_REPO / "src"))
 
