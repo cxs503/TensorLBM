@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from xval.gitlab_ci_staged_gates.stage_semantics import (
+from development.verification.gitlab_ci_staged_gates.stage_semantics import (
     ALLOWED_FAILURE,
     PRUNED_BARRIER,
     SUCCEEDED,

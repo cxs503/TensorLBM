@@ -15,7 +15,7 @@ and programmatically::
     record = run_program_file("program.lbm")
 
 Exit-code contract (needed by the shell-driven conformance suite under
-``xval/XVAL-LBM-INSTRUCTION-DSL-TESTS-SH``, which can only observe the process
+``development/verification/instruction_dsl``, which can only observe the process
 status and its streams):
 
 =====  ===================================================================

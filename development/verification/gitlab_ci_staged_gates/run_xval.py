@@ -14,7 +14,7 @@ counts); nothing is transcribed.
 
 Usage::
 
-    PYTHONPATH=src python xval/gitlab_ci_staged_gates/run_xval.py [--refresh-oss]
+    PYTHONPATH=src python -m development.verification.gitlab_ci_staged_gates.run_xval [--refresh-oss]
 """
 
 from __future__ import annotations
@@ -311,7 +311,7 @@ def main() -> int:
 
     corpus = gate_sim.Corpus.load(HERE / "data" / "corpus_markers.json")
     measurements = json.loads((HERE / "data" / "selection_measurements.json").read_text())
-    ours = ci_spec.parse_github_actions(HERE.parents[1] / ".github" / "workflows" / "ci.yml")
+    ours = ci_spec.parse_github_actions(HERE.parents[2] / ".github" / "workflows" / "ci.yml")
     oss, nox_resolution, oss_meta = load_oss_spec()
 
     arms = {

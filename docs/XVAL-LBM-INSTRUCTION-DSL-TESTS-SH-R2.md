@@ -1,5 +1,7 @@
 # XVAL-LBM-INSTRUCTION-DSL-TESTS-SH（第 2 轮）— 指令 DSL 的 shell 驱动一致性测试套件（TCLB `instruction-dsl-tests-sh` 做法）
 
+> [Current archive and reproduction instructions](../development/verification/instruction_dsl/README.md). The historical report retains its original delivery paths.
+
 仓库 TensorLBM｜分支 agent/m20996｜日期 2026-11-14｜锚点 `XVAL-LBM-INSTRUCTION-DSL-TESTS-SH`（第 1 轮 m17968 交付了解析器+pytest，
 本单补齐「测试由 shell 驱动」这一半）。
 
