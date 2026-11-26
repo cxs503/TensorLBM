@@ -221,7 +221,9 @@ def scalar_wall_step_means(step_edges, switch_times, levels, *, interpolation="c
     return integral / np.diff(edges).reshape((-1,) + trailing)
 
 
-def scalar_stream_slab(g: torch.Tensor, west, east, *, wall_transfer=(None, None)) -> tuple[torch.Tensor, torch.Tensor]:
+def scalar_stream_slab(
+    g: torch.Tensor, west, east, *, wall_transfer=(None, None)
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Stream post-collision D2Q5 populations with halfway walls in x and periodic y.
 
     For a stationary wall, a scalar or (ny,) value prescribes the diffusing
@@ -238,7 +240,9 @@ def scalar_stream_slab(g: torch.Tensor, west, east, *, wall_transfer=(None, None
     transfers = []
     if len(wall_transfer) != 2:
         raise ValueError("supply a transfer entry for each wall")
-    for flux, (wall, incoming, outgoing, col) in zip(wall_transfer, ((west, 1, 3, 0), (east, 3, 1, -1))):
+    for flux, (wall, incoming, outgoing, col) in zip(
+        wall_transfer, ((west, 1, 3, 0), (east, 3, 1, -1))
+    ):
         leaving = g[outgoing, :, col]
         arriving = leaving
         if wall is not None:
