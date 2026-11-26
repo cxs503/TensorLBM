@@ -1,0 +1,36 @@
+{
+  "source_commit": "b13998fcabb4d0c943f255def313bba23b49038f",
+  "command": "PYTHONPATH=src OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest -q tests/test_scalar_harmonic.py -o junit_family=legacy --junitxml=/tmp/lbm-wave-heat.xml",
+  "reference": "Traveling Dirichlet wave on two walls with periodic y. Integrate -K grad(T) for T=Re(exp(r*x+i*b*y+i*omega*t)) over each face width and each time window. Both signs of off-diagonal conductivity tested. Check each cell storage change against the integrated net transfer per unit depth.",
+  "passed": 31,
+  "measurements": {
+    "test_traveling_temperature_wave_interval_heat[-0.3]": {
+      "x_interval_error_8_J_m2": 0.03660045964266173,
+      "y_interval_error_8_J_m2": 0.04439958689451773,
+      "cell_balance_8_J_per_m_depth": 8.396061623727746e-16,
+      "x_interval_error_16_J_m2": 0.009498561399548466,
+      "y_interval_error_16_J_m2": 0.015067461815288397,
+      "cell_balance_16_J_per_m_depth": 4.0245584642661925e-16,
+      "x_interval_error_32_J_m2": 0.0024004914152050416,
+      "y_interval_error_32_J_m2": 0.0042361560933783515,
+      "cell_balance_32_J_per_m_depth": 6.930220286527344e-16,
+      "x_interval_error_64_J_m2": 0.0006016850603324242,
+      "y_interval_error_64_J_m2": 0.0011239207632895987,
+      "cell_balance_64_J_per_m_depth": 8.632959798415829e-16
+    },
+    "test_traveling_temperature_wave_interval_heat[0.3]": {
+      "x_interval_error_8_J_m2": 0.04163010682024304,
+      "y_interval_error_8_J_m2": 0.06102938425075788,
+      "cell_balance_8_J_per_m_depth": 8.465450562766819e-16,
+      "x_interval_error_16_J_m2": 0.010272175994451516,
+      "y_interval_error_16_J_m2": 0.019079453753738873,
+      "cell_balance_16_J_per_m_depth": 6.613633252161577e-16,
+      "x_interval_error_32_J_m2": 0.0025802355557500434,
+      "y_interval_error_32_J_m2": 0.00533115137099327,
+      "cell_balance_32_J_per_m_depth": 9.749145934989656e-16,
+      "x_interval_error_64_J_m2": 0.0006450232361883135,
+      "y_interval_error_64_J_m2": 0.001409689137451764,
+      "cell_balance_64_J_per_m_depth": 8.040443311152501e-16
+    }
+  }
+}
