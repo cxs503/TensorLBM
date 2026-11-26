@@ -93,7 +93,9 @@ def test_oblique_periodic_decay_converges(direction):
     assert errors[-1] < 0.001
 
 
-@pytest.mark.parametrize("omega,insulated", [(0.0, False), (0.27, False), (0.27, True), (3.1, True)])
+@pytest.mark.parametrize(
+    "omega,insulated", [(0.0, False), (0.27, False), (0.27, True), (3.1, True)]
+)
 def test_volume_heat_increment_matches_population_step_and_local_balance(omega, insulated):
     from tensorlbm.scalar import scalar_equilibrium
 
@@ -116,84 +118,95 @@ def test_volume_heat_increment_matches_population_step_and_local_balance(omega, 
 def test_insulated_balanced_heat_source_converges_with_prescribed_mean(record_property):
     # Unit square and unit physical diffusivity. The x cosine is Neumann
     # and the independent y cosine is periodic; both integrate to zero.
-    tau = .9
-    mean = 3.+.25j
+    tau = 0.9
+    mean = 3.0 + 0.25j
     previous = None
     for n in (8, 16, 32, 64):
-        dx = 1/n
-        dt = (tau-.5)*dx**2/3
-        x = (torch.arange(n, dtype=torch.float64)+.5)*dx
-        longitudinal = torch.cos(math.pi*x)[None, :]
-        transverse = .4j*torch.cos(2*math.pi*x)[:, None]
-        source = dt*math.pi**2*(longitudinal+4*transverse)
-        sol = solve_harmonic_scalar_slab(n, n, tau, 0., None, None, source=source,
-                                         mean_temperature=mean)
-        error = (sol.scalar-(mean+longitudinal+transverse)).abs().max().item()
-        faces = torch.arange(n+1, dtype=torch.float64)*dx
-        flux_x = math.pi*torch.sin(math.pi*faces)
-        flux_y = .8j*math.pi*torch.sin(2*math.pi*faces[1:])[:, None]
-        flux_error = max((sol.x_transfer*dx/dt-flux_x).abs().max().item(),
-                         (sol.y_transfer*dx/dt-flux_y).abs().max().item())
+        dx = 1 / n
+        dt = (tau - 0.5) * dx**2 / 3
+        x = (torch.arange(n, dtype=torch.float64) + 0.5) * dx
+        longitudinal = torch.cos(math.pi * x)[None, :]
+        transverse = 0.4j * torch.cos(2 * math.pi * x)[:, None]
+        source = dt * math.pi**2 * (longitudinal + 4 * transverse)
+        sol = solve_harmonic_scalar_slab(
+            n, n, tau, 0.0, None, None, source=source, mean_temperature=mean
+        )
+        error = (sol.scalar - (mean + longitudinal + transverse)).abs().max().item()
+        faces = torch.arange(n + 1, dtype=torch.float64) * dx
+        flux_x = math.pi * torch.sin(math.pi * faces)
+        flux_y = 0.8j * math.pi * torch.sin(2 * math.pi * faces[1:])[:, None]
+        flux_error = max(
+            (sol.x_transfer * dx / dt - flux_x).abs().max().item(),
+            (sol.y_transfer * dx / dt - flux_y).abs().max().item(),
+        )
         record_property(f"flux_error_{n}_W_per_m2", flux_error)
         divergence = sol.x_transfer.diff(dim=1) + sol.y_transfer - sol.y_transfer.roll(1, 0)
-        balance = (divergence-source).abs().max().item()
+        balance = (divergence - source).abs().max().item()
         record_property(f"field_error_{n}_K", error)
         record_property(f"max_cell_balance_{n}_K_per_step", balance)
-        assert abs(sol.scalar.mean().item()-mean) < 2e-14
-        assert sol.x_transfer[:, [0, -1]].abs().max().item() == 0.
+        assert abs(sol.scalar.mean().item() - mean) < 2e-14
+        assert sol.x_transfer[:, [0, -1]].abs().max().item() == 0.0
         assert balance < 5e-14
         if previous is not None:
-            assert previous[0]/error > 3.8
-            assert previous[1]/flux_error > 3.8
+            assert previous[0] / error > 3.8
+            assert previous[1] / flux_error > 3.8
         previous = error, flux_error
-    assert error < 4e-5 and flux_error < .002
+    assert error < 4e-5 and flux_error < 0.002
 
 
 def test_insulated_dc_mean_and_source_compatibility():
-    sol = solve_harmonic_scalar_slab(1, 1, .85, 0., None, None, mean_temperature=2.+1j)
-    assert sol.scalar.item() == pytest.approx(2.+1j)
+    sol = solve_harmonic_scalar_slab(1, 1, 0.85, 0.0, None, None, mean_temperature=2.0 + 1j)
+    assert sol.scalar.item() == pytest.approx(2.0 + 1j)
     with pytest.raises(ValueError, match="zero net source"):
-        solve_harmonic_scalar_slab(4, 3, .85, 0., None, None, source=1j, mean_temperature=0.)
+        solve_harmonic_scalar_slab(4, 3, 0.85, 0.0, None, None, source=1j, mean_temperature=0.0)
     with pytest.raises(ValueError, match="only"):
-        solve_harmonic_scalar_slab(4, 3, .85, .2, None, None, mean_temperature=2.)
+        solve_harmonic_scalar_slab(4, 3, 0.85, 0.2, None, None, mean_temperature=2.0)
 
 
 @pytest.mark.parametrize("omega", [1e-12, 1e-18])
 def test_slow_insulated_response_separates_mean_storage_and_link_transfer(omega, record_property):
     # Constant source fills the entire insulated slab. On top of it, a
     # balanced source/sink sends heat across the interior toward increasing x.
-    uniform = .75-.25j
-    perturbation = torch.tensor([.125, .125, 0., 0., -.125, -.125], dtype=torch.float64)
+    uniform = 0.75 - 0.25j
+    perturbation = torch.tensor([0.125, 0.125, 0.0, 0.0, -0.125, -0.125], dtype=torch.float64)
     source = uniform + perturbation
-    sol = solve_harmonic_scalar_slab(6, 3, .85, omega, None, None, source=source)
-    storage = 2j*math.sin(omega/2)
-    mean_error = abs(storage*sol.scalar.mean().item()-uniform)/abs(uniform)
+    sol = solve_harmonic_scalar_slab(6, 3, 0.85, omega, None, None, source=source)
+    storage = 2j * math.sin(omega / 2)
+    mean_error = abs(storage * sol.scalar.mean().item() - uniform) / abs(uniform)
     # At these frequencies the nonuniform storage correction is O(omega).
     dc_transfer = torch.cat((perturbation.new_zeros(1), perturbation.cumsum(0)))
-    flux_error = (sol.x_transfer-dc_transfer).abs().max().item()
-    div = sol.x_transfer.diff(dim=1) + sol.y_transfer-sol.y_transfer.roll(1, 0)
-    residual = (storage*sol.scalar+div-source).abs().max().item()
+    flux_error = (sol.x_transfer - dc_transfer).abs().max().item()
+    div = sol.x_transfer.diff(dim=1) + sol.y_transfer - sol.y_transfer.roll(1, 0)
+    residual = (storage * sol.scalar + div - source).abs().max().item()
     record_property("relative_mean_storage_error", mean_error)
     record_property("max_transfer_difference_from_dc", flux_error)
     record_property("max_cell_balance_error", residual)
     assert mean_error < 1e-14
-    assert flux_error < 20*omega+5e-15
+    assert flux_error < 20 * omega + 5e-15
     assert residual < 1e-14
 
 
 @pytest.mark.parametrize("fixed", [None, "west", "east"])
 def test_prescribed_wall_transfer_recovers_steady_gradient(fixed, record_property):
-    nx, tau, slope = 12, .9, -.125
+    nx, tau, slope = 12, 0.9, -0.125
     mean = 2.5
-    transfer = -(tau-.5)*slope/3
-    west = mean-slope*nx/2 if fixed == "west" else None
-    east = mean+slope*nx/2 if fixed == "east" else None
+    transfer = -(tau - 0.5) * slope / 3
+    west = mean - slope * nx / 2 if fixed == "west" else None
+    east = mean + slope * nx / 2 if fixed == "east" else None
     flux = (transfer if west is None else None, -transfer if east is None else None)
-    sol = solve_harmonic_scalar_slab(nx, 3, tau, 0., west, east, wall_transfer=flux,
-                                     mean_temperature=mean if fixed is None else None)
-    exact = mean + slope*(torch.arange(nx, dtype=torch.float64)+.5-nx/2)
-    field_error = (sol.scalar-exact).abs().max().item()
-    rate_error = (sol.x_transfer-transfer).abs().max().item()
+    sol = solve_harmonic_scalar_slab(
+        nx,
+        3,
+        tau,
+        0.0,
+        west,
+        east,
+        wall_transfer=flux,
+        mean_temperature=mean if fixed is None else None,
+    )
+    exact = mean + slope * (torch.arange(nx, dtype=torch.float64) + 0.5 - nx / 2)
+    field_error = (sol.scalar - exact).abs().max().item()
+    rate_error = (sol.x_transfer - transfer).abs().max().item()
     record_property("max_temperature_error_K", field_error)
     record_property("max_link_transfer_error", rate_error)
     assert field_error < 2e-13
@@ -203,24 +216,27 @@ def test_prescribed_wall_transfer_recovers_steady_gradient(fixed, record_propert
 def test_rowwise_wall_flux_closes_harmonic_storage_and_time_update(record_property):
     from tensorlbm.scalar import scalar_equilibrium
 
-    nx, ny, omega, tau = 4, 3, .19, .87
-    west = torch.tensor([.1j, .3, -.4], dtype=torch.complex128)
-    east = -.02+.1j
-    source = .03+.04j
-    sol = solve_harmonic_scalar_slab(nx, ny, tau, omega, None, None, source=source,
-                                     wall_transfer=(west, east))
-    div = sol.x_transfer.diff(dim=1)+sol.y_transfer-sol.y_transfer.roll(1, 0)
-    storage = 2j*math.sin(omega/2)*sol.scalar
-    residual = (storage+div-source).abs().max().item()
-    assert abs(storage.mean()-(source+(west.mean()+east)/nx)) < 1e-14
-    mid = complex(math.cos(omega/2), math.sin(omega/2))
+    nx, ny, omega, tau = 4, 3, 0.19, 0.87
+    west = torch.tensor([0.1j, 0.3, -0.4], dtype=torch.complex128)
+    east = -0.02 + 0.1j
+    source = 0.03 + 0.04j
+    sol = solve_harmonic_scalar_slab(
+        nx, ny, tau, omega, None, None, source=source, wall_transfer=(west, east)
+    )
+    div = sol.x_transfer.diff(dim=1) + sol.y_transfer - sol.y_transfer.roll(1, 0)
+    storage = 2j * math.sin(omega / 2) * sol.scalar
+    residual = (storage + div - source).abs().max().item()
+    assert abs(storage.mean() - (source + (west.mean() + east) / nx)) < 1e-14
+    mid = complex(math.cos(omega / 2), math.sin(omega / 2))
     end = mid**2
     g = sol.populations.real
     zero = torch.zeros_like(g[0])
     post = scalar_collide_bgk(g, g.sum(0), zero, zero, tau)
-    streamed, _ = scalar_stream_slab(post, None, None, wall_transfer=((mid*west).real, (mid*east).real))
-    streamed += scalar_equilibrium(zero+(mid*source).real, zero, zero)
-    update_error = (streamed-(end*sol.populations).real).abs().max().item()
+    streamed, _ = scalar_stream_slab(
+        post, None, None, wall_transfer=((mid * west).real, (mid * east).real)
+    )
+    streamed += scalar_equilibrium(zero + (mid * source).real, zero, zero)
+    update_error = (streamed - (end * sol.populations).real).abs().max().item()
     record_property("max_cell_balance_error", residual)
     record_property("max_population_step_error", update_error)
     assert max(residual, update_error) < 1e-14
@@ -228,99 +244,120 @@ def test_rowwise_wall_flux_closes_harmonic_storage_and_time_update(record_proper
 
 def test_flux_wall_rejects_inconsistent_data():
     with pytest.raises(ValueError, match="both"):
-        solve_harmonic_scalar_slab(3, 1, .9, .2, 0., None, wall_transfer=(1., None))
+        solve_harmonic_scalar_slab(3, 1, 0.9, 0.2, 0.0, None, wall_transfer=(1.0, None))
     with pytest.raises(ValueError, match="zero net"):
-        solve_harmonic_scalar_slab(3, 1, .9, 0., None, None, mean_temperature=0.,
-                                   wall_transfer=(1., None))
+        solve_harmonic_scalar_slab(
+            3, 1, 0.9, 0.0, None, None, mean_temperature=0.0, wall_transfer=(1.0, None)
+        )
 
 
 def test_steady_wall_input_balances_uniform_volume_sink(record_property):
-    source = -.0625
+    source = -0.0625
     nx = 7
-    sol = solve_harmonic_scalar_slab(nx, 2, .87, 0., None, None, source=source,
-                                     wall_transfer=(-nx*source, None), mean_temperature=4.)
-    expected = (torch.arange(nx+1, dtype=torch.float64)-nx)*source
-    error = (sol.x_transfer-expected).abs().max().item()
+    sol = solve_harmonic_scalar_slab(
+        nx,
+        2,
+        0.87,
+        0.0,
+        None,
+        None,
+        source=source,
+        wall_transfer=(-nx * source, None),
+        mean_temperature=4.0,
+    )
+    expected = (torch.arange(nx + 1, dtype=torch.float64) - nx) * source
+    error = (sol.x_transfer - expected).abs().max().item()
     record_property("max_link_transfer_error", error)
     assert error < 5e-15
-    assert abs(sol.scalar.mean()-4.) < 1e-14
+    assert abs(sol.scalar.mean() - 4.0) < 1e-14
 
 
-@pytest.mark.parametrize("kxy", [0., -.35, .35])
+@pytest.mark.parametrize("kxy", [0.0, -0.35, 0.35])
 def test_anisotropic_traveling_wall_flux_refines_against_continuum(kxy, record_property):
     # Unit square, unit volumetric heat capacity. Both walls have traveling
     # inward fluxes with a quarter-period phase offset. The bounded solution
     # is exp(i*b*y)*X(x), with qx=-kx*X'-i*b*kxy*X.
-    kx, ky = 1., .5
-    omega, b = 8., 2*math.pi
-    west, east = 1., .5j
-    beta = b*kxy/kx
-    wave = ((b*b*(ky-kxy*kxy/kx)+1j*omega)/kx)**.5
+    kx, ky = 1.0, 0.5
+    omega, b = 8.0, 2 * math.pi
+    west, east = 1.0, 0.5j
+    beta = b * kxy / kx
+    wave = ((b * b * (ky - kxy * kxy / kx) + 1j * omega) / kx) ** 0.5
     # Two decaying axial modes. Their coefficients impose qx(0)=west
     # and qx(1)=-east with the common transverse phase factored out.
-    left_rate, right_rate = -wave-1j*beta, wave-1j*beta
-    scale = kx*wave*(1-cmath.exp(-2*wave))
-    left = (west+east*cmath.exp(-right_rate))/scale
-    right = (east+west*cmath.exp(left_rate))/scale
+    left_rate, right_rate = -wave - 1j * beta, wave - 1j * beta
+    scale = kx * wave * (1 - cmath.exp(-2 * wave))
+    left = (west + east * cmath.exp(-right_rate)) / scale
+    right = (east + west * cmath.exp(left_rate)) / scale
     refinements = []
     for n in (8, 16, 32, 64):
-        dx = 1/n
-        dt = (.9-.5)*dx**2/(3*kx)
-        faces = torch.arange(n+1, dtype=torch.float64)*dx
-        centers = (faces[1:]+faces[:-1])/2
-        y_average = torch.exp(1j*b*centers)*math.sin(b*dx/2)/(b*dx/2)
-        left_face = left*torch.exp(left_rate*faces)
-        right_face = right*torch.exp(right_rate*(faces-1))
-        x_average = (left_face.diff()/left_rate + right_face.diff()/right_rate)/dx
-        gradient_average = (left_face+right_face).diff()/dx
-        qx = kx*wave*(left_face-right_face)
+        dx = 1 / n
+        dt = (0.9 - 0.5) * dx**2 / (3 * kx)
+        faces = torch.arange(n + 1, dtype=torch.float64) * dx
+        centers = (faces[1:] + faces[:-1]) / 2
+        y_average = torch.exp(1j * b * centers) * math.sin(b * dx / 2) / (b * dx / 2)
+        left_face = left * torch.exp(left_rate * faces)
+        right_face = right * torch.exp(right_rate * (faces - 1))
+        x_average = (left_face.diff() / left_rate + right_face.diff() / right_rate) / dx
+        gradient_average = (left_face + right_face).diff() / dx
+        qx = kx * wave * (left_face - right_face)
         sol = solve_harmonic_scalar_slab(
-            n, n, .9, omega*dt, None, None, tau_y=.5+3*ky*dt/dx**2, tau_xy=3*kxy*dt/dx**2,
-            wall_transfer=(west*y_average*dt/dx, east*y_average*dt/dx))
-        exact_y_flux = torch.exp(1j*b*faces[1:, None])*(-kxy*gradient_average-1j*b*ky*x_average)
+            n,
+            n,
+            0.9,
+            omega * dt,
+            None,
+            None,
+            tau_y=0.5 + 3 * ky * dt / dx**2,
+            tau_xy=3 * kxy * dt / dx**2,
+            wall_transfer=(west * y_average * dt / dx, east * y_average * dt / dx),
+        )
+        exact_y_flux = torch.exp(1j * b * faces[1:, None]) * (
+            -kxy * gradient_average - 1j * b * ky * x_average
+        )
         errors = (
-            (sol.scalar-y_average[:, None]*x_average).abs().max().item(),
-            (sol.x_transfer*dx/dt-y_average[:, None]*qx).abs().max().item(),
-            (sol.y_transfer*dx/dt-exact_y_flux).abs().max().item(),
+            (sol.scalar - y_average[:, None] * x_average).abs().max().item(),
+            (sol.x_transfer * dx / dt - y_average[:, None] * qx).abs().max().item(),
+            (sol.y_transfer * dx / dt - exact_y_flux).abs().max().item(),
         )
         for name, error in zip(("temperature_K", "x_flux_W_m2", "y_flux_W_m2"), errors):
             record_property(f"max_error_{name}_{n}", error)
         refinements.append(errors)
     for previous, current in zip(refinements, refinements[1:]):
-        assert all(old > 3*new for old, new in zip(previous, current))
-    assert all(old > 3.7*new for old, new in zip(refinements[-2], refinements[-1]))
-    assert errors[0] < .001 and max(errors[1:]) < .003
+        assert all(old > 3 * new for old, new in zip(previous, current))
+    assert all(old > 3.7 * new for old, new in zip(refinements[-2], refinements[-1]))
+    assert errors[0] < 0.001 and max(errors[1:]) < 0.003
 
 
-@pytest.mark.parametrize("omega", [0., 1e-10, .37])
+@pytest.mark.parametrize("omega", [0.0, 1e-10, 0.37])
 def test_interval_transfer_against_real_collision_stream(omega, record_property):
     from tensorlbm.scalar import scalar_collide_diffusion, scalar_link_transfer
 
     nx, ny = 5, 4
-    west = torch.tensor([1., .1j, -.7, .4-.1j], dtype=torch.complex128)
-    east = .15-.2j
-    result = solve_harmonic_scalar_slab(nx, ny, .91, omega, west, east,
-                                       tau_y=1.1, tau_xy=.12)
+    west = torch.tensor([1.0, 0.1j, -0.7, 0.4 - 0.1j], dtype=torch.complex128)
+    east = 0.15 - 0.2j
+    result = solve_harmonic_scalar_slab(nx, ny, 0.91, omega, west, east, tau_y=1.1, tau_xy=0.12)
     start, stop = 3, 24
-    state = (result.populations*cmath.exp(1j*omega*start)).real
+    state = (result.populations * cmath.exp(1j * omega * start)).real
     initial = state.sum(0)
     reference_x = torch.zeros_like(result.x_transfer.real)
     reference_y = torch.zeros_like(result.y_transfer.real)
     for j in range(start, stop):
-        phase = cmath.exp(1j*omega*(j+.5))
-        post = scalar_collide_diffusion(state, .91, 1.1, .91, tau_xy=.12)
-        state, wall = scalar_stream_slab(post, (west*phase).real, (east*phase).real)
-        reference_x += torch.cat((wall[0,:,None], scalar_link_transfer(post, "x"), -wall[1,:,None]), dim=1)
+        phase = cmath.exp(1j * omega * (j + 0.5))
+        post = scalar_collide_diffusion(state, 0.91, 1.1, 0.91, tau_xy=0.12)
+        state, wall = scalar_stream_slab(post, (west * phase).real, (east * phase).real)
+        reference_x += torch.cat(
+            (wall[0, :, None], scalar_link_transfer(post, "x"), -wall[1, :, None]), dim=1
+        )
         reference_y += scalar_link_transfer(post, "y", periodic=True)
     qx, qy = result.interval_transfer(start, stop)
-    error = max((qx-reference_x).abs().max().item(), (qy-reference_y).abs().max().item())
-    balance = (state.sum(0)-initial+qx.diff(dim=1)+qy-qy.roll(1,0)).abs().max().item()
+    error = max((qx - reference_x).abs().max().item(), (qy - reference_y).abs().max().item())
+    balance = (state.sum(0) - initial + qx.diff(dim=1) + qy - qy.roll(1, 0)).abs().max().item()
     record_property("max_link_transfer_error_lattice", error)
     record_property("max_cell_balance_error_lattice", balance)
     assert max(error, balance) < 3e-14
     for value in result.interval_transfer(7, 7):
         assert torch.count_nonzero(value) == 0
-    for bounds in ((2, 1), (-1, 2), (True, 3), (.5, 1)):
+    for bounds in ((2, 1), (-1, 2), (True, 3), (0.5, 1)):
         with pytest.raises(ValueError, match="step bounds"):
             result.interval_transfer(*bounds)
 
@@ -328,78 +365,92 @@ def test_interval_transfer_against_real_collision_stream(omega, record_property)
 def test_physical_interval_heat_against_two_wall_slab(record_property):
     # Unit-length slab; both prescribed wall temperatures oscillate. For
     # T = Re(X(x) exp(i omega t)), X'' = i omega C/k X, q = -k X'.
-    capacity, k, omega = 4., 2., 2*math.pi
-    west, east = 1.+.3j, -.2+.5j
-    tau = .875
-    wave = cmath.sqrt(1j*omega*capacity/k)
+    capacity, k, omega = 4.0, 2.0, 2 * math.pi
+    west, east = 1.0 + 0.3j, -0.2 + 0.5j
+    tau = 0.875
+    wave = cmath.sqrt(1j * omega * capacity / k)
     previous = None
     for n in (8, 16, 32, 64):
-        dx = 1/n
-        dt = (tau-.5)*dx**2/(3*(k/capacity))
-        slab = solve_harmonic_scalar_slab(n, 1, tau, omega*dt, west, east)
-        faces = torch.arange(n+1, dtype=torch.float64)*dx
-        flux = k*wave*(west*torch.cosh(wave*(1-faces))-east*torch.cosh(wave*faces))/cmath.sinh(wave)
-        wall_error = interior_error = balance_error = 0.
-        for start, stop in ((0., .25), (.25, .5), (.5, 1.), (.0625, .5)):
-            a, b = round(start/dt), round(stop/dt)
-            assert (a*dt, b*dt) == (start, stop)
+        dx = 1 / n
+        dt = (tau - 0.5) * dx**2 / (3 * (k / capacity))
+        slab = solve_harmonic_scalar_slab(n, 1, tau, omega * dt, west, east)
+        faces = torch.arange(n + 1, dtype=torch.float64) * dx
+        flux = (
+            k
+            * wave
+            * (west * torch.cosh(wave * (1 - faces)) - east * torch.cosh(wave * faces))
+            / cmath.sinh(wave)
+        )
+        wall_error = interior_error = balance_error = 0.0
+        for start, stop in ((0.0, 0.25), (0.25, 0.5), (0.5, 1.0), (0.0625, 0.5)):
+            a, b = round(start / dt), round(stop / dt)
+            assert (a * dt, b * dt) == (start, stop)
             transfer, _ = slab.interval_transfer(a, b)
-            heat = capacity*dx*transfer[0]
-            phase_change = cmath.exp(1j*omega*stop)-cmath.exp(1j*omega*start)
-            exact = (flux*phase_change/(1j*omega)).real
-            errors = (heat-exact).abs()
-            wall_error = max(wall_error, errors[[0,-1]].max().item())
+            heat = capacity * dx * transfer[0]
+            phase_change = cmath.exp(1j * omega * stop) - cmath.exp(1j * omega * start)
+            exact = (flux * phase_change / (1j * omega)).real
+            errors = (heat - exact).abs()
+            wall_error = max(wall_error, errors[[0, -1]].max().item())
             interior_error = max(interior_error, errors[1:-1].max().item())
-            stored = capacity*dx*(slab.scalar*phase_change).real.sum()
-            balance_error = max(balance_error, abs((heat[0]-heat[-1]-stored).item()))
+            stored = capacity * dx * (slab.scalar * phase_change).real.sum()
+            balance_error = max(balance_error, abs((heat[0] - heat[-1] - stored).item()))
         record_property(f"wall_error_{n}_J_m2", wall_error)
         record_property(f"interior_error_{n}_J_m2", interior_error)
         record_property(f"storage_balance_{n}_J_m2", balance_error)
         if previous is not None:
-            assert previous[0] > 3.7*wall_error and previous[1] > 3.7*interior_error
+            assert previous[0] > 3.7 * wall_error and previous[1] > 3.7 * interior_error
         previous = (wall_error, interior_error)
         assert balance_error < 2e-11
 
 
-@pytest.mark.parametrize("cross", [-.3, .3])
+@pytest.mark.parametrize("cross", [-0.3, 0.3])
 def test_traveling_temperature_wave_interval_heat(cross, record_property):
     # A decaying wave T=Re(exp(r*x + i*b*y + i*omega*t)) on the unit square.
     # The axial rate solves kx*r² + 2i*b*kxy*r - ky*b² = i*omega*C.
-    kx, ky, capacity, omega, b = 2., 1., 4., 2*math.pi, 2*math.pi
-    r = -1j*b*cross/kx - cmath.sqrt((b*b*(ky-cross**2/kx)+1j*omega*capacity)/kx)
+    kx, ky, capacity, omega, b = 2.0, 1.0, 4.0, 2 * math.pi, 2 * math.pi
+    r = -1j * b * cross / kx - cmath.sqrt(
+        (b * b * (ky - cross**2 / kx) + 1j * omega * capacity) / kx
+    )
     previous = None
     for n in (8, 16, 32, 64):
-        dx, dt = 1/n, .25/n**2
-        faces = torch.arange(n+1, dtype=torch.float64)*dx
-        centers = (faces[:-1]+faces[1:])/2
+        dx, dt = 1 / n, 0.25 / n**2
+        faces = torch.arange(n + 1, dtype=torch.float64) * dx
+        centers = (faces[:-1] + faces[1:]) / 2
         # Exact spatial means over the transverse width of each link face.
-        ymean = torch.exp(1j*b*centers)*math.sin(b*dx/2)/(b*dx/2)
-        xmean = torch.exp(r*faces[:-1])*torch.expm1(faces.new_tensor(dx)*r)/(dx*r)
-        qx = -(kx*r+1j*b*cross)*ymean[:,None]*torch.exp(r*faces)
-        qy = -(cross*r+1j*b*ky)*torch.exp(1j*b*faces[1:,None])*xmean
+        ymean = torch.exp(1j * b * centers) * math.sin(b * dx / 2) / (b * dx / 2)
+        xmean = torch.exp(r * faces[:-1]) * torch.expm1(faces.new_tensor(dx) * r) / (dx * r)
+        qx = -(kx * r + 1j * b * cross) * ymean[:, None] * torch.exp(r * faces)
+        qy = -(cross * r + 1j * b * ky) * torch.exp(1j * b * faces[1:, None]) * xmean
         slab = solve_harmonic_scalar_slab(
-            n,n,.5+3*kx*dt/(capacity*dx**2),omega*dt,ymean,ymean*cmath.exp(r),
-            tau_y=.5+3*ky*dt/(capacity*dx**2),tau_xy=3*cross*dt/(capacity*dx**2))
-        errors = [0., 0.]
-        balance = 0.
-        for start, stop in ((0., .25), (.25, .5), (.0625, .5)):
-            first, last = round(start/dt), round(stop/dt)
-            assert (first*dt, last*dt) == (start, stop)
+            n,
+            n,
+            0.5 + 3 * kx * dt / (capacity * dx**2),
+            omega * dt,
+            ymean,
+            ymean * cmath.exp(r),
+            tau_y=0.5 + 3 * ky * dt / (capacity * dx**2),
+            tau_xy=3 * cross * dt / (capacity * dx**2),
+        )
+        errors = [0.0, 0.0]
+        balance = 0.0
+        for start, stop in ((0.0, 0.25), (0.25, 0.5), (0.0625, 0.5)):
+            first, last = round(start / dt), round(stop / dt)
+            assert (first * dt, last * dt) == (start, stop)
             tx, ty = slab.interval_transfer(first, last)
-            phase_change = cmath.exp(1j*omega*stop)-cmath.exp(1j*omega*start)
-            for j,(actual, reference) in enumerate(((tx,qx),(ty,qy))):
-                exact = (reference*phase_change/(1j*omega)).real
-                errors[j] = max(errors[j], (capacity*dx*actual-exact).abs().max().item())
-            storage = capacity*dx**2*(slab.scalar*phase_change).real
-            residual = storage+capacity*dx**2*(tx.diff(dim=1)+ty-ty.roll(1,0))
+            phase_change = cmath.exp(1j * omega * stop) - cmath.exp(1j * omega * start)
+            for j, (actual, reference) in enumerate(((tx, qx), (ty, qy))):
+                exact = (reference * phase_change / (1j * omega)).real
+                errors[j] = max(errors[j], (capacity * dx * actual - exact).abs().max().item())
+            storage = capacity * dx**2 * (slab.scalar * phase_change).real
+            residual = storage + capacity * dx**2 * (tx.diff(dim=1) + ty - ty.roll(1, 0))
             balance = max(balance, residual.abs().max().item())
         for axis, error in zip(("x", "y"), errors):
             record_property(f"{axis}_interval_error_{n}_J_m2", error)
         record_property(f"cell_balance_{n}_J_per_m_depth", balance)
         assert balance < 1e-12
         if previous is not None:
-            assert all(old > 2.8*new for old,new in zip(previous,errors))
+            assert all(old > 2.8 * new for old, new in zip(previous, errors))
             if n == 64:
-                assert all(old > 3.7*new for old,new in zip(previous,errors))
-                assert max(errors) < .0015
+                assert all(old > 3.7 * new for old, new in zip(previous, errors))
+                assert max(errors) < 0.0015
         previous = errors
