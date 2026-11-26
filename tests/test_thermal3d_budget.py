@@ -546,6 +546,12 @@ def test_fixed_wall_pulse_interior_peak_flux(record_property):
     reference = (entry_ref, exit_ref, exit_ref-entry_ref)
     for label, value in zip(("entry", "exit", "duration"), reference):
         record_property(f"{label}_reference_s", value)
+    # Integrate each decaying mode between the two analytic crossings.
+    duration_ref = exit_ref-entry_ref
+    total_ref = (flux_terms(entry_ref)*(-torch.expm1(-rates*duration_ref))/rates).sum().item()
+    excess_ref = total_ref-threshold*duration_ref
+    record_property("total_heat_reference_J_m2", total_ref)
+    record_property("excess_heat_reference_J_m2", excess_ref)
     previous = None
     for n in (16, 48, 80):
         dx, dt = 1/n, 1/n**2
@@ -584,6 +590,18 @@ def test_fixed_wall_pulse_interior_peak_flux(record_property):
             record_property(f"n{n}_{label}_s", value)
             record_property(f"n{n}_{label}_error_s", abs(value-target))
             errors += (abs(value-target),)
+        # Insert the crossing points so partial first and last steps contribute.
+        times = (first+torch.where(above)[0].to(wave.dtype)-.5)*dt
+        times = torch.cat((times.new_tensor([entry]), times, times.new_tensor([exit_time])))
+        boundary = signal.new_tensor([threshold])
+        clipped = torch.cat((boundary, signal[above], boundary))
+        total_heat = torch.trapezoid(clipped, times).item()
+        excess_heat = torch.trapezoid(clipped-threshold, times).item()
+        for label, value, target in (("total", total_heat, total_ref), ("excess", excess_heat, excess_ref)):
+            relative_error = abs(value/target-1)
+            record_property(f"n{n}_{label}_heat_J_m2", value)
+            record_property(f"n{n}_{label}_heat_relative_error", relative_error)
+            errors += (relative_error,)
         if previous is not None:
             assert all(fine < coarse for fine, coarse in zip(errors, previous))
         previous = errors
