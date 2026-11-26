@@ -14,6 +14,7 @@
   α_eff/α − 1 = δ_k − 3u²（3 = 1/c_s²，与 τ_T、k 无关），
   残差 < 0.03pp（百分点）。若有人改动 g_eq 的 u² 结构（补齐二阶矩）该判据会红。
 """
+
 from __future__ import annotations
 
 import math
@@ -50,8 +51,9 @@ def modal_eigen(k: float, u: float, tau: float) -> complex:
     return complex(ev[np.argmax(np.abs(ev))])
 
 
-def simulate(n: int, periods: int, u: float, tau: float, efolds: float = 2.0,
-             ny: int = 4, tail: int = 300) -> dict:
+def simulate(
+    n: int, periods: int, u: float, tau: float, efolds: float = 2.0, ny: int = 4, tail: int = 300
+) -> dict:
     """余弦模态模拟，返回实测衰减率 γ 与漂移速度 U（末段逐段复增长率）。"""
     k = 2.0 * math.pi * periods / n
     alpha = (tau - 0.5) / 3.0
@@ -90,7 +92,8 @@ def test_modal_decay_matches_exact_eigenvalue(tau: float, n: int) -> None:
     sim = simulate(n, 2, 0.0, tau, efolds=1.5)
     gd = -math.log(abs(modal_eigen(sim["k"], 0.0, tau)))
     assert abs(sim["gamma"] / gd - 1.0) < 1e-9, (
-        f"γ_sim={sim['gamma']:.12e} vs γ_modal={gd:.12e} (tau={tau}, n={n})")
+        f"γ_sim={sim['gamma']:.12e} vs γ_modal={gd:.12e} (tau={tau}, n={n})"
+    )
 
 
 @pytest.mark.parametrize("u", [0.01, 0.05])
@@ -101,8 +104,8 @@ def test_advection_phase_speed_matches_exact_eigenvalue(u: float) -> None:
     ev = modal_eigen(sim["k"], u, tau)
     gd = -math.log(abs(ev))
     Ud = -math.atan2(ev.imag, ev.real) / sim["k"]
-    assert abs(sim["gamma"] / gd - 1.0) < 1e-9, f"γ 偏差 {abs(sim['gamma']/gd-1):.2e}"
-    assert abs(sim["U"] / Ud - 1.0) < 1e-9, f"U 偏差 {abs(sim['U']/Ud-1):.2e}"
+    assert abs(sim["gamma"] / gd - 1.0) < 1e-9, f"γ 偏差 {abs(sim['gamma'] / gd - 1):.2e}"
+    assert abs(sim["U"] / Ud - 1.0) < 1e-9, f"U 偏差 {abs(sim['U'] / Ud - 1):.2e}"
     # 相速度与连续 u 的差仅 O(k²)：k=0.098 时 < 1e-5 相对
     assert abs(Ud / u - 1.0) < 1e-5
 
@@ -165,7 +168,7 @@ def test_advection_diffusivity_bias_follows_minus_3u_squared() -> None:
     k = 2.0 * math.pi * 4.0 / n
     g5 = -math.log(abs(modal_eigen(k, 0.05, tau)))
     g0 = -math.log(abs(modal_eigen(k, 0.0, tau)))
-    slope = ((g5 - g0) / g0) / (0.05 ** 2)
+    slope = ((g5 - g0) / g0) / (0.05**2)
     assert abs(slope / -3.0 - 1.0) < 0.01
 
 
@@ -190,46 +193,52 @@ def test_negative_control_d2q5_equilibrium_has_no_u2_second_moment() -> None:
         assert abs(float((_C5NP[:, 0] * _C5NP[:, 1] * geq).sum())) < 1e-12
         assert abs(float(geq.sum()) - 1.0) < 1e-9
 
+
 @pytest.mark.parametrize("y_mode", [-1, 1])
 def test_oblique_mode_on_rectangular_periodic_domain(y_mode, record_property):
     # Diffusive scaling: dx=1/n, dt=dx², physical domain 1 by 3/4.
-    tau, final_time = .8, 1/16
-    velocity = np.array([.6, .3])
-    wave = 2*np.pi*np.array([1., y_mode/.75])
-    exact = np.exp(-final_time*((tau-.5)/3*(wave @ wave) + 1j*(velocity @ wave)))
+    tau, final_time = 0.8, 1 / 16
+    velocity = np.array([0.6, 0.3])
+    wave = 2 * np.pi * np.array([1.0, y_mode / 0.75])
+    exact = np.exp(-final_time * ((tau - 0.5) / 3 * (wave @ wave) + 1j * (velocity @ wave)))
     previous = None
     for n in (16, 32, 64):
-        ny = 3*n//4
-        y, x = torch.meshgrid(torch.arange(ny, dtype=torch.float64),
-                              torch.arange(n, dtype=torch.float64), indexing="ij")
-        phase = (wave[0]*x+wave[1]*y)/n
-        initial = 1.5+torch.cos(phase)
-        ux, uy = (torch.full_like(initial, component/n) for component in velocity)
+        ny = 3 * n // 4
+        y, x = torch.meshgrid(
+            torch.arange(ny, dtype=torch.float64),
+            torch.arange(n, dtype=torch.float64),
+            indexing="ij",
+        )
+        phase = (wave[0] * x + wave[1] * y) / n
+        initial = 1.5 + torch.cos(phase)
+        ux, uy = (torch.full_like(initial, component / n) for component in velocity)
         populations = temperature_equilibrium(initial, ux, uy)
-        steps = int(final_time*n**2)
+        steps = int(final_time * n**2)
         for _ in range(steps):
             populations = temperature_stream(temperature_collision(populations, tau, ux, uy))
         field = populations.sum(dim=0)
-        coefficient = (2*(field-1.5)*torch.exp(-1j*phase)).mean().item()
+        coefficient = (2 * (field - 1.5) * torch.exp(-1j * phase)).mean().item()
 
         # Propagate the initial equilibrium populations, retaining all kinetic
         # modes at finite time, with streaming diagonal in Fourier space.
-        equilibrium = _W5NP*(1+3*(_C5NP @ velocity)/n)
-        collision = (1-1/tau)*np.eye(5) + equilibrium[:, None]/tau
-        operator = np.exp(-1j*(_C5NP @ wave)/n)[:, None]*collision
+        equilibrium = _W5NP * (1 + 3 * (_C5NP @ velocity) / n)
+        collision = (1 - 1 / tau) * np.eye(5) + equilibrium[:, None] / tau
+        operator = np.exp(-1j * (_C5NP @ wave) / n)[:, None] * collision
         discrete = (np.linalg.matrix_power(operator, steps) @ equilibrium).sum()
-        discrete_error = abs(coefficient-discrete)
-        mean_error = abs(field.mean().item()-1.5)
-        errors = dict(amplitude=abs(abs(coefficient)-abs(exact)),
-                      phase_rad=abs(np.angle(coefficient/exact)),
-                      field=float((field-1.5-(exact*torch.exp(1j*phase)).real).abs().max()))
+        discrete_error = abs(coefficient - discrete)
+        mean_error = abs(field.mean().item() - 1.5)
+        errors = dict(
+            amplitude=abs(abs(coefficient) - abs(exact)),
+            phase_rad=abs(np.angle(coefficient / exact)),
+            field=float((field - 1.5 - (exact * torch.exp(1j * phase)).real).abs().max()),
+        )
         record_property(f"n{n}_discrete_coefficient_error", discrete_error)
         record_property(f"n{n}_mean_error", mean_error)
         assert discrete_error < 1e-12 and mean_error < 1e-12
         for name, error in errors.items():
             record_property(f"n{n}_{name}_error", error)
             if previous is not None:
-                order = math.log2(previous[name]/error)
+                order = math.log2(previous[name] / error)
                 record_property(f"n{n}_{name}_order", order)
                 assert order > 1.8
         previous = errors
