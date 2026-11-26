@@ -1,3 +1,4 @@
+import cmath
 import math
 
 import pytest
@@ -245,14 +246,22 @@ def test_steady_wall_input_balances_uniform_volume_sink(record_property):
     assert abs(sol.scalar.mean()-4.) < 1e-14
 
 
-def test_anisotropic_traveling_wall_flux_refines_against_continuum(record_property):
+@pytest.mark.parametrize("kxy", [0., -.35, .35])
+def test_anisotropic_traveling_wall_flux_refines_against_continuum(kxy, record_property):
     # Unit square, unit volumetric heat capacity. Both walls have traveling
     # inward fluxes with a quarter-period phase offset. The bounded solution
-    # is exp(i*b*y)*X(x), where kx*X''=(ky*b²+i*omega)*X.
+    # is exp(i*b*y)*X(x), with qx=-kx*X'-i*b*kxy*X.
     kx, ky = 1., .5
     omega, b = 8., 2*math.pi
     west, east = 1., .5j
-    wave = ((ky*b*b+1j*omega)/kx)**.5
+    beta = b*kxy/kx
+    wave = ((b*b*(ky-kxy*kxy/kx)+1j*omega)/kx)**.5
+    # Two decaying axial modes. Their coefficients impose qx(0)=west
+    # and qx(1)=-east with the common transverse phase factored out.
+    left_rate, right_rate = -wave-1j*beta, wave-1j*beta
+    scale = kx*wave*(1-cmath.exp(-2*wave))
+    left = (west+east*cmath.exp(-right_rate))/scale
+    right = (east+west*cmath.exp(left_rate))/scale
     refinements = []
     for n in (8, 16, 32, 64):
         dx = 1/n
@@ -260,15 +269,15 @@ def test_anisotropic_traveling_wall_flux_refines_against_continuum(record_proper
         faces = torch.arange(n+1, dtype=torch.float64)*dx
         centers = (faces[1:]+faces[:-1])/2
         y_average = torch.exp(1j*b*centers)*math.sin(b*dx/2)/(b*dx/2)
-        denominator = torch.sinh(wave*faces[-1])
-        # Exact x-cell average of the two wall contributions.
-        x_average = (-west*torch.sinh(wave*(1-faces)).diff() +
-                     east*torch.sinh(wave*faces).diff())/(dx*kx*wave**2*denominator)
-        qx = (west*torch.sinh(wave*(1-faces))-east*torch.sinh(wave*faces))/denominator
+        left_face = left*torch.exp(left_rate*faces)
+        right_face = right*torch.exp(right_rate*(faces-1))
+        x_average = (left_face.diff()/left_rate + right_face.diff()/right_rate)/dx
+        gradient_average = (left_face+right_face).diff()/dx
+        qx = kx*wave*(left_face-right_face)
         sol = solve_harmonic_scalar_slab(
-            n, n, .9, omega*dt, None, None, tau_y=.5+3*ky*dt/dx**2,
+            n, n, .9, omega*dt, None, None, tau_y=.5+3*ky*dt/dx**2, tau_xy=3*kxy*dt/dx**2,
             wall_transfer=(west*y_average*dt/dx, east*y_average*dt/dx))
-        exact_y_flux = -1j*b*ky*torch.exp(1j*b*faces[1:, None])*x_average
+        exact_y_flux = torch.exp(1j*b*faces[1:, None])*(-kxy*gradient_average-1j*b*ky*x_average)
         errors = (
             (sol.scalar-y_average[:, None]*x_average).abs().max().item(),
             (sol.x_transfer*dx/dt-y_average[:, None]*qx).abs().max().item(),
