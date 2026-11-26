@@ -74,6 +74,10 @@ moves the registered case into `benchmarks/cross_validation/` with the same
 `xval:ludwig_fe_stress` case ID. Use that directory for registered
 cross-validations and keep historical supporting material in development.
 
+The [kernel and preprocessing ledger](migrations/kernel-preprocess-xval-2026-11-26.json)
+records the archived [warp-shift streaming](../../development/verification/warp_shift_streaming/README.md)
+and [voxel porosity](../../development/verification/voxel_porosity/README.md) studies.
+
 The [EOS and FSI report ledger](migrations/eos-fsi-xval-reports-2026-11-23.json)
 places the archived Maxwell stability and vivsim fixed-point evidence in their
 benchmark directories.

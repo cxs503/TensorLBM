@@ -1,0 +1,151 @@
+{
+  "source_commit": "5473f210acab839c2e3c872a0e0d98bddbd066c6",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 54,
+      "after": 52
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT",
+    "xval/XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT/DIFF_OSS_VS_TENSORLBM.md",
+      "new_path": "development/verification/warp_shift_streaming/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "3c8d42c47c53464374a8bb6fa5365a5c1e75ead7",
+      "original_sha256": "53195459154b647d56194d1a7ca03c2e2fd77d425b264bc710159032ed233dab",
+      "original_size_bytes": 5267,
+      "current_sha256": "53195459154b647d56194d1a7ca03c2e2fd77d425b264bc710159032ed233dab",
+      "current_size_bytes": 5267,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT/make_figures.py",
+      "new_path": "development/verification/warp_shift_streaming/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "0402e38059e741d3b86b9631180bcbecaca691e3",
+      "original_sha256": "c5485e6311491bc7d48763bedc482203adfadb27b55d3e000998d04a8358a44b",
+      "original_size_bytes": 4471,
+      "current_sha256": "c5485e6311491bc7d48763bedc482203adfadb27b55d3e000998d04a8358a44b",
+      "current_size_bytes": 4471,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT/predeclared.json",
+      "new_path": "development/verification/warp_shift_streaming/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "725d9ae78289efdabbb1a2e4effa029777ad0532",
+      "original_sha256": "727578781cb7483d9b582c7a242638790bf6e9bd3c60ddd551ae28dd7c5f9a54",
+      "original_size_bytes": 7922,
+      "current_sha256": "727578781cb7483d9b582c7a242638790bf6e9bd3c60ddd551ae28dd7c5f9a54",
+      "current_size_bytes": 7922,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT/results.json",
+      "new_path": "development/verification/warp_shift_streaming/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "460749592a5894a04005c194f7d3ce51a8637006",
+      "original_sha256": "743f0ceac1b56ff0d3c99fb68036408042f6f7fe91a7e10095ed7026ebb78a90",
+      "original_size_bytes": 15518,
+      "current_sha256": "743f0ceac1b56ff0d3c99fb68036408042f6f7fe91a7e10095ed7026ebb78a90",
+      "current_size_bytes": 15518,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT/run_xval.py",
+      "new_path": "development/verification/warp_shift_streaming/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "75c2981031980eaf266dc1853732303791461fbe",
+      "original_sha256": "60031abe05cd647fe87d922bce9ad146beb58fcc12ff188bbcedcef167fb41bc",
+      "original_size_bytes": 12728,
+      "current_sha256": "60031abe05cd647fe87d922bce9ad146beb58fcc12ff188bbcedcef167fb41bc",
+      "current_size_bytes": 12728,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT/REPORT.md",
+      "new_path": "development/verification/voxel_porosity/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "de4c59e7eefc6dcf62c122ebef1db6a8dfc96952",
+      "original_sha256": "7d9ac4982b0fa676ab96fc95590778de2ea29dce1e82f93ebf3836dfad162e6c",
+      "original_size_bytes": 10202,
+      "current_sha256": "7d9ac4982b0fa676ab96fc95590778de2ea29dce1e82f93ebf3836dfad162e6c",
+      "current_size_bytes": 10202,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT/figures.json",
+      "new_path": "development/verification/voxel_porosity/figures.json",
+      "git_mode": "100644",
+      "original_git_blob": "cc3d4a8671a762f4523c31ad400ce46697d1ecc8",
+      "original_sha256": "a69fc6de4cdc8056948f7caf61aceac92c315cd7cc74e4364bc23c5687a8aec4",
+      "original_size_bytes": 275218,
+      "current_sha256": "a69fc6de4cdc8056948f7caf61aceac92c315cd7cc74e4364bc23c5687a8aec4",
+      "current_size_bytes": 275218,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT/make_figures.py",
+      "new_path": "development/verification/voxel_porosity/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "92973e08682d3026fc095a8508a7fd1b8b08e3b6",
+      "original_sha256": "c92bd6c3ea330c274b73c7d3cf74ec80814c64d2f19ccaaac9da57fa2bca90e3",
+      "original_size_bytes": 5898,
+      "current_sha256": "c92bd6c3ea330c274b73c7d3cf74ec80814c64d2f19ccaaac9da57fa2bca90e3",
+      "current_size_bytes": 5898,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT/predeclared.json",
+      "new_path": "development/verification/voxel_porosity/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "4531cfce2f81d6a05613c4d8ff94ebc1b1791ea5",
+      "original_sha256": "bcf71bdea047ada4892c86240b4d555cc2d2f4490d42a1784a28842c0b1ce017",
+      "original_size_bytes": 973,
+      "current_sha256": "bcf71bdea047ada4892c86240b4d555cc2d2f4490d42a1784a28842c0b1ce017",
+      "current_size_bytes": 973,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT/results.json",
+      "new_path": "development/verification/voxel_porosity/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "b618f31f5b0e83bd6264811454e54911714dbc10",
+      "original_sha256": "29b01a81b208d05cf746264a29a0a61a6cbfb61247a3ff580811363582b19c63",
+      "original_size_bytes": 11419,
+      "current_sha256": "29b01a81b208d05cf746264a29a0a61a6cbfb61247a3ff580811363582b19c63",
+      "current_size_bytes": 11419,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT/run_xval.py",
+      "new_path": "development/verification/voxel_porosity/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "f78afb62823ed69010a9a4a1505fdb4bee96c559",
+      "original_sha256": "068bacca25f88001d72bd66730c207aa629c211d35931b19ee1115766f999673",
+      "original_size_bytes": 16568,
+      "current_sha256": "c056e5f0a221ec9d820d5b865febd80db414d06f85dd2d0ad2aa0768268b4c3a",
+      "current_size_bytes": 16574,
+      "byte_identical": false
+    }
+  ],
+  "compatibility": {
+    "warp_shift_streaming": "Driver and assets are byte-identical. Use the checkout's src through PYTHONPATH or the installed package. The original published report URL links to the new location. The historical CUDA and timing limitations remain in the report.",
+    "voxel_porosity": "The only moved-file edit is one more parent step for canonical src. A stable path through the target layout index links to the archive. The old xval report remains available in the recorded source Git commit.",
+    "execution": "Archive programs retain their original output behavior. Use a separate checkout for runs that write beside source. No Python test imports the removed directories."
+  },
+  "verification": {
+    "voxel_cpu_replay": "Real old and new arm output matches after dropping only timestamp and wall_seconds.",
+    "voxel_normalized_sha256": "8359ccc1fb4be08c181779ce2629490b05b774da87f03197df2b6b28849f1fc8",
+    "warp_shift_figures": "Four PNGs regenerated from the archived JSON in a disposable directory. The original PNGs are absent from the source Git tree.",
+    "focused_regressions": "30 passed in tests/test_warp_shift_streaming.py and tests/test_porosity_xval.py on CPU.",
+    "governance": "86 tests, Ruff 0.15.0, four Python syntax checks and 15 archive navigation links passed. The registry lists 226 entries and the manual catalogue lists 35 cases with 33 PDFs. Zero hard ledger violations."
+  },
+  "scientific_scope": "Directory and compatibility verification only. The historical ratings and thresholds are retained. The complete warp-shift timing sweep and CUDA replay were not executed."
+}
