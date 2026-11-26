@@ -1,5 +1,7 @@
 # XVAL R5 — the regularised wall closure's steady-channel regression is a *forcing* defect, not a third-moment defect
 
+> Repository migration note: current campaign files are at [development/verification/regularised_bc_noneq_stress](../development/verification/regularised_bc_noneq_stress/). Original mission paths in the narrative refer to the frozen historical revision. Historical verdicts are not current acceptance.
+
 Anchor `XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC` · arm **R5** · module
 `src/tensorlbm/regularised_bc.py` · artifacts `xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r5/`
 · tests `tests/test_regularised_bc_order3.py`.
@@ -187,8 +189,8 @@ the problem — the attribution was.
 
 ```bash
 PYTHONPATH=src python -m pytest tests/test_regularised_bc_order3.py -q
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py --arm invariant
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py --arm ladder --nys 24 --walls 0,0.5,1
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py --arm osc --deltas 6
-bash xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_all_r5.sh   # full campaign
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r5.py --arm invariant
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r5.py --arm ladder --nys 24 --walls 0,0.5,1
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r5.py --arm osc --deltas 6
+bash development/verification/regularised_bc_noneq_stress/run_all_r5.sh   # full campaign
 ```

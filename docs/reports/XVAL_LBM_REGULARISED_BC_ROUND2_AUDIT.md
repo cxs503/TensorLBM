@@ -1,5 +1,7 @@
 # XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC — 第 2 轮审计与推进（调研结合）
 
+> Repository migration note: current campaign files are at [development/verification/regularised_bc_2d_reference](../../development/verification/regularised_bc_2d_reference/), [development/verification/regularised_bc_noneq_stress](../../development/verification/regularised_bc_noneq_stress/). Original mission paths in the narrative refer to the frozen historical revision. Historical verdicts are not current acceptance.
+
 任务号 m21104｜分支 agent/m21104｜基准出处：joconnor22/LIFE `src/Grid.cpp::regularisedBC`（L386-470，Latt & Chopard 2006 / Latt et al. 2008 正则化边界）、
 D2Q9/D3Q19 解析解（平面 Couette、体积力 Poiseuille、Stokes 第二问题有限深 Stokes 层）。
 owner 精度判据：对标误差 <15% 不可接受线、<3% 目标线。
@@ -162,11 +164,11 @@ owner 精度判据：对标误差 <15% 不可接受线、<3% 目标线。
 # 1) 全仓本锚点用例（15 个）
 PYTHONPATH=src python -m pytest tests/test_regularised_bc.py tests/test_regularised_bc_2d.py -q
 # 2) 1D 三臂（约 100 s）
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval.py --arm all
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval.py --arm all
 # 3) 2D 端到端分辨率阶梯（单分辨率约 10–60 s；长跑请递交 compute gate）
-PYTHONPATH=src python xval/XVAL-LBM-REG-BC-NEQ-STRESS/run_xval.py --arms reg --res 16,32 --steps 1500
+PYTHONPATH=src python development/verification/regularised_bc_2d_reference/run_xval.py --arms reg --res 16,32 --steps 1500
 # 4) 工件 + 图
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/make_round2.py
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/make_round2.py
 ```
 
 ## 7 误差判定（逐项显式回答）

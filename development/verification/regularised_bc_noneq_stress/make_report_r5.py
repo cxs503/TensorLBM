@@ -9,7 +9,7 @@ was run in chunks; each chunk is a plain ``run_xval_r5.py`` invocation and the
 cluster job ``cj3642`` reproduces the same sweep unattended.  ``provenance``
 records the exact commands.
 
-Usage: PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/make_report_r5.py
+Usage: PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/make_report_r5.py
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ import numpy as np  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "artifacts_r5"
-DOCS = HERE.parents[1] / "docs"
+DOCS = HERE.parents[2] / "docs"
 DOC = DOCS / "XVAL-LBM-REGULARISED-BC-NONEQ-STRESS-R5.md"
 
 CLOSURES = [
@@ -213,7 +213,7 @@ def markdown(payload: dict) -> str:
     return f"""# XVAL R5 — the regularised wall closure's steady-channel regression is a *forcing* defect, not a third-moment defect
 
 Anchor `XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC` · arm **R5** · module
-`src/tensorlbm/regularised_bc.py` · artifacts `xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r5/`
+`src/tensorlbm/regularised_bc.py` · artifacts `development/verification/regularised_bc_noneq_stress/artifacts_r5/`
 · tests `tests/test_regularised_bc_order3.py`.
 
 ## ① 案例介绍
@@ -390,10 +390,10 @@ the problem — the attribution was.
 
 ```bash
 PYTHONPATH=src python -m pytest tests/test_regularised_bc_order3.py -q
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py --arm invariant
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py --arm ladder --nys 24 --walls 0,0.5,1
-PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py --arm osc --deltas 6
-bash xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_all_r5.sh   # full campaign
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r5.py --arm invariant
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r5.py --arm ladder --nys 24 --walls 0,0.5,1
+PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r5.py --arm osc --deltas 6
+bash development/verification/regularised_bc_noneq_stress/run_all_r5.sh   # full campaign
 ```
 """
 

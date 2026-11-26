@@ -3,9 +3,9 @@
 # Sequential on purpose: every arm merges into artifacts_r5/*.json, so parallel
 # jobs would clobber each other's artifact file.
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 export PYTHONPATH=src
-X=xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py
+X=development/verification/regularised_bc_noneq_stress/run_xval_r5.py
 python "$X" --arm invariant
 python "$X" --arm ladder --nys 16,24,32,48
 python "$X" --arm tau --taus 0.6,1.0,1.5

@@ -14,7 +14,7 @@ artifacts of the pre-registration (``predeclared.json``):
     profiles.json          steady profiles of every configuration
     figures/*.png          profile comparison + precision panel
 
-Run:  python3 xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/run_xval.py
+Run:  python3 development/verification/moving_wall_halfway_float64/run_xval.py
       (PYTHONPATH must contain ``src``; the script adds it itself.)
 """
 
@@ -29,7 +29,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 if str(REPO / "src") not in sys.path:
     sys.path.insert(0, str(REPO / "src"))
 

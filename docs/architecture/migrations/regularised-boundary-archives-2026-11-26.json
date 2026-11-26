@@ -1,0 +1,526 @@
+{
+  "source_commit": "42b61fda3f4c443e31a7259d4b3c85e13c8354a1",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 52,
+      "after": 49
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-REG-BC-NEQ-STRESS",
+    "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC",
+    "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64"
+  ],
+  "reference_scan": "Scanned full and split path expressions across Git tracked code/tests/workflows/reports. No external workflow or formal case manifest consumed these three campaign roots. Three live test files load the reference/runner directly; updated paths. Source citations are module docstring-only. Round 2 renderer reads the 2D output sibling. R5 shell launcher changes repo depth; report generators update future commands. Historical output JSON, markdown and upstream source snapshots are unchanged.",
+  "compatibility": "Four published report URLs preserved, with links to moved archives and updated current reproduction commands. Retired-directory guard prevents new tracked assets under old names. The original Git revision and hashes preserve the historical entry paths. No public solver import changes.",
+  "scientific_scope": "Directory relocation only. Historical scientific verdicts not adopted. No external pylbm rerun, full solver campaign or report publishing.",
+  "remaining_blockers": [
+    "Moving-wall reference requires original pinned external pylbm checkout; retained historical shim and recorded results, did not run missing external dependency.",
+    "Round 2 figures were not tracked on main; regenerate using the archived measurements, not synthetic data. Full R4/R5 campaign deferred."
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/oss_src/Grid.cpp",
+      "new_path": "development/verification/regularised_bc_2d_reference/oss_src/Grid.cpp",
+      "git_mode": "100644",
+      "original_git_blob": "25ba36f6bb449ac754d1b113f42a20ccc8a60c8c",
+      "size_bytes": 38489,
+      "original_sha256": "3699722b221d68f9212def39aec869739d33be97f9d3f2eefac5d9c6bb2591de",
+      "new_sha256": "3699722b221d68f9212def39aec869739d33be97f9d3f2eefac5d9c6bb2591de"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/oss_src/LICENSE.upstream",
+      "new_path": "development/verification/regularised_bc_2d_reference/oss_src/LICENSE.upstream",
+      "git_mode": "100644",
+      "original_git_blob": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "size_bytes": 35149,
+      "original_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "new_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/oss_src/PROVENANCE.json",
+      "new_path": "development/verification/regularised_bc_2d_reference/oss_src/PROVENANCE.json",
+      "git_mode": "100644",
+      "original_git_blob": "07d4455a036363ef3e7ea6c2ee33e62fccbb7940",
+      "size_bytes": 1218,
+      "original_sha256": "bff3ce2bf8731b769437cdbcd0b64832cf6ad56f1efd1240db0eb993e45286b0",
+      "new_sha256": "bff3ce2bf8731b769437cdbcd0b64832cf6ad56f1efd1240db0eb993e45286b0"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/oss_src/README.upstream.md",
+      "new_path": "development/verification/regularised_bc_2d_reference/oss_src/README.upstream.md",
+      "git_mode": "100644",
+      "original_git_blob": "8b87a6209d900c059e8e0539e9b12b0ed4e28a81",
+      "size_bytes": 4195,
+      "original_sha256": "e07e155201567b40df35eeb8d304671b0a2bcb720e8265f75148e8f15b8affc1",
+      "new_sha256": "e07e155201567b40df35eeb8d304671b0a2bcb720e8265f75148e8f15b8affc1"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/oss_src/Utils.h",
+      "new_path": "development/verification/regularised_bc_2d_reference/oss_src/Utils.h",
+      "git_mode": "100644",
+      "original_git_blob": "410c1cb8fa2b37099196dad74659ac314d8e2f68",
+      "size_bytes": 11850,
+      "original_sha256": "be7ab8d9fb7cb9bffd39a6e90c16a31945c8908ec9bfa15606c5e2bb3981ddd5",
+      "new_sha256": "be7ab8d9fb7cb9bffd39a6e90c16a31945c8908ec9bfa15606c5e2bb3981ddd5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/out/res_h16.json",
+      "new_path": "development/verification/regularised_bc_2d_reference/out/res_h16.json",
+      "git_mode": "100644",
+      "original_git_blob": "af3882690722806a1f6fb51d20dca5e66bdae461",
+      "size_bytes": 3633,
+      "original_sha256": "443a6e8f7d0c92372f33550f71959ea9a7e739a6db08cc79cc3cc98e21d9feb3",
+      "new_sha256": "443a6e8f7d0c92372f33550f71959ea9a7e739a6db08cc79cc3cc98e21d9feb3"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/out/res_h32.json",
+      "new_path": "development/verification/regularised_bc_2d_reference/out/res_h32.json",
+      "git_mode": "100644",
+      "original_git_blob": "4342d3dc740f22e757e7bcd51794518b9a2bbb41",
+      "size_bytes": 5363,
+      "original_sha256": "ff02dc66d87a2dc327f7ed83f69ef88fb426f1d34bbd0b32efc838e4126b5d51",
+      "new_sha256": "ff02dc66d87a2dc327f7ed83f69ef88fb426f1d34bbd0b32efc838e4126b5d51"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/out/results.json",
+      "new_path": "development/verification/regularised_bc_2d_reference/out/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "4342d3dc740f22e757e7bcd51794518b9a2bbb41",
+      "size_bytes": 5363,
+      "original_sha256": "ff02dc66d87a2dc327f7ed83f69ef88fb426f1d34bbd0b32efc838e4126b5d51",
+      "new_sha256": "ff02dc66d87a2dc327f7ed83f69ef88fb426f1d34bbd0b32efc838e4126b5d51"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/predeclared.json",
+      "new_path": "development/verification/regularised_bc_2d_reference/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "6cac264ac39ace6f59e31285e23a468437ed6897",
+      "size_bytes": 5149,
+      "original_sha256": "82ad86f2e8787776ff572ec2e9bf268013719c48a7e59f449b23cbbf9279c7a9",
+      "new_sha256": "82ad86f2e8787776ff572ec2e9bf268013719c48a7e59f449b23cbbf9279c7a9"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/reference.py",
+      "new_path": "development/verification/regularised_bc_2d_reference/reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "56d1bfa9c16f52606062f5b4ee21070115be2227",
+      "size_bytes": 8728,
+      "original_sha256": "09169cd9ab902634965cc711dc6a691557dfabcfcde712bd8bebe79f349e217a",
+      "new_sha256": "09169cd9ab902634965cc711dc6a691557dfabcfcde712bd8bebe79f349e217a"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REG-BC-NEQ-STRESS/run_xval.py",
+      "new_path": "development/verification/regularised_bc_2d_reference/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "94bcbbecb0f037e38a36c0f22e273470b8f2fdd7",
+      "size_bytes": 15087,
+      "original_sha256": "9d6472c5de6419202de93c2f58b288cae22f8b1d464dbe59cdafebfea02ae423",
+      "new_sha256": "f15fdd1b10dec835ed5bc864ef103ca19e905ffcfb8da08440b0c804c90b2808"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/OSS_DIFF.md",
+      "new_path": "development/verification/regularised_bc_noneq_stress/OSS_DIFF.md",
+      "git_mode": "100644",
+      "original_git_blob": "04d83836618b4fe6c251f0f692a58ed75bdd2590",
+      "size_bytes": 2074,
+      "original_sha256": "b383e5985a8ce72287e0d7d40cd94f00b0f58e70c0d669bd7264fc871028f4d7",
+      "new_sha256": "b383e5985a8ce72287e0d7d40cd94f00b0f58e70c0d669bd7264fc871028f4d7"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/PREREG.md",
+      "new_path": "development/verification/regularised_bc_noneq_stress/PREREG.md",
+      "git_mode": "100644",
+      "original_git_blob": "de2b006ab698dc5267a8798147b12caf3afc7fe1",
+      "size_bytes": 1897,
+      "original_sha256": "d693f8bbd861a7a5af5cbc94491de8bb0be0fafb3c58715134dd657a2a986dac",
+      "new_sha256": "d693f8bbd861a7a5af5cbc94491de8bb0be0fafb3c58715134dd657a2a986dac"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/REPORT.md",
+      "new_path": "development/verification/regularised_bc_noneq_stress/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "c421e73af8ecb0c07956ca841d137a3e3e3eee29",
+      "size_bytes": 5895,
+      "original_sha256": "b4ac4af8fc3f9b0759cbbb64687e0a220e526d582fafaee91420fc33419c830f",
+      "new_sha256": "b4ac4af8fc3f9b0759cbbb64687e0a220e526d582fafaee91420fc33419c830f"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/REPORT_R4.md",
+      "new_path": "development/verification/regularised_bc_noneq_stress/REPORT_R4.md",
+      "git_mode": "100644",
+      "original_git_blob": "122c90226bb0dc20067e1899173f6643cddedbc8",
+      "size_bytes": 10029,
+      "original_sha256": "021385e55eeef802b81387e6066fd349e5d4a4320a7345f4d98613943980d231",
+      "new_sha256": "021385e55eeef802b81387e6066fd349e5d4a4320a7345f4d98613943980d231"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/REPORT_R5.md",
+      "new_path": "development/verification/regularised_bc_noneq_stress/REPORT_R5.md",
+      "git_mode": "100644",
+      "original_git_blob": "d5c6e119bc4ebf6c7739f50ccfdbe957f27a1b0b",
+      "size_bytes": 10169,
+      "original_sha256": "0e5255e9e25b6a2c2617dc1a9e630c6e24c3a31a6c6f30bcb292e00cea9ee149",
+      "new_sha256": "0e5255e9e25b6a2c2617dc1a9e630c6e24c3a31a6c6f30bcb292e00cea9ee149"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts/identity.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts/identity.json",
+      "git_mode": "100644",
+      "original_git_blob": "e5e7e219ee8f9c0afaf611c8d5eebfd9a5066863",
+      "size_bytes": 1823,
+      "original_sha256": "3e417145be5548aa29a38df985f5eba8ce36b51bfb2bfb41b410167dc734a0d6",
+      "new_sha256": "3e417145be5548aa29a38df985f5eba8ce36b51bfb2bfb41b410167dc734a0d6"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts/oscillating.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts/oscillating.json",
+      "git_mode": "100644",
+      "original_git_blob": "0bb8c03c1a3e09ce0e285bb5a06f1c4cb71b9206",
+      "size_bytes": 27855,
+      "original_sha256": "c3bf8912b813c75d1971b62b5ffb6f29b03a9bffa454e7ec222984cca947abf9",
+      "new_sha256": "c3bf8912b813c75d1971b62b5ffb6f29b03a9bffa454e7ec222984cca947abf9"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts/round2_summary.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts/round2_summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "ac79e027e99fe2b3d6abe9887b87d16edde6e8f8",
+      "size_bytes": 48094,
+      "original_sha256": "ded636360b923bac25068d8d01c6d819e328456770c7a3225d5d4c1893db6da2",
+      "new_sha256": "ded636360b923bac25068d8d01c6d819e328456770c7a3225d5d4c1893db6da2"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts/steady.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts/steady.json",
+      "git_mode": "100644",
+      "original_git_blob": "759b669ebde6df36d7a9adbb678d18272511411b",
+      "size_bytes": 18437,
+      "original_sha256": "a2f9c8c339652868588648b0c6d90e0b6e54c220ef07c9990ff35f0bb021e57b",
+      "new_sha256": "a2f9c8c339652868588648b0c6d90e0b6e54c220ef07c9990ff35f0bb021e57b"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts/summary.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "13d236533c90ddafd698b0427fd2ce4bd31ac2cc",
+      "size_bytes": 4354,
+      "original_sha256": "03da48ee9d99366e85646386968aaca7e9290fa66d404bb1a56323e83399d16b",
+      "new_sha256": "03da48ee9d99366e85646386968aaca7e9290fa66d404bb1a56323e83399d16b"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r4/d3q19_channel.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r4/d3q19_channel.json",
+      "git_mode": "100644",
+      "original_git_blob": "19702543ece5a606de36c5009471a454767a5273",
+      "size_bytes": 16188,
+      "original_sha256": "e05351663d3e48777f593b8a96c35cc8f9089d2f9c49146becab9c59ca0e6d23",
+      "new_sha256": "e05351663d3e48777f593b8a96c35cc8f9089d2f9c49146becab9c59ca0e6d23"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r4/ladder.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r4/ladder.json",
+      "git_mode": "100644",
+      "original_git_blob": "51c28c6ea71239eb9610c52940c14de71ebc1541",
+      "size_bytes": 17771,
+      "original_sha256": "31369d459f94a2de2455b059d66ab1e20af4278181b427af817080af2c72ef56",
+      "new_sha256": "31369d459f94a2de2455b059d66ab1e20af4278181b427af817080af2c72ef56"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r4/report_payload.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r4/report_payload.json",
+      "git_mode": "100644",
+      "original_git_blob": "b57f0aa11cc6fabaadab0f2a64d99dfc2af2bc10",
+      "size_bytes": 439552,
+      "original_sha256": "76cd513c502ff9abb9f9d55ec8e87875d7d302bd99d954a4b964e9e634ebf1e8",
+      "new_sha256": "76cd513c502ff9abb9f9d55ec8e87875d7d302bd99d954a4b964e9e634ebf1e8"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r4/summary_r4.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r4/summary_r4.json",
+      "git_mode": "100644",
+      "original_git_blob": "ef8e9557e37b65853579d2f9f93c4fd932d162c8",
+      "size_bytes": 7781,
+      "original_sha256": "be5fb894eb6604899219b6c153209db3fb98b8a90a2dbed3dbd6056df1a750e5",
+      "new_sha256": "be5fb894eb6604899219b6c153209db3fb98b8a90a2dbed3dbd6056df1a750e5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r4/tau_sweep.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r4/tau_sweep.json",
+      "git_mode": "100644",
+      "original_git_blob": "ccf13244105232ebb1a8d3f9fe28e5ce720a27a7",
+      "size_bytes": 10536,
+      "original_sha256": "f231421ffa11c7288e29d4a2d999c48482cab8cf66c62946bc0412673324f77b",
+      "new_sha256": "f231421ffa11c7288e29d4a2d999c48482cab8cf66c62946bc0412673324f77b"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r5/invariant.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r5/invariant.json",
+      "git_mode": "100644",
+      "original_git_blob": "5a6f363edeb7d4be2f8a9d0cef04a18201fefe1a",
+      "size_bytes": 547,
+      "original_sha256": "9b870fbbe7cb12b24eed8a29fec031bc7844e6175eb6fb94e14866586c39cf32",
+      "new_sha256": "9b870fbbe7cb12b24eed8a29fec031bc7844e6175eb6fb94e14866586c39cf32"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r5/ladder.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r5/ladder.json",
+      "git_mode": "100644",
+      "original_git_blob": "594c66e77f6bb9b6d6796d59a81d818559ad607c",
+      "size_bytes": 8232,
+      "original_sha256": "ed940501e727845fe0823d65b46442dbafef1855f01d3b18569829c2734916b1",
+      "new_sha256": "ed940501e727845fe0823d65b46442dbafef1855f01d3b18569829c2734916b1"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r5/oscillating.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r5/oscillating.json",
+      "git_mode": "100644",
+      "original_git_blob": "6eb41491d3f4f4b0063de952091e26c4c00018ac",
+      "size_bytes": 2511,
+      "original_sha256": "ab869d115b4a135597a773321abca091b8696a08eeacaa4f1cfcd0386d851410",
+      "new_sha256": "ab869d115b4a135597a773321abca091b8696a08eeacaa4f1cfcd0386d851410"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r5/r5_chunked_summary.json",
+      "new_path": "development/verification/regularised_bc_noneq_stress/artifacts_r5/r5_chunked_summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "b3ff7c51c96796680f0223a75bea75e155545074",
+      "size_bytes": 2194,
+      "original_sha256": "f7ee6f399a5862fbd58cf4dfbe84d22613dc644ac9142956cfe8573ecd0c2d77",
+      "new_sha256": "f7ee6f399a5862fbd58cf4dfbe84d22613dc644ac9142956cfe8573ecd0c2d77"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/make_report_r4.py",
+      "new_path": "development/verification/regularised_bc_noneq_stress/make_report_r4.py",
+      "git_mode": "100644",
+      "original_git_blob": "afc26d920fe15efe736b57832a8a0ac1269abe9a",
+      "size_bytes": 20502,
+      "original_sha256": "7b3710ed19e58ea64a19cfb1f49f2d062349a34e6983f6d0c7e53bad1b1f7940",
+      "new_sha256": "347560c7496821a7008aaa4586e72a47c9a123b36f798f23d052dbecd44f1c76"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/make_report_r5.py",
+      "new_path": "development/verification/regularised_bc_noneq_stress/make_report_r5.py",
+      "git_mode": "100644",
+      "original_git_blob": "e2ec8be2e8deb9cf3731d90b4a47b991513a2df0",
+      "size_bytes": 22107,
+      "original_sha256": "9bd580cf3efa3c699a36e017ca4646856b450ec2b0a84bba44153f54b576024a",
+      "new_sha256": "670dd548518eaaf440f52a645ddba27076efdeff7c518aaf8626b8ff85b7891c"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/make_round2.py",
+      "new_path": "development/verification/regularised_bc_noneq_stress/make_round2.py",
+      "git_mode": "100644",
+      "original_git_blob": "c6531c7652a5713d78151867de7d347d8ddc45da",
+      "size_bytes": 6177,
+      "original_sha256": "f928bdfb844d7177fa4aa17f98a1ee748a3d1e0af0c441ee03cae9a416318ddd",
+      "new_sha256": "adc5b10cb086372ce6befb89d391b44e772db44cbf158a7349556fa6078737fc"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_all_r5.sh",
+      "new_path": "development/verification/regularised_bc_noneq_stress/run_all_r5.sh",
+      "git_mode": "100644",
+      "original_git_blob": "c217ec0c95a3af8d2548e199b9fed7300f9c06ca",
+      "size_bytes": 589,
+      "original_sha256": "e8ec36da1ee33d8c296b961ce6bba3b82abd5d0e2a4892fd2094d45e06e29541",
+      "new_sha256": "ffae19916b0ecc47f64e12fcdc8e1a7f370ddf4c40e7361c754ce05709c18b6a"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval.py",
+      "new_path": "development/verification/regularised_bc_noneq_stress/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "4efd21a09330869c9656cf09c66869d5d42be063",
+      "size_bytes": 15221,
+      "original_sha256": "e44c84605baf6790faa15efa58ff1e34d06e217fddc1a5f7ded36f71bc3d76b7",
+      "new_sha256": "1ee5a9ffb9775d5cb4abe40ac2d2633c280376d024148a7eb3761c233bbff560"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py",
+      "new_path": "development/verification/regularised_bc_noneq_stress/run_xval_r4.py",
+      "git_mode": "100644",
+      "original_git_blob": "89a5c3e4751abd532827f5579882c9851d11d126",
+      "size_bytes": 20677,
+      "original_sha256": "a537f4b83b2608b0687992263b8b03d9666bdb5d05d9bb85c321dad8fb6cfd90",
+      "new_sha256": "88db39408f11bd2a406aaeb485fe8e51f19c000a0dd417a92086e4d3b565a4a4"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py",
+      "new_path": "development/verification/regularised_bc_noneq_stress/run_xval_r5.py",
+      "git_mode": "100644",
+      "original_git_blob": "db6aed36d165576569cfbd8526cb560c8493c58f",
+      "size_bytes": 12948,
+      "original_sha256": "b3290d8961a270c2eeb48f6d497f1715756f774734133e2112f72b9d27d555d3",
+      "new_sha256": "3b68d58f236bef81ba5acb1be8b797b2217989c311de61ac4735077ee1e76f92"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/_shim/mpi4py/MPI.py",
+      "new_path": "development/verification/moving_wall_halfway_float64/_shim/mpi4py/MPI.py",
+      "git_mode": "100644",
+      "original_git_blob": "5c8ba805002fafb46ca254753146ff6449bfccf5",
+      "size_bytes": 4068,
+      "original_sha256": "8ee22081ad1ab459082de97448409904b43e7f2ceb9a1521686b737ab2031dbc",
+      "new_sha256": "8ee22081ad1ab459082de97448409904b43e7f2ceb9a1521686b737ab2031dbc"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/_shim/mpi4py/__init__.py",
+      "new_path": "development/verification/moving_wall_halfway_float64/_shim/mpi4py/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "6a3c12da2134db82e98a3d9207053980ae905b79",
+      "size_bytes": 152,
+      "original_sha256": "c838dfe51c8b78096795e3d8145408332a2979dd72966d0d8dd4e7384da91877",
+      "new_sha256": "c838dfe51c8b78096795e3d8145408332a2979dd72966d0d8dd4e7384da91877"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/oss_reference.py",
+      "new_path": "development/verification/moving_wall_halfway_float64/oss_reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "4c9a7fa1ed4dd32caf38576b89180ded1c1ee8fb",
+      "size_bytes": 9947,
+      "original_sha256": "dc3b0d4efb3aac05aedca935bbbae5caaa9942c9a8c182a0101af835e5239241",
+      "new_sha256": "dc3b0d4efb3aac05aedca935bbbae5caaa9942c9a8c182a0101af835e5239241"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/predeclared.json",
+      "new_path": "development/verification/moving_wall_halfway_float64/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "4b79566d0d44814e2ac9e86479461e7f39f27a35",
+      "size_bytes": 5631,
+      "original_sha256": "21033c19555703996c04a354d71f02e75453d4c8ac0145a904822dcad0d09d90",
+      "new_sha256": "21033c19555703996c04a354d71f02e75453d4c8ac0145a904822dcad0d09d90"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/profiles.json",
+      "new_path": "development/verification/moving_wall_halfway_float64/profiles.json",
+      "git_mode": "100644",
+      "original_git_blob": "c67b04774eea1bf1f1d5036fc689c6d09b1caaf0",
+      "size_bytes": 11225,
+      "original_sha256": "ac108016ea26bfd188b74973e3fd5c49ae19545e869e8a33be8a3445848ff681",
+      "new_sha256": "ac108016ea26bfd188b74973e3fd5c49ae19545e869e8a33be8a3445848ff681"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/run_xval.py",
+      "new_path": "development/verification/moving_wall_halfway_float64/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "43cdbe3680216f95c7e6db3888760eda7f0d7750",
+      "size_bytes": 19120,
+      "original_sha256": "e966f59b3b3273dcf21fdebf76705868a55c3684d63052850c44bcf8653f3214",
+      "new_sha256": "1d5e59680df55dbe371fb48c703202371745b6f7c3fd6468729eda3610fe471c"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/summary.json",
+      "new_path": "development/verification/moving_wall_halfway_float64/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "4eb5939606f8868557f8d27784222228cd3b86d0",
+      "size_bytes": 6044,
+      "original_sha256": "2689ce3e239c021fdf2ce421d5c07a4de5c588faf93e7877ba32dfb2eebc7436",
+      "new_sha256": "2689ce3e239c021fdf2ce421d5c07a4de5c588faf93e7877ba32dfb2eebc7436"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/table.csv",
+      "new_path": "development/verification/moving_wall_halfway_float64/table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "3b73df0854b789e11632a581d95e75dd263e72aa",
+      "size_bytes": 1352,
+      "original_sha256": "e39f19bd18e439ca2f79d9b12a1b1151fbf4f708694078a3509c8733bb34a1f4",
+      "new_sha256": "e39f19bd18e439ca2f79d9b12a1b1151fbf4f708694078a3509c8733bb34a1f4"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/table.csv.bak",
+      "new_path": "development/verification/moving_wall_halfway_float64/table.csv.bak",
+      "git_mode": "100644",
+      "original_git_blob": "7f6210e114f41c96020d044739486e10cecfd152",
+      "size_bytes": 1337,
+      "original_sha256": "9bc33fb58b4261a591d81c869f07545da50fe0fb2639c87c8af0a7b36641c5e8",
+      "new_sha256": "9bc33fb58b4261a591d81c869f07545da50fe0fb2639c87c8af0a7b36641c5e8"
+    }
+  ],
+  "verification": [
+    "Before and after: python -m pytest -q tests/test_regularised_bc.py tests/test_regularised_bc_2d.py tests/test_regularised_bc_order.py tests/test_regularised_bc_order3.py -k 'transcription or reconstruction or phase_metric or projection or antisymmetric or third_moment or third_basis or wall_bc_arm_table' -> 29 passed, 16 deselected. Actual CPU reference and moment checks, no new external simulation.",
+    "Both make_round2.py runs completed against the original tracked measurements. Reconstructed summary JSON and three generated PNG files matched byte-for-byte before/after. Restored the original frozen summary; temporary figures remain outside the tracked tree. These are report reproduction checks, not solver campaign reruns.",
+    "2D, R4 and R5 runner --help succeeded. bash -n run_all_r5.sh and Python compileall on the three new trees passed. Full R4/R5, external pylbm and external publishing not run.",
+    "All 46 old Git blobs, new SHA256 and tracked destination paths verified; 16 archive navigation links resolve. Source module AST after removing the respective path-only module docstrings is unchanged. Formal solver imports/call signatures unchanged.",
+    "86 governance tests passed; 226 registry entries, 35 tutorial cases, 33 PDFs, 33 Word manuals; zero hard ledger violations and 16 pre-existing soft violations. Registry --find-asset resolves all moved files. Current main aggregate Ruff failure (3034 findings, 2198 format files, ceilings 3023/2195) exactly unchanged. Independent lint repair #3039 is required; no baseline changes."
+  ],
+  "file_counts": {
+    "moved": 46,
+    "byte_identical": 37,
+    "path_only_edited": 9
+  },
+  "renderer_replay": {
+    "summary_sha256": "ded636360b923bac25068d8d01c6d819e328456770c7a3225d5d4c1893db6da2",
+    "figures": [
+      {
+        "file": "fig1_steady_profiles.png",
+        "sha256": "18735cb0da94fb8a4c4ef8e0092eadc85fc755d559deb4ac9f466747ebe9e046"
+      },
+      {
+        "file": "fig2_stokes_layer.png",
+        "sha256": "93225b56d272957697e51bc64c5d6b10e576cdca7b3bded924ae39d3c1c4e215"
+      },
+      {
+        "file": "fig3_error_ladder.png",
+        "sha256": "91f05d04a9a3565b41bcb7fdf82d2d3130a943071356f7a61a39a5bf85c9b303"
+      }
+    ],
+    "before_after_identical": true
+  },
+  "compatibility_edits": [
+    {
+      "path": "docs/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64.md",
+      "original_sha256": "7204a3803845943e6d6af7718121ce4e03d048ea99b23f2764979696fde2b406",
+      "new_sha256": "624171bc38e22aec1ffa4fe696111641738ccd6c115847733211eb7691a4e4dc"
+    },
+    {
+      "path": "docs/XVAL-LBM-REGULARISED-BC-NONEQ-STRESS-R5.md",
+      "original_sha256": "0e5255e9e25b6a2c2617dc1a9e630c6e24c3a31a6c6f30bcb292e00cea9ee149",
+      "new_sha256": "faac1dff7eeaf30079dc260e22dd8e2549ec560384083247da79632d74eca675"
+    },
+    {
+      "path": "docs/reports/XVAL_LBM_REGULARISED_BC_NONEQ_STRESS.md",
+      "original_sha256": "c345481ed314c5ff1b1eb12eb274733af8f6812676556ae601cdda9dd06ceb41",
+      "new_sha256": "d06126a6118b7443cdb6ecba46c6313e1c83a52281985689912d3117b54a65f9"
+    },
+    {
+      "path": "docs/reports/XVAL_LBM_REGULARISED_BC_ROUND2_AUDIT.md",
+      "original_sha256": "04d1eeeb7f0efadad27b70d61d0c282053463348ff829f36ba2339f33f207b7c",
+      "new_sha256": "98a2fec9b4daa3556fc5c9c8baa604a8a4ecd23f5af5f214babe7d7a21c1fe17"
+    },
+    {
+      "path": "src/tensorlbm/regularised_bc.py",
+      "original_sha256": "19402c4326e7517714e33c0d453fd0144157667d750f7899d2e5902c456766b1",
+      "new_sha256": "59eb4db35074a52d99bb5309ee657c57062f9f4a0693826b6a9b162552e26acf"
+    },
+    {
+      "path": "src/tensorlbm/regularised_bc_2d.py",
+      "original_sha256": "3f1bff66d0b06f2e9ae6d090ff96c88bb2fe0ea9932e9fb83b8595b2c4566814",
+      "new_sha256": "b8265773562d7766448053b37b06095fbf8737cb6825901766de6dce9b836aed"
+    },
+    {
+      "path": "tests/test_regularised_bc.py",
+      "original_sha256": "576efaa337360932b24a1505ae3b4cf23f71533103e538e8270e00f9d1d810a6",
+      "new_sha256": "aa61f9c75c3b3f93a7164955b8e13dfd60cb1b781e093da764a4142f53d19fa6"
+    },
+    {
+      "path": "tests/test_regularised_bc_2d.py",
+      "original_sha256": "de1dd66f390330b142d8a55241f9ee77221f851da1bf87bdcc1c437487a4bddf",
+      "new_sha256": "4d4a463a74b8297c2f8f8ceefde2398c94f84140e0dc890b4f906c734ce1388a"
+    },
+    {
+      "path": "tests/test_regularised_bc_order.py",
+      "original_sha256": "e94a147b57cf57e10074496b1f6b47c76528c785ca77ab95d172938360f692e5",
+      "new_sha256": "1323aa2ce04902c9a49dd1a741affe08dd88d6bf6d48f0ed2a191ea54787220e"
+    },
+    {
+      "path": "tests/test_regularised_bc_order3.py",
+      "original_sha256": "510433234f6420f42642886f7aec2d5ffd83f8c092e110fd90581f67e64a9c7a",
+      "new_sha256": "1ac9b880f4e62c250bc52fa99bd6cb572232a17d103aaa1312ebfcdda58d9b1f"
+    },
+    {
+      "path": "tools/check_repository_layout.py",
+      "original_sha256": "9aca061764e66ecb51e9a14541e9ccd1c17e868970deec02566b899f9c866ee7",
+      "new_sha256": "325787fb1835f7e89f83e1ef4d4c454d7cf2222a886e486b1d10f6f80ee1bb2c"
+    }
+  ]
+}
