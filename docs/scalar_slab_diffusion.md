@@ -34,7 +34,9 @@ Specify radians per lattice step and complex midpoint wall phasors. The
 solver separates transverse Fourier components, solves the sparse linear
 system along x and returns complex populations plus midpoint link transfers.
 It runs on CPU with NumPy, SciPy and PyTorch; multiply transfers by dx/dt
-for flux at unit capacity. Zero frequency requires a fixed wall.
+for flux at unit capacity. For zero frequency with two insulated walls, pass a finite
+`mean_temperature` to fix the spatial mean. Any volumetric source must
+then sum to zero over the lattice.
 
 Run the oscillating slab command with `--periodic-start` to start the
 time march from the real part of those populations. Every grid passes the

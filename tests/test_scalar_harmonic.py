@@ -110,3 +110,48 @@ def test_volume_heat_increment_matches_population_step_and_local_balance(omega):
     torch.testing.assert_close(new, (end * solution.populations).real, rtol=0, atol=2e-14)
     div = solution.x_transfer.diff(dim=1) + solution.y_transfer - solution.y_transfer.roll(1, 0)
     torch.testing.assert_close(2j * math.sin(omega / 2) * solution.scalar + div, source)
+
+
+def test_insulated_balanced_heat_source_converges_with_prescribed_mean(record_property):
+    # Unit square and unit physical diffusivity. The x cosine is Neumann
+    # and the independent y cosine is periodic; both integrate to zero.
+    tau = .9
+    mean = 3.+.25j
+    previous = None
+    for n in (8, 16, 32, 64):
+        dx = 1/n
+        dt = (tau-.5)*dx**2/3
+        x = (torch.arange(n, dtype=torch.float64)+.5)*dx
+        longitudinal = torch.cos(math.pi*x)[None, :]
+        transverse = .4j*torch.cos(2*math.pi*x)[:, None]
+        source = dt*math.pi**2*(longitudinal+4*transverse)
+        sol = solve_harmonic_scalar_slab(n, n, tau, 0., None, None, source=source,
+                                         mean_temperature=mean)
+        error = (sol.scalar-(mean+longitudinal+transverse)).abs().max().item()
+        faces = torch.arange(n+1, dtype=torch.float64)*dx
+        flux_x = math.pi*torch.sin(math.pi*faces)
+        flux_y = .8j*math.pi*torch.sin(2*math.pi*faces[1:])[:, None]
+        flux_error = max((sol.x_transfer*dx/dt-flux_x).abs().max().item(),
+                         (sol.y_transfer*dx/dt-flux_y).abs().max().item())
+        record_property(f"flux_error_{n}_W_per_m2", flux_error)
+        divergence = sol.x_transfer.diff(dim=1) + sol.y_transfer - sol.y_transfer.roll(1, 0)
+        balance = (divergence-source).abs().max().item()
+        record_property(f"field_error_{n}_K", error)
+        record_property(f"max_cell_balance_{n}_K_per_step", balance)
+        assert abs(sol.scalar.mean().item()-mean) < 2e-14
+        assert sol.x_transfer[:, [0, -1]].abs().max().item() == 0.
+        assert balance < 5e-14
+        if previous is not None:
+            assert previous[0]/error > 3.8
+            assert previous[1]/flux_error > 3.8
+        previous = error, flux_error
+    assert error < 4e-5 and flux_error < .002
+
+
+def test_insulated_dc_mean_and_source_compatibility():
+    sol = solve_harmonic_scalar_slab(1, 1, .85, 0., None, None, mean_temperature=2.+1j)
+    assert sol.scalar.item() == pytest.approx(2.+1j)
+    with pytest.raises(ValueError, match="zero net source"):
+        solve_harmonic_scalar_slab(4, 3, .85, 0., None, None, source=1j, mean_temperature=0.)
+    with pytest.raises(ValueError, match="only"):
+        solve_harmonic_scalar_slab(4, 3, .85, .2, None, None, mean_temperature=2.)
