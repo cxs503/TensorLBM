@@ -358,6 +358,12 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
     # Odd multiples of 16 put both probes exactly at kinetic link midpoints.
     probes = torch.tensor([29/32, 31/32], dtype=wave.dtype)
     reference = -capacity*alpha*(torch.cos(probes[:, None]*wave) @ (wave*integrated))
+    # Image solution for a wall step: no cancellation of long Fourier sums
+    # when the initial thermal front is very weak near the far wall.
+    distances = probes[:, None]+2*torch.arange(-4, 5)
+    def step_flux(t):
+        return capacity*math.sqrt(alpha/(math.pi*t))*torch.exp(-distances.square()/(4*alpha*t)).sum(1)
+    flux_reference = torch.stack([step_flux(t)-step_flux(t-shutoff) for t in (start, end)])
     previous_probe_errors = None
     for n in (16, 32, 48, 64, 80):
         dt = 1/n**2
@@ -366,11 +372,19 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
         g = equilibrium_thermal_3d(initial, initial, initial, initial)
         g = apply_bc(g, 1., 0.)
         heat = torch.zeros_like(x[:-1])
-        for step in range(1, round(end/dt)+1):
+        start_step, end_step = round(start/dt), round(end/dt)
+        endpoint_fluxes = []
+        for step in range(1, end_step+1):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), initial, initial, initial, tau)
-            if step > round(start/dt):
+            if step >= start_step:
                 qx, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=1/n, volumetric_heat_capacity=capacity)
-                heat += dt*qx.mean((0, 1))
+                link_flux = qx.mean((0, 1))
+                if step > start_step:
+                    heat += dt*link_flux
+                if step == start_step:
+                    before_start = link_flux
+                if step == start_step+1:
+                    endpoint_fluxes.append(.5*(before_start+link_flux))
             g = apply_bc(stream_thermal_3d(post), float(step*dt < shutoff), 0.)
             if step == round(start/dt):
                 start_field = macroscopic_thermal_3d(g).mean((0, 1))
@@ -395,7 +409,22 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
                 assert previous[0]/error > 3.5 and previous[1]/link_error > 2.5
             previous = error, link_error
         if n in (16, 48, 80):
+            # Kinetic flux is centered half a step before its output time.
+            # One further collision supplies the other half-step sample at end.
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), initial, initial, initial, tau)
+            after_end, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=1/n, volumetric_heat_capacity=capacity)
+            endpoint_fluxes.append(.5*(link_flux+after_end.mean((0, 1))))
             indices = (probes*n).long()
+            endpoint_relative = (torch.stack(endpoint_fluxes)[:, indices]/flux_reference-1).abs()
+            for row, label in enumerate(("start", "end")):
+                for col, numerator in enumerate((29, 31)):
+                    key = f"{label}_x{numerator}_over_32"
+                    record_property(f"{key}_reference_W_m2", flux_reference[row, col].item())
+                    record_property(f"n{n}_{key}_W_m2", endpoint_fluxes[row][indices[col]].item())
+                    record_property(f"n{n}_{key}_relative_error", endpoint_relative[row, col].item())
+            if n == 80:
+                assert endpoint_relative[0].max() < .5 and endpoint_relative[1].max() < .06
+
             assert torch.equal(faces[indices], probes)
             relative = ((heat[indices]-reference)/reference).abs()
             for numerator, computed, target, rel in zip((29, 31), heat[indices], reference, relative):
