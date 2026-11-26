@@ -193,3 +193,52 @@ def test_transient_slab_with_isothermal_and_insulated_walls(record_property):
                 else:
                     assert order > (1.65 if n == 64 else 1.3)
         previous = errors
+
+
+def test_cumulative_link_heat_and_slab_storage(record_property):
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    # Unit-length slab with constant x-wall temperatures, insulated transverse
+    # walls and unit-area reporting. A decaying mode gives nonzero net cooling.
+    tau, capacity, end_time = .8, 2.3, .125
+    alpha = (tau-.5)/4
+    hot, cold = 1.2, .4
+    amplitude = .35
+    previous = None
+    for n in (16, 32, 64):
+        dx, dt = 1/n, 1/n**2
+        x = torch.arange(n+1, dtype=torch.float64)*dx
+        initial = (hot+(cold-hot)*x+amplitude*torch.sin(math.pi*x)).expand(3, 4, -1)
+        zero = torch.zeros_like(initial)
+        g = equilibrium_thermal_3d(initial, zero, zero, zero)
+        heat = torch.zeros_like(x[:-1])
+        faces = x[:-1]+.5*dx
+        worst_cell = worst_slab = 0.
+        for step in range(1, int(end_time/dt)+1):
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
+            qx, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=dx, volumetric_heat_capacity=capacity)
+            heat += dt*qx.mean(dim=(0, 1))
+            g = apply_bc(stream_thermal_3d(post), hot, cold)
+            delta = macroscopic_thermal_3d(g)-initial
+            stored = capacity*dx*delta[..., 1:-1].mean(dim=(0, 1))
+            worst_cell = max(worst_cell, (stored+heat.diff()).abs().max().item())
+            worst_slab = max(worst_slab, abs((stored.sum()-heat[0]+heat[-1]).item()))
+        # Integrate -C*alpha*T_x in time at each face. Integrate the change
+        # in C*T separately in space between the two reservoir-adjacent links.
+        decay_change = math.expm1(-alpha*math.pi**2*end_time)
+        exact_heat = capacity*(alpha*(hot-cold)*end_time
+                               + amplitude*torch.cos(math.pi*faces)*decay_change/math.pi)
+        exact_storage = capacity*amplitude*decay_change*(
+            math.cos(math.pi*faces[0])-math.cos(math.pi*faces[-1]))/math.pi
+        errors = dict(link_heat=(heat-exact_heat).abs().max().item(),
+                      slab_storage=abs(stored.sum().item()-exact_storage))
+        record_property(f"n{n}_max_cell_balance_J_m2", worst_cell)
+        record_property(f"n{n}_max_slab_balance_J_m2", worst_slab)
+        assert max(worst_cell, worst_slab) < 1e-12
+        for name, error in errors.items():
+            record_property(f"n{n}_{name}_error_J_m2", error)
+            if previous is not None:
+                order = math.log2(previous[name]/error)
+                record_property(f"n{n}_{name}_order", order)
+                assert order > 1.8
+        previous = errors
