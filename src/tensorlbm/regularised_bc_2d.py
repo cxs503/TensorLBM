@@ -3,7 +3,7 @@
 This is the TensorLBM port of the regularised boundary condition used by
 joconnor22/LIFE (``src/Grid.cpp::regularisedBC``, Latt et al. 2008).  The
 cross-validation protocol, the upstream snapshot and the reference
-transcription live in ``xval/XVAL-LBM-REG-BC-NEQ-STRESS/``.
+transcription live in ``development/verification/regularised_bc_2d_reference/``.
 
 Algorithm (one pass per boundary node, exactly the upstream data flow):
 

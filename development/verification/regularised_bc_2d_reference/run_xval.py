@@ -14,7 +14,7 @@ Arms (identical BGK kernel, D2Q9, float64, initial state = analytic parabola):
 
 Usage::
 
-    PYTHONPATH=src python3 xval/XVAL-LBM-REG-BC-NEQ-STRESS/run_xval.py
+    PYTHONPATH=src python3 development/verification/regularised_bc_2d_reference/run_xval.py
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ import numpy as np
 import torch
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 

@@ -35,7 +35,7 @@ Experiments
     ``invariant`` third-moment representability of the order-3 map per lattice
 
 Usage
-    PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r5.py --arm ladder
+    PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r5.py --arm ladder
     ... --arm tau | --arm force | --arm osc | --arm invariant | --arm analyse
 
 Each arm merges into ``artifacts_r5/*.json`` so the sweep can be split into

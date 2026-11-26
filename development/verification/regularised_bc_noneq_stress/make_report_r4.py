@@ -1,6 +1,6 @@
 """Render the R4 figures and REPORT_R4.md from the measured artifacts (no hand-typed numbers).
 
-    PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/make_report_r4.py
+    PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/make_report_r4.py
 """
 
 from __future__ import annotations
@@ -131,7 +131,7 @@ def main() -> int:
     A("## relaxation-rate dependence, and D3Q19 physical validation")
     A("")
     A("Anchor `XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC` · arm R4 · "
-      f"commit series on `agent/m21628` · artifacts `xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts_r4/`.")
+      f"commit series on `agent/m21628` · artifacts `development/verification/regularised_bc_noneq_stress/artifacts_r4/`.")
     A("")
     A("### ① 案例介绍")
     A("")
@@ -292,15 +292,15 @@ def main() -> int:
     A("### 复现")
     A("")
     A("```bash")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm L1 --l1-taus 0.8")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm L1 --l1-taus 1.0,1.5 --l1-deltas 2,4,6,8,10")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm L2 --taus 0.55,0.575")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm L2 --taus 0.6,0.7,0.8")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm L2 --taus 1.0,1.2,1.5,2.0")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm L3 --d3 couette:24,couette:32")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm L3 --d3 poiseuille:24,poiseuille:32")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm analyse")
-    A("PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/make_report_r4.py")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm L1 --l1-taus 0.8")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm L1 --l1-taus 1.0,1.5 --l1-deltas 2,4,6,8,10")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm L2 --taus 0.55,0.575")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm L2 --taus 0.6,0.7,0.8")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm L2 --taus 1.0,1.2,1.5,2.0")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm L3 --d3 couette:24,couette:32")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm L3 --d3 poiseuille:24,poiseuille:32")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm analyse")
+    A("PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/make_report_r4.py")
     A("PYTHONPATH=src python -m pytest tests/test_regularised_bc.py tests/test_regularised_bc_order.py -q")
     A("```")
     A("")

@@ -2,10 +2,10 @@
 
 Reads only machine-produced JSON (no hand-typed numbers):
 
-* ``xval/XVAL-LBM-REG-BC-NEQ-STRESS/out/res_h16.json`` / ``res_h32.json``
+* ``development/verification/regularised_bc_2d_reference/out/res_h16.json`` / ``res_h32.json``
   (2D D2Q9 torch port, node-level parity vs the LIFE transcription + analytic
   Poiseuille error ladder),
-* ``xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/artifacts/{steady,
+* ``development/verification/regularised_bc_noneq_stress/artifacts/{steady,
   oscillating,identity}.json`` (1D D3Q19 numpy production module, round 1,
   re-run unchanged in round 2).
 
@@ -24,8 +24,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
-X2D = REPO / "xval" / "XVAL-LBM-REG-BC-NEQ-STRESS" / "out"
+REPO = HERE.parents[2]
+X2D = HERE.parent / "regularised_bc_2d_reference" / "out"
 FIG = HERE / "figures"
 FIG.mkdir(exist_ok=True)
 

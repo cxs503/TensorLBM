@@ -12,7 +12,7 @@ Arms
 
 Usage
 -----
-    PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval.py --arm all
+    PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval.py --arm all
 
 Each arm writes ``artifacts/<arm>.json`` plus a row in ``artifacts/summary.json``;
 nothing is tuned after the fact (thresholds live in PREREG.md and are copied
@@ -29,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm import regularised_bc as rb  # noqa: E402

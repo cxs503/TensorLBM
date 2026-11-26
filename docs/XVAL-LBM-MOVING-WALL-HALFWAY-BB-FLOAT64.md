@@ -1,5 +1,7 @@
 # XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64 — TensorLBM 半程运动壁 bounce-back（float64）与 OSS `pylbm` 交叉对标（第 1 轮）
 
+> Repository migration note: current campaign files are at [development/verification/moving_wall_halfway_float64](../development/verification/moving_wall_halfway_float64/). Original mission paths in the narrative refer to the frozen historical revision. Historical verdicts are not current acceptance.
+
 仓库：TensorLBM｜分支：agent/m17993｜日期：2026-11-13｜预登记：`xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64/predeclared.json`
 
 ## ① 问题 + ref 出处

@@ -64,7 +64,7 @@ def test_matches_oss_scalar_transcription():
     from pathlib import Path
 
     path = Path(__file__).resolve().parents[1] / (
-        "xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval.py"
+        "development/verification/regularised_bc_noneq_stress/run_xval.py"
     )
     spec = importlib.util.spec_from_file_location("xval_runner", path)
     mod = importlib.util.module_from_spec(spec)

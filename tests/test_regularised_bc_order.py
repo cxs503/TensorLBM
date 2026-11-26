@@ -13,7 +13,7 @@ that the "second order" claim is measurable.  The tests below add
 * a 3-D D3Q19 body-force Poiseuille channel against its analytic parabola.
 
 The heavy sweeps (8-point ladder, tau sweep) live in
-``xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py``.
+``development/verification/regularised_bc_noneq_stress/run_xval_r4.py``.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import pytest
 
 from tensorlbm import regularised_bc as rb
 
-XVAL = Path(__file__).resolve().parents[1] / "xval" / "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC"
+XVAL = Path(__file__).resolve().parents[1] / "development" / "verification" / "regularised_bc_noneq_stress"
 D3_NORMALS = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
 
 

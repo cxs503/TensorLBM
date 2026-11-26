@@ -35,7 +35,7 @@ reproduces the artifacts byte for byte.
 
 CLI::
 
-    PYTHONPATH=src python xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_xval_r4.py --arm all
+    PYTHONPATH=src python development/verification/regularised_bc_noneq_stress/run_xval_r4.py --arm all
 """
 
 from __future__ import annotations
