@@ -342,6 +342,7 @@ def test_harmonic_walls_recover_temperature_and_link_flux_phasors(record_propert
 
 
 def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
+    from scipy.optimize import brentq
     from tensorlbm.thermal_common import thermal_link_fluxes_3d
 
     # Difference of delayed unit wall steps in a unit slab, initially at zero.
@@ -364,6 +365,10 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
     def step_flux(t):
         return capacity*math.sqrt(alpha/(math.pi*t))*torch.exp(-distances.square()/(4*alpha*t)).sum(1)
     flux_reference = torch.stack([step_flux(t)-step_flux(t-shutoff) for t in (start, end)])
+    threshold = 1e-8  # W/m², on the rising signal within the cooling window.
+    arrival_reference = [brentq(lambda t: (step_flux(t)-step_flux(t-shutoff))[col].item()-threshold,
+                                start, end, xtol=1e-14) for col in range(len(probes))]
+    previous_arrival_errors = None
     previous_probe_errors = None
     for n in (16, 32, 48, 64, 80):
         dt = 1/n**2
@@ -374,11 +379,16 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
         heat = torch.zeros_like(x[:-1])
         start_step, end_step = round(start/dt), round(end/dt)
         endpoint_fluxes = []
+        fixed_probes = n in (16, 48, 80)
+        indices = (probes*n).long()
+        samples = []
         for step in range(1, end_step+1):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), initial, initial, initial, tau)
             if step >= start_step:
                 qx, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=1/n, volumetric_heat_capacity=capacity)
                 link_flux = qx.mean((0, 1))
+                if fixed_probes:
+                    samples.append(link_flux[indices])
                 if step > start_step:
                     heat += dt*link_flux
                 if step == start_step:
@@ -408,13 +418,30 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
             if previous is not None:
                 assert previous[0]/error > 3.5 and previous[1]/link_error > 2.5
             previous = error, link_error
-        if n in (16, 48, 80):
+        if fixed_probes:
             # Kinetic flux is centered half a step before its output time.
             # One further collision supplies the other half-step sample at end.
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), initial, initial, initial, tau)
             after_end, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=1/n, volumetric_heat_capacity=capacity)
             endpoint_fluxes.append(.5*(link_flux+after_end.mean((0, 1))))
-            indices = (probes*n).long()
+            history = torch.stack(samples)
+            arrival_errors = []
+            for col, numerator in enumerate((29, 31)):
+                signal = history[:, col]
+                crossings = torch.where((signal[:-1] < threshold) & (signal[1:] >= threshold))[0]
+                assert signal[0] < threshold and len(crossings) == 1
+                j = crossings.item()
+                fraction = ((threshold-signal[j])/(signal[j+1]-signal[j])).item()
+                arrival = (start_step+j-.5+fraction)*dt
+                timing_error = abs(arrival-arrival_reference[col])
+                key = f"x{numerator}_over_32_threshold"
+                record_property(f"{key}_reference_s", arrival_reference[col])
+                record_property(f"n{n}_{key}_s", arrival)
+                record_property(f"n{n}_{key}_error_s", timing_error)
+                arrival_errors.append(timing_error)
+            if previous_arrival_errors is not None:
+                assert all(fine < coarse for fine, coarse in zip(arrival_errors, previous_arrival_errors))
+            previous_arrival_errors = arrival_errors
             endpoint_relative = (torch.stack(endpoint_fluxes)[:, indices]/flux_reference-1).abs()
             for row, label in enumerate(("start", "end")):
                 for col, numerator in enumerate((29, 31)):
