@@ -1,7 +1,7 @@
 """Regression guard for XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING.
 
 The cross-validation verdict lives in
-``xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/analysis.json`` (written by
+``development/verification/mcmp_velocity_mixing/artifacts/analysis.json`` (written by
 ``analyze.py`` from ``result.json``).  Re-running the full matrix takes ~10
 minutes, so this test does not re-simulate: it checks that the *recorded*
 verdict still satisfies the predeclared decision structure, i.e. that the four
@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-XVAL = Path(__file__).resolve().parents[2] / "xval" / "XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING"
+XVAL = Path(__file__).resolve().parents[2] / "development" / "verification" / "mcmp_velocity_mixing"
 ART = XVAL / "artifacts"
 
 

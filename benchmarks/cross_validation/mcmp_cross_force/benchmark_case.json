@@ -1,0 +1,56 @@
+{
+  "scope": "Two distinct historical MCMP cross-force protocols (symbol/spectral/OSS and two-component cross-force), grouped for discovery; preserve each independent result and historical criteria. No new scientific verdict is established by this archive migration.",
+  "criteria": {
+    "symbol_spectral_operator": "Original gates and individual residuals in the published report and xval_results.json verdict; no consolidated fresh criterion.",
+    "two_component_cross_force": {
+      "accept_pct": 15.0,
+      "oss_identity_max": 1e-12,
+      "symbol_identity_max": 1e-10,
+      "uniform_nil_max": 1e-14,
+      "symmetry_equivariance_max": 1e-12,
+      "momentum_edm_max": 1e-13,
+      "mutation_min": 15.0,
+      "resolved_min_cells_per_wavelength": 8.0
+    }
+  },
+  "source": [
+    "development/verification/mcmp_cross_force_operator/arms.py",
+    "development/verification/mcmp_cross_force_operator/make_report_md.py",
+    "development/verification/mcmp_cross_force_operator/run_xval.py",
+    "development/verification/mcmp_cross_force_operator/scan_stability.py",
+    "development/verification/mcmp_two_component_cross_force/run_xval.py",
+    "development/verification/mcmp_two_component_cross_force/xval_lib.py",
+    "development/verification/mcmp_two_component_cross_force/make_report.py",
+    "src/tensorlbm/multiphase.py"
+  ],
+  "config": [
+    "development/verification/mcmp_two_component_cross_force/predeclared.json",
+    "development/verification/mcmp_cross_force_operator/run_xval.py"
+  ],
+  "documentation": [
+    "docs/XVAL_LBM_MCMP_CROSS_FORCE_OPERATOR_SYMBOL_SPECTRAL_OSS.md",
+    "development/verification/mcmp_two_component_cross_force/REPORT.md",
+    "docs/AUDIT_m18101_VERDICT.md",
+    "docs/board_audit/m18219/AUDIT_M18126.md",
+    "development/audit/xval_mcmp_cross_force_m18289/AUDIT_M18289.md"
+  ],
+  "reference_files": [
+    "development/audit/xval_mcmp_cross_force_m18289/refs/operators.py",
+    "development/verification/mcmp_two_component_cross_force/xval_lib.py",
+    "development/verification/mcmp_cross_force_operator/arms.py"
+  ],
+  "results": [
+    "development/verification/mcmp_cross_force_operator/artifacts/xval_results.json",
+    "development/verification/mcmp_two_component_cross_force/artifacts/summary.json",
+    "development/verification/mcmp_two_component_cross_force/artifacts/slab_cases.jsonl"
+  ],
+  "evidence": [
+    "development/verification/mcmp_cross_force_operator/artifacts/xval_profiles.npz",
+    "development/verification/mcmp_two_component_cross_force/artifacts/fields.npz",
+    "development/verification/mcmp_cross_force_operator/figures/fig1_gain.png",
+    "development/verification/mcmp_cross_force_operator/figures/fig2_equilibrium.png",
+    "development/verification/mcmp_cross_force_operator/figures/fig3_invariants.png",
+    "development/verification/mcmp_two_component_cross_force/artifacts/fig_xval.png",
+    "docs/architecture/migrations/mcmp-force-velocity-xval-2026-11-27.json"
+  ]
+}

@@ -1,7 +1,7 @@
 # XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING — cross-validation against `sorush-khajepor/listLBM`
 
 Round 1 · open-source cross-validation · anchor `XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING`
-Repository TensorLBM · branch `agent/m18328` · design frozen in `xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/predeclared.json`
+Repository TensorLBM · branch `agent/m18328` · design frozen in `development/verification/mcmp_velocity_mixing/predeclared.json`
 
 **Decision (predeclared, answered below): do not port the OSS mixing rule — neither of its two
 readings survives the comparison (one is 136 % off the analytic two-layer Poiseuille solution, the
@@ -59,7 +59,7 @@ respects and conflating them would make the verdict unattributable:
 * the **shift coefficient** (ours `τ F/ρ`, the OSS "no source term" `1·F/ρ`; for the velocity-shift
   family the momentum delivered per step is `s·F/τ`, so `s=1` coincides with ours only at `τ=1`).
 
-Seven arms (`xval/.../velocity_mixing_arms.py`), each a pure function of the populations:
+Seven arms (`development/verification/mcmp_velocity_mixing/velocity_mixing_arms.py`), each a pure function of the populations:
 
 | arm | mixing | shift | guard |
 |---|---|---|---|
@@ -80,7 +80,7 @@ Workloads:
   current, coexistence densities, Young–Laplace `σ = Δp·R` with `p = cs²ρ_tot + G_12 cs² ρ_1ρ_2`.
 * **W2 stratified two-layer Poiseuille** (ny=25/41, X-periodic, no-slip rows 0 and ny−1, mirror wall,
   `G_x = 5e-5`, `G_12 = −2.5/-2.0`, 12 000 steps) against the closed-form two-layer solution of
-  `cases/mcmp_stratified_poiseuille/analytic.py` with `H = ny−2` and mixture-rule viscosities.
+  `benchmarks/verified/mcmp_stratified_poiseuille/analytic.py` with `H = ny−2` and mixture-rule viscosities.
 * **W3 momentum ledger** (n=48, periodic, no body force, 400 steps) — the discriminator of H2.
 * **W4 depleted-cell guard** — one collision on a field with a 2×2 cell at `ρ_1=1e-8`.
 

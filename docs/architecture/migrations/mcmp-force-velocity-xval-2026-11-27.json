@@ -1,0 +1,480 @@
+{
+  "scope": "Archive three complete legacy MCMP cross-validation directories and restore nine missing derived figure files from existing committed result data.",
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "prerequisite": "#3048 (root retirement and existing lint regression); not yet merged.",
+  "root_directories_before": [
+    ".github",
+    "BB",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "root_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 39
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP",
+    "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE",
+    "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP/arms.py",
+      "new_path": "development/verification/mcmp_cross_force_operator/arms.py",
+      "git_mode": "100644",
+      "original_git_blob": "b5bea36fb9e9b09a46ce1fbeac4f22e26237999d",
+      "original_sha256": "d4f97e9db9ae9ebea4164c44d3f5416b933f5ad7eb8a02c63e721680c4907612",
+      "original_size_bytes": 23356,
+      "current_sha256": "9583b5a4aa11c43e073a85d5f15e6d5dded2ecf075814f3b51c85f8d134cc077",
+      "current_size_bytes": 23373,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP/artifacts/xval_profiles.npz",
+      "new_path": "development/verification/mcmp_cross_force_operator/artifacts/xval_profiles.npz",
+      "git_mode": "100644",
+      "original_git_blob": "ff3f80cb97ba8dce573abb1c95c66f605a6647cf",
+      "original_sha256": "eee2903dc3ef273f0e2a1167bc28c4d7334fb1236ac3a2ee7737e268904b38e1",
+      "original_size_bytes": 39610,
+      "current_sha256": "eee2903dc3ef273f0e2a1167bc28c4d7334fb1236ac3a2ee7737e268904b38e1",
+      "current_size_bytes": 39610,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP/artifacts/xval_results.json",
+      "new_path": "development/verification/mcmp_cross_force_operator/artifacts/xval_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "cb7b96ff6b1bcb94f13f2b4f534cdf90722c261c",
+      "original_sha256": "8a5fd960fc2f07c9f7150398aca81239b8dea2fbcb005dcbc25f02f92e3699c0",
+      "original_size_bytes": 14178,
+      "current_sha256": "8a5fd960fc2f07c9f7150398aca81239b8dea2fbcb005dcbc25f02f92e3699c0",
+      "current_size_bytes": 14178,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP/make_report_md.py",
+      "new_path": "development/verification/mcmp_cross_force_operator/make_report_md.py",
+      "git_mode": "100644",
+      "original_git_blob": "c9124d911ec1f59f26feaae134e3262c9fd20a78",
+      "original_sha256": "cba66ead60331859f0df0134ad63f000b8105aba0e54212023b9759fd785efd6",
+      "original_size_bytes": 10557,
+      "current_sha256": "217ec3bf118886b395965406974a44034f016a516b7a548c7aafeb11e360b3da",
+      "current_size_bytes": 10723,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP/run_xval.py",
+      "new_path": "development/verification/mcmp_cross_force_operator/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "63a11e094f8cd11a44b944cff098cd4dd006986f",
+      "original_sha256": "7ac71c17f7835c2978a2eb55155c184612a372af05aeb08bba4644fc32041d90",
+      "original_size_bytes": 12631,
+      "current_sha256": "36c730677e085a39505255628121702cd115c4bf9df29fa10b387d1828165a8a",
+      "current_size_bytes": 12648,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP/scan_stability.py",
+      "new_path": "development/verification/mcmp_cross_force_operator/scan_stability.py",
+      "git_mode": "100644",
+      "original_git_blob": "f19cea107b7895db5ef62171d1af5cf8be52cf26",
+      "original_sha256": "f4758b5fa84c8628fc2e6dbc1828034c7de569a4a1713fc57fc605d16b7600a3",
+      "original_size_bytes": 2311,
+      "current_sha256": "f4758b5fa84c8628fc2e6dbc1828034c7de569a4a1713fc57fc605d16b7600a3",
+      "current_size_bytes": 2311,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/REPORT.md",
+      "new_path": "development/verification/mcmp_two_component_cross_force/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "037cca2b5247dcb09198ec65ab8ef9a057adb0c7",
+      "original_sha256": "f0af4880bb1693d6b0b8f87ad85bfa2b2c23008114f011c9d7bd4ba97bae99bd",
+      "original_size_bytes": 14144,
+      "current_sha256": "22056773cd377fa98c8efe285214468a93ef71b9019d6b7d6b671f273a346eff",
+      "current_size_bytes": 14268,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/artifacts/fields.npz",
+      "new_path": "development/verification/mcmp_two_component_cross_force/artifacts/fields.npz",
+      "git_mode": "100644",
+      "original_git_blob": "5706a1b8599cd24a21814cf2adab8a27b74b545b",
+      "original_sha256": "bd40e59c7dfeadba9c0b455e83b580878de8e8975233f42d9ab0fdab3b732ae1",
+      "original_size_bytes": 7180,
+      "current_sha256": "bd40e59c7dfeadba9c0b455e83b580878de8e8975233f42d9ab0fdab3b732ae1",
+      "current_size_bytes": 7180,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/artifacts/slab_cases.jsonl",
+      "new_path": "development/verification/mcmp_two_component_cross_force/artifacts/slab_cases.jsonl",
+      "git_mode": "100644",
+      "original_git_blob": "3c164fa07f68b277e366b0bdb10175a132948509",
+      "original_sha256": "b2567174264c3400afaf76b6f974e76a6c2629eb2e2912bf3aff0b46d581ddfd",
+      "original_size_bytes": 18990,
+      "current_sha256": "b2567174264c3400afaf76b6f974e76a6c2629eb2e2912bf3aff0b46d581ddfd",
+      "current_size_bytes": 18990,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/artifacts/summary.json",
+      "new_path": "development/verification/mcmp_two_component_cross_force/artifacts/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "87736b46a0de15dc0a38bf90cc374aab708de53d",
+      "original_sha256": "f4aa4627aca3fb0b8467374a0c8ee0fee799d732d2b3c0e8aba4453e211df520",
+      "original_size_bytes": 50033,
+      "current_sha256": "f4aa4627aca3fb0b8467374a0c8ee0fee799d732d2b3c0e8aba4453e211df520",
+      "current_size_bytes": 50033,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/make_report.py",
+      "new_path": "development/verification/mcmp_two_component_cross_force/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "b9757b16e7f80e775dd9154655bee8b13d815e6e",
+      "original_sha256": "0c83318e039f582ea3a92a51a19a482d5779442f3c82fa7e2b2c4716c8aa9939",
+      "original_size_bytes": 22057,
+      "current_sha256": "5e2216f220a18a4db9355578df30664010ba6d1bdde3b9385def523199c3245c",
+      "current_size_bytes": 22181,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/predeclared.json",
+      "new_path": "development/verification/mcmp_two_component_cross_force/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "d82fee1a6c92647f04382a5dec7cd8af46b4d52a",
+      "original_sha256": "c3f4fcf2ef6e8038f61a198313bc31da8c148e4a9f7ff6059070fc3bf0b84363",
+      "original_size_bytes": 8194,
+      "current_sha256": "c3f4fcf2ef6e8038f61a198313bc31da8c148e4a9f7ff6059070fc3bf0b84363",
+      "current_size_bytes": 8194,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/run_xval.py",
+      "new_path": "development/verification/mcmp_two_component_cross_force/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "f47dad9d92b78a0928c29797db806529fbe18b7a",
+      "original_sha256": "fcd3871848cac25d29e5c59998a755f54ab0860ea3b1b11f883de574431626ac",
+      "original_size_bytes": 22582,
+      "current_sha256": "fcd3871848cac25d29e5c59998a755f54ab0860ea3b1b11f883de574431626ac",
+      "current_size_bytes": 22582,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/xval_lib.py",
+      "new_path": "development/verification/mcmp_two_component_cross_force/xval_lib.py",
+      "git_mode": "100644",
+      "original_git_blob": "84c4b1c310f85d10104b518f8b8b8d2eecce1e3e",
+      "original_sha256": "8dfd766de6067b4c6baa1cd1603c16a1959f0d0b5ee54edab445a059b8357739",
+      "original_size_bytes": 6890,
+      "current_sha256": "8dfd766de6067b4c6baa1cd1603c16a1959f0d0b5ee54edab445a059b8357739",
+      "current_size_bytes": 6890,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/REPORT.md",
+      "new_path": "development/verification/mcmp_velocity_mixing/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "9149c181ebd21393daf6c2f3f56cd046397a7841",
+      "original_sha256": "91cde6df2013c57417d00dbae4c3d4729e702cdda1c96c10293686ccec70d491",
+      "original_size_bytes": 17727,
+      "current_sha256": "829b39cfc430ee165991a426cc9374315d5bc4616dd2da40cf62b6035173db6f",
+      "current_size_bytes": 17779,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/analyze.py",
+      "new_path": "development/verification/mcmp_velocity_mixing/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "4bb3c7c9d9d31b928ac5effe0afb88b0663e1d26",
+      "original_sha256": "110ac27a183ca4e96eebd1c631cab5ce8238030824ff4da83cd4c23d3bb26e57",
+      "original_size_bytes": 24821,
+      "current_sha256": "1e0e5ca972cd731a6112b94cb19dce6e982b84e3f63daa2c710845d48b1657ba",
+      "current_size_bytes": 24839,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/analysis.json",
+      "new_path": "development/verification/mcmp_velocity_mixing/artifacts/analysis.json",
+      "git_mode": "100644",
+      "original_git_blob": "46ffa83a1e8d9dda9ecbb14ba3965eaa319212e1",
+      "original_sha256": "323c2bfcf4ed68de5960bf1aa705d5bc91b6905751ab5beaa3af7a817bb3f81e",
+      "original_size_bytes": 2948,
+      "current_sha256": "323c2bfcf4ed68de5960bf1aa705d5bc91b6905751ab5beaa3af7a817bb3f81e",
+      "current_size_bytes": 2948,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/part_W1.json",
+      "new_path": "development/verification/mcmp_velocity_mixing/artifacts/part_W1.json",
+      "git_mode": "100644",
+      "original_git_blob": "c046e06c96f48723102f4ec52444f72cf1285717",
+      "original_sha256": "d0e051e35d3f370c965dd46f5e7ebab2d79ff42168b41db7f59fd5109a3f194a",
+      "original_size_bytes": 126738,
+      "current_sha256": "d0e051e35d3f370c965dd46f5e7ebab2d79ff42168b41db7f59fd5109a3f194a",
+      "current_size_bytes": 126738,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/part_W2.json",
+      "new_path": "development/verification/mcmp_velocity_mixing/artifacts/part_W2.json",
+      "git_mode": "100644",
+      "original_git_blob": "0a25709faaca0ae8b7764646a34ff9054d12fdaf",
+      "original_sha256": "22bda9fc34f802f20ac8f29097c3572368e874d32ca3adee14f8d7ea99cb1260",
+      "original_size_bytes": 23938,
+      "current_sha256": "22bda9fc34f802f20ac8f29097c3572368e874d32ca3adee14f8d7ea99cb1260",
+      "current_size_bytes": 23938,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/part_W3.json",
+      "new_path": "development/verification/mcmp_velocity_mixing/artifacts/part_W3.json",
+      "git_mode": "100644",
+      "original_git_blob": "808fca86b69555e259550f0b4e3a89884614f702",
+      "original_sha256": "d7435fd7a9da4c6c1e703e057c47846b5ce56ff3bda39e201573323f448705c6",
+      "original_size_bytes": 7406,
+      "current_sha256": "d7435fd7a9da4c6c1e703e057c47846b5ce56ff3bda39e201573323f448705c6",
+      "current_size_bytes": 7406,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/result.json",
+      "new_path": "development/verification/mcmp_velocity_mixing/artifacts/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "2d0c6ed4994add69bd4b19372ef45f8a2a1b6d08",
+      "original_sha256": "0a3e4748e0a133b7bfc515b7440b97c3c5ef8246d8e8446cb25cc686a7b9a7eb",
+      "original_size_bytes": 1259238,
+      "current_sha256": "0a3e4748e0a133b7bfc515b7440b97c3c5ef8246d8e8446cb25cc686a7b9a7eb",
+      "current_size_bytes": 1259238,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/table.csv",
+      "new_path": "development/verification/mcmp_velocity_mixing/artifacts/table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "722f8f83a59370000013f24c8282b7761a82951c",
+      "original_sha256": "be0abc4a4e42c0bc6639843f46d76854f77b125b1efb49347e4addb68331163f",
+      "original_size_bytes": 3654,
+      "current_sha256": "be0abc4a4e42c0bc6639843f46d76854f77b125b1efb49347e4addb68331163f",
+      "current_size_bytes": 3654,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/artifacts/tables.md",
+      "new_path": "development/verification/mcmp_velocity_mixing/artifacts/tables.md",
+      "git_mode": "100644",
+      "original_git_blob": "c75e238f625af15968bcb7f5eb7d60181d726368",
+      "original_sha256": "bcea493dc5a2da500a052e28d1748bbdec7a0970d23e56f6c23dfc225a404c6c",
+      "original_size_bytes": 7094,
+      "current_sha256": "bcea493dc5a2da500a052e28d1748bbdec7a0970d23e56f6c23dfc225a404c6c",
+      "current_size_bytes": 7094,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/predeclared.json",
+      "new_path": "development/verification/mcmp_velocity_mixing/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "41a9486d187c071ea5868432d76f02f4ad989ae5",
+      "original_sha256": "c7e4ba699fa549742b863113d232ec20bc5bdbfe94da13f3d6acf666313ce60f",
+      "original_size_bytes": 12208,
+      "current_sha256": "c7e4ba699fa549742b863113d232ec20bc5bdbfe94da13f3d6acf666313ce60f",
+      "current_size_bytes": 12208,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/run_xval.py",
+      "new_path": "development/verification/mcmp_velocity_mixing/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "15403c1c3e64f70d51247ee6ac6a0c1ca72017cf",
+      "original_sha256": "488543269d476d85b8c2f76526088a09a1b53438c5f807b2bd7e21e7b7666197",
+      "original_size_bytes": 9682,
+      "current_sha256": "3f63ed36ec22c7a5631c8854aafbccd8a7bc6cb4eed637600d93db64f919f0fa",
+      "current_size_bytes": 9686,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/velocity_mixing_arms.py",
+      "new_path": "development/verification/mcmp_velocity_mixing/velocity_mixing_arms.py",
+      "git_mode": "100644",
+      "original_git_blob": "4525a99da3acb78b7fed73848a0fb4ac23846f21",
+      "original_sha256": "336df1408d97f89b17d25df52d019f84630da548b3f187dd8f5f26515d6b34b9",
+      "original_size_bytes": 24374,
+      "current_sha256": "336df1408d97f89b17d25df52d019f84630da548b3f187dd8f5f26515d6b34b9",
+      "current_size_bytes": 24374,
+      "byte_identical": true
+    }
+  ],
+  "updated_consumers": [
+    {
+      "path": "docs/XVAL_LBM_MCMP_CROSS_FORCE_OPERATOR_SYMBOL_SPECTRAL_OSS.md",
+      "original_sha256": "b83eda32e693f419ea039dafa2f5d4324bb9cfb3ec166d1fdc938236b944b760",
+      "current_sha256": "9088a4a9efc705f156ceeb08c9b45d033b25377736f32c7206f2219d7b6d49ab",
+      "reason": "Only active path updates; existing thresholds and checks preserved."
+    },
+    {
+      "path": "tests/test_xval_mcmp_cross_force_operator.py",
+      "original_sha256": "9a96ffcd171b5f157268c4d8c588e70ec71bfe1075052da1806a93320055629c",
+      "current_sha256": "4608e5d0d7dadbac9a849246416dc75b247488c75c47004b4a8212dfa1937950",
+      "reason": "Only active path updates; existing thresholds and checks preserved."
+    },
+    {
+      "path": "tests/test_xval_mcmp_cross_force.py",
+      "original_sha256": "42380f2bdb8fa0b29692b4137ac0096454ca65be51ca07c0e8bc8c813780a9f1",
+      "current_sha256": "33c58b39b9cf299d8971fb61089dffc841079c084282200392581e913d1e1aa3",
+      "reason": "Only active path updates; existing thresholds and checks preserved."
+    },
+    {
+      "path": "tests/xval/test_mcmp_velocity_mixing_xval.py",
+      "original_sha256": "ffa41ce755848926204d88098687d529c21c4a1f483360d614d5480118603292",
+      "current_sha256": "f14583ef0df09bcd24da999906eed4fc65e2edd6c68ae86365444fbebccf4469",
+      "reason": "Only active path updates; existing thresholds and checks preserved."
+    }
+  ],
+  "dependencies": {
+    "canonical_analytic": {
+      "path": "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py",
+      "old_path": "cases/mcmp_stratified_poiseuille/analytic.py",
+      "old_commit": "1e80de6f87308a5cd856219983dd69495c2f4a00",
+      "old_sha256": "25f6ce4387b6f25c15b0b17838f37939233ca464a8828b6f19cc2781279cafd8",
+      "current_sha256": "add2a6a1e65e5e7ea60b2b3ae1b905ef1104f0f40f979534748ec1c680f57bc6",
+      "verification": "Retrieved old Git object; diff is solely a docstring path change."
+    },
+    "frozen_operator_reference": {
+      "path": "development/audit/xval_mcmp_cross_force_m18289/refs/operators.py",
+      "sha256": "bcb03ce105513c1012a19707dac702b23c6ffcb72eff771587857a7030ea245c",
+      "verification": "Existing audit source unchanged. Relative audit lookup now resolves to development/audit from the relocated runner."
+    },
+    "historical_external_references": "Audit reports, SQL, frozen manifests and external /srv/tensor mission paths are historical provenance, not rewritten; external mission runner was not executed."
+  },
+  "registry": [
+    "benchmarks/cross_validation/mcmp_cross_force/benchmark_case.json",
+    "benchmarks/cross_validation/mcmp_velocity_mixing/benchmark_case.json"
+  ],
+  "restored_derived_figures": [
+    {
+      "path": "development/verification/mcmp_cross_force_operator/figures/fig1_gain.png",
+      "sha256": "b5c10ffb878b4545d4c8be812e46749ebbe90f0f4693cb9398a3e49bf13dffc1",
+      "renderer": "development/verification/mcmp_cross_force_operator/run_xval.py::_figures",
+      "inputs": {
+        "development/verification/mcmp_cross_force_operator/artifacts/xval_results.json": "8a5fd960fc2f07c9f7150398aca81239b8dea2fbcb005dcbc25f02f92e3699c0",
+        "development/verification/mcmp_cross_force_operator/artifacts/xval_profiles.npz": "eee2903dc3ef273f0e2a1167bc28c4d7334fb1236ac3a2ee7737e268904b38e1"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_cross_force_operator/figures/fig2_equilibrium.png",
+      "sha256": "376216d33613744e8b4b1b51f1cd659e4fc02daf0b2e6f980bea93ef4c88cc70",
+      "renderer": "development/verification/mcmp_cross_force_operator/run_xval.py::_figures",
+      "inputs": {
+        "development/verification/mcmp_cross_force_operator/artifacts/xval_results.json": "8a5fd960fc2f07c9f7150398aca81239b8dea2fbcb005dcbc25f02f92e3699c0",
+        "development/verification/mcmp_cross_force_operator/artifacts/xval_profiles.npz": "eee2903dc3ef273f0e2a1167bc28c4d7334fb1236ac3a2ee7737e268904b38e1"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_cross_force_operator/figures/fig3_invariants.png",
+      "sha256": "5bbee8b6b0d000ba048aa8fd775089f371384d1e0f25b61ee312951f63f6bb7d",
+      "renderer": "development/verification/mcmp_cross_force_operator/run_xval.py::_figures",
+      "inputs": {
+        "development/verification/mcmp_cross_force_operator/artifacts/xval_results.json": "8a5fd960fc2f07c9f7150398aca81239b8dea2fbcb005dcbc25f02f92e3699c0",
+        "development/verification/mcmp_cross_force_operator/artifacts/xval_profiles.npz": "eee2903dc3ef273f0e2a1167bc28c4d7334fb1236ac3a2ee7737e268904b38e1"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_two_component_cross_force/artifacts/fig_xval.png",
+      "sha256": "cebcff06f2436b63abec6bf20c6009c68f26e8b3d0bb26be16c5b2e02fdbbce9",
+      "renderer": "development/verification/mcmp_two_component_cross_force/make_report.py",
+      "inputs": {
+        "development/verification/mcmp_two_component_cross_force/artifacts/summary.json": "f4aa4627aca3fb0b8467374a0c8ee0fee799d732d2b3c0e8aba4453e211df520",
+        "development/verification/mcmp_two_component_cross_force/artifacts/fields.npz": "bd40e59c7dfeadba9c0b455e83b580878de8e8975233f42d9ab0fdab3b732ae1",
+        "development/verification/mcmp_two_component_cross_force/artifacts/slab_cases.jsonl": "b2567174264c3400afaf76b6f974e76a6c2629eb2e2912bf3aff0b46d581ddfd"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_velocity_mixing/figures/fig1_deviation_bars.png",
+      "sha256": "c45c9d8f43c3ae5813da0b5539083d6df53b0cd2e86c67faa3c492e8c687a133",
+      "renderer": "development/verification/mcmp_velocity_mixing/analyze.py",
+      "inputs": {
+        "development/verification/mcmp_velocity_mixing/artifacts/result.json": "0a3e4748e0a133b7bfc515b7440b97c3c5ef8246d8e8446cb25cc686a7b9a7eb",
+        "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py": "add2a6a1e65e5e7ea60b2b3ae1b905ef1104f0f40f979534748ec1c680f57bc6"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_velocity_mixing/figures/fig2_droplet_spurious.png",
+      "sha256": "352ea649534c6bbe88f4f6ac1bb64b27e9d2594291af3abb9d95ff2f7ee1ad7c",
+      "renderer": "development/verification/mcmp_velocity_mixing/analyze.py",
+      "inputs": {
+        "development/verification/mcmp_velocity_mixing/artifacts/result.json": "0a3e4748e0a133b7bfc515b7440b97c3c5ef8246d8e8446cb25cc686a7b9a7eb",
+        "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py": "add2a6a1e65e5e7ea60b2b3ae1b905ef1104f0f40f979534748ec1c680f57bc6"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_velocity_mixing/figures/fig3_momentum_ledger.png",
+      "sha256": "7f4decd1eb0f222fa60c5f8aa4f7c68cc78bcc3dc2b60b9a4b0475a8608e7314",
+      "renderer": "development/verification/mcmp_velocity_mixing/analyze.py",
+      "inputs": {
+        "development/verification/mcmp_velocity_mixing/artifacts/result.json": "0a3e4748e0a133b7bfc515b7440b97c3c5ef8246d8e8446cb25cc686a7b9a7eb",
+        "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py": "add2a6a1e65e5e7ea60b2b3ae1b905ef1104f0f40f979534748ec1c680f57bc6"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_velocity_mixing/figures/fig4_profile_primary.png",
+      "sha256": "bf2206c0c62cfbf7138b5289d36ced14b6a9c6f4ab983ffab144d322f8cb75c0",
+      "renderer": "development/verification/mcmp_velocity_mixing/analyze.py",
+      "inputs": {
+        "development/verification/mcmp_velocity_mixing/artifacts/result.json": "0a3e4748e0a133b7bfc515b7440b97c3c5ef8246d8e8446cb25cc686a7b9a7eb",
+        "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py": "add2a6a1e65e5e7ea60b2b3ae1b905ef1104f0f40f979534748ec1c680f57bc6"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    },
+    {
+      "path": "development/verification/mcmp_velocity_mixing/figures/fig5_profile_shift_factor.png",
+      "sha256": "0aac401259808475fd0e4bc9316e30cff6d3de53cd824ac1e51ca6a22b2d397a",
+      "renderer": "development/verification/mcmp_velocity_mixing/analyze.py",
+      "inputs": {
+        "development/verification/mcmp_velocity_mixing/artifacts/result.json": "0a3e4748e0a133b7bfc515b7440b97c3c5ef8246d8e8446cb25cc686a7b9a7eb",
+        "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py": "add2a6a1e65e5e7ea60b2b3ae1b905ef1104f0f40f979534748ec1c680f57bc6"
+      },
+      "verification": "Actual before/after render byte-identical; original recorded result tables unchanged."
+    }
+  ],
+  "validation": {
+    "baseline": "17 cross-force tests passed; full targeted group 22 passed and 1 failed because missing velocity figures. Existing analytic path also stale.",
+    "after": "23 targeted tests passed with real CPU runtime (Triton unavailable; native CI still required).",
+    "offline_render": "All 9 figures byte-identical before/after relocation. Velocity analysis.json, table.csv, tables.md match original committed bytes; both generated reports identical except the declared paths.",
+    "current_scientific_acceptance": "not_evaluated",
+    "science_replay": "not run; offline figure rendering is not new solver execution."
+  }
+}

@@ -72,9 +72,9 @@ D2Q9 对称模板 ⇒ 前向 gather 与后向 gather 代数等价，因此与 OS
 
 ### ④ 结果图
 
-- `figures/fig1_gain.png`：算符增益 vs 波数（数值 vs 闭式 `1-k²/6` vs 连续 cs²），右图为截断误差与 3%/15% 门的交点。
-- `figures/fig2_equilibrium.png`：ρ1−ρ2 场量云图 + y 平均界面剖面 + 两种 EOS 符号下的压力剖面（只有导出式在平界面上为常数）。
-- `figures/fig3_invariants.png`：全部不变量残差对 3%/15% 门的条形图。
+- `development/verification/mcmp_cross_force_operator/figures/fig1_gain.png`：算符增益 vs 波数（数值 vs 闭式 `1-k²/6` vs 连续 cs²），右图为截断误差与 3%/15% 门的交点。
+- `development/verification/mcmp_cross_force_operator/figures/fig2_equilibrium.png`：ρ1−ρ2 场量云图 + y 平均界面剖面 + 两种 EOS 符号下的压力剖面（只有导出式在平界面上为常数）。
+- `development/verification/mcmp_cross_force_operator/figures/fig3_invariants.png`：全部不变量残差对 3%/15% 门的条形图。
 
 ### ⑤ 注意点
 
@@ -105,7 +105,7 @@ D2Q9 对称模板 ⇒ 前向 gather 与后向 gather 代数等价，因此与 OS
 ### 复现
 
 ```
-cd xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP
+cd development/verification/mcmp_cross_force_operator
 PYTHONPATH=<repo>/src python run_xval.py --n 96 --steps 12000
 PYTHONPATH=<repo>/src python -m pytest tests/test_xval_mcmp_cross_force_operator.py -q
 ```

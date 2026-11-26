@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-XV = ROOT / "xval" / "XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE"
+XV = ROOT / "development" / "verification" / "mcmp_two_component_cross_force"
 sys.path.insert(0, str(XV))
 sys.path.insert(0, str(ROOT / "src"))
 

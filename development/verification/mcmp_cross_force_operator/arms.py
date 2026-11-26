@@ -36,8 +36,8 @@ import sys
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)))), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))), "src"))
 
 from tensorlbm.d2q9 import C, W, equilibrium, macroscopic  # noqa: E402
 from tensorlbm.multiphase import (  # noqa: E402

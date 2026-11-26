@@ -43,7 +43,7 @@ G_12 < 0 时力指向上游方向（背离富组分 2 的区域）⇒ 排斥 ⇒
 | 环节 | 文件 | 提供量 |
 |---|---|---|
 | 被测核 | `src/tensorlbm/multiphase.py:534` `sc_two_component_force`（:`788` 被求解器调用） | `(Fx1,Fy1,Fx2,Fy2)` |
-| OSS 参考 | `xval/.../xval_lib.py::oss_force` | 前向 gather 独立 NumPy 实现（float64，自带权重表） |
+| OSS 参考 | `development/verification/mcmp_two_component_cross_force/xval_lib.py::oss_force` | 前向 gather 独立 NumPy 实现（float64，自带权重表） |
 | 闭式符号 | `xval_lib.py::symbol_ratio` | `S(k)` |
 | 连续参考 | `xval_lib.py::spectral_force` | `G_12 c_s² ρ_1 ∇ρ_2` |
 | 真实求解态 | `tensorlbm.mcmp_verification.simulate_planar_slab` | 松弛后的两组分分层场 + `u_max` 平台判据 |
@@ -146,16 +146,16 @@ G_12 < 0 时力指向上游方向（背离富组分 2 的区域）⇒ 排斥 ⇒
 
 ```bash
 cd <worktree>
-PYTHONPATH=src python xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/run_xval.py            # 解析臂+汇总 (<1 s)
-PYTHONPATH=src python xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/run_xval.py --slab-case 64:-2.5:4000
-PYTHONPATH=src python xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/run_xval.py --slab-case 96:-2.5:3000
-PYTHONPATH=src python xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/run_xval.py --slab-case 96:-3.0:3000
-PYTHONPATH=src python xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/make_report.py            # 本文件 + 图
+PYTHONPATH=src python development/verification/mcmp_two_component_cross_force/run_xval.py            # 解析臂+汇总 (<1 s)
+PYTHONPATH=src python development/verification/mcmp_two_component_cross_force/run_xval.py --slab-case 64:-2.5:4000
+PYTHONPATH=src python development/verification/mcmp_two_component_cross_force/run_xval.py --slab-case 96:-2.5:3000
+PYTHONPATH=src python development/verification/mcmp_two_component_cross_force/run_xval.py --slab-case 96:-3.0:3000
+PYTHONPATH=src python development/verification/mcmp_two_component_cross_force/make_report.py            # 本文件 + 图
 python -m pytest tests/test_xval_mcmp_cross_force.py -q                                       # 9 passed
 ```
 
-- `xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/{predeclared.json,xval_lib.py,run_xval.py,make_report.py,REPORT.md}`
-- `xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/artifacts/{summary.json,slab_cases.jsonl,fields.npz,fig_xval.png}`
+- `development/verification/mcmp_two_component_cross_force/{predeclared.json,xval_lib.py,run_xval.py,make_report.py,REPORT.md}`
+- `development/verification/mcmp_two_component_cross_force/artifacts/{summary.json,slab_cases.jsonl,fields.npz,fig_xval.png}`
 - `tests/test_xval_mcmp_cross_force.py`
 
 ![xval figure](artifacts/fig_xval.png)
