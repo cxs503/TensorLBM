@@ -1,0 +1,24 @@
+{
+  "source_commit": "95944f91088b48ac5b9f8c158d7e8e6a86229c6b",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_arrival.xml",
+  "tests": 8,
+  "failures": 0,
+  "errors": 0,
+  "reference": "Solve the continuous Gaussian image-sum pulse flux for its rising crossing of 1e-8 W/m² in [0.125,0.25] s at x/L=29/32 and 31/32. Linearly interpolate consecutive D3Q7 half-step fluxes on grids of 16, 48 and 80 intervals; dt=1/n².",
+  "measurements": {
+    "x29_over_32_threshold_reference_s": 0.1492934657645322,
+    "n16_x29_over_32_threshold_s": 0.22116411400997088,
+    "n16_x29_over_32_threshold_error_s": 0.07187064824543868,
+    "x31_over_32_threshold_reference_s": 0.1704404792130277,
+    "n16_x31_over_32_threshold_s": 0.24665107740840747,
+    "n16_x31_over_32_threshold_error_s": 0.07621059819537976,
+    "n48_x29_over_32_threshold_s": 0.15460219308537895,
+    "n48_x29_over_32_threshold_error_s": 0.005308727320846751,
+    "n48_x31_over_32_threshold_s": 0.1758524124602028,
+    "n48_x31_over_32_threshold_error_s": 0.005411933247175094,
+    "n80_x29_over_32_threshold_s": 0.15114511291256194,
+    "n80_x29_over_32_threshold_error_s": 0.0018516471480297392,
+    "n80_x31_over_32_threshold_s": 0.17232657466291457,
+    "n80_x31_over_32_threshold_error_s": 0.0018860954498868543
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "source_commit": "044cb7c16ba592f4faeb953db917630baea4d0f1",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_peak_heat.xml",
+  "tests": 9,
+  "failures": 0,
+  "errors": 0,
+  "reference": "Integrate each of the 80 Fourier flux modes analytically between both roots of q(t)=0.055 W/m² at x/L=11/32. Compare total heat and the integral of q minus the threshold on that interval to the D3Q7 piecewise-linear history integrated between its own crossings. Unit slab, unit wall pulse until 1/16 s, CPU float64.",
+  "measurements": {
+    "total_heat_reference_J_m2": 0.0029531527070476554,
+    "excess_heat_reference_J_m2": 9.003951449359279e-05,
+    "n16_total_heat_J_m2": 0.004672222961488746,
+    "n16_total_heat_relative_error": 0.5821135664060157,
+    "n16_excess_heat_J_m2": 0.0003688657272577968,
+    "n16_excess_heat_relative_error": 3.0967094206626946,
+    "n48_total_heat_J_m2": 0.003169211622130537,
+    "n48_total_heat_relative_error": 0.07316212079628004,
+    "n48_excess_heat_J_m2": 0.00011173070221864857,
+    "n48_excess_heat_relative_error": 0.24090742655658515,
+    "n80_total_heat_J_m2": 0.0030303493682791276,
+    "n80_total_heat_relative_error": 0.026140423096727705,
+    "n80_excess_heat_J_m2": 9.742316561099686e-05,
+    "n80_excess_heat_relative_error": 0.08200456387322586
+  }
+}

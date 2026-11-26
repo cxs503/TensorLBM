@@ -1,0 +1,30 @@
+{
+  "source_commit": "682fad116b65f5ebd43ab5fe8b17f56d1a4d9af9",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_peak_window_split.xml",
+  "tests": 9,
+  "failures": 0,
+  "errors": 0,
+  "reference": "Integrate the continuous 80-mode slab flux between the analytic 0.055 W/m² crossings at x/L=11/32. Integrate the D3Q7 piecewise-linear flux on that same window, then on its own crossing window. Report fixed-window minus continuum (curve error) and numerical-window minus fixed-window (window shift), both signed. Repeat for q minus the threshold.",
+  "measurements": {
+    "total_heat_reference_J_m2": 0.0029531527070476554,
+    "excess_heat_reference_J_m2": 9.003951449359279e-05,
+    "n16_total_fixed_window_J_m2": 0.0031641573340531874,
+    "n16_total_curve_error_J_m2": 0.000211004627005532,
+    "n16_total_window_shift_J_m2": 0.0015080656274355582,
+    "n16_excess_fixed_window_J_m2": 0.0003010441414991248,
+    "n16_excess_curve_error_J_m2": 0.000211004627005532,
+    "n16_excess_window_shift_J_m2": 6.782158575867201e-05,
+    "n48_total_fixed_window_J_m2": 0.002974034722678902,
+    "n48_total_curve_error_J_m2": 2.0882015631246576e-05,
+    "n48_total_window_shift_J_m2": 0.00019517689945163516,
+    "n48_excess_fixed_window_J_m2": 0.00011092153012483955,
+    "n48_excess_curve_error_J_m2": 2.0882015631246766e-05,
+    "n48_excess_window_shift_J_m2": 8.091720938090233e-07,
+    "n80_total_fixed_window_J_m2": 0.002960434956521578,
+    "n80_total_curve_error_J_m2": 7.282249473922805e-06,
+    "n80_total_window_shift_J_m2": 6.991441175754941e-05,
+    "n80_excess_fixed_window_J_m2": 9.732176396751518e-05,
+    "n80_excess_curve_error_J_m2": 7.282249473922398e-06,
+    "n80_excess_window_shift_J_m2": 1.0140164348167516e-07
+  }
+}

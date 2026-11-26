@@ -399,3 +399,352 @@ def test_harmonic_walls_recover_temperature_and_link_flux_phasors(record_propert
                 record_property(f"n{n}_{name}_order", order)
                 assert order > {24: 1.2, 48: 1.5, 96: 1.75}[n]
         previous = errors
+
+
+def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
+    from scipy.integrate import quad
+    from scipy.optimize import brentq
+
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    # Difference of delayed unit wall steps in a unit slab, initially at zero.
+    # After shutoff both walls are cold and the constant-in-time lift cancels.
+    tau, shutoff, end = 0.8, 1 / 16, 1 / 4
+    alpha = (tau - 0.5) / 4
+    wave = math.pi * torch.arange(1, 81, dtype=torch.float64)
+    rate = alpha * wave.square()
+    amplitude = 2 * torch.exp(-rate * (end - shutoff)) * (-torch.expm1(-rate * shutoff)) / wave
+    start, capacity = 1 / 8, 2.3
+    start_amplitude = (
+        2 * torch.exp(-rate * (start - shutoff)) * (-torch.expm1(-rate * shutoff)) / wave
+    )
+    integrated = start_amplitude * (-torch.expm1(-rate * (end - start))) / rate
+    previous = None
+    # Odd multiples of 16 put both probes exactly at kinetic link midpoints.
+    probes = torch.tensor([29 / 32, 31 / 32], dtype=wave.dtype)
+    reference = -capacity * alpha * (torch.cos(probes[:, None] * wave) @ (wave * integrated))
+    # Image solution for a wall step: no cancellation of long Fourier sums
+    # when the initial thermal front is very weak near the far wall.
+    distances = probes[:, None] + 2 * torch.arange(-4, 5)
+
+    def step_flux(t):
+        return (
+            capacity
+            * math.sqrt(alpha / (math.pi * t))
+            * torch.exp(-distances.square() / (4 * alpha * t)).sum(1)
+        )
+
+    flux_reference = torch.stack([step_flux(t) - step_flux(t - shutoff) for t in (start, end)])
+    levels = (5e-9, 1e-8)  # W/m², both reached within the cooling window.
+
+    def reference_time(col, level):
+        return brentq(
+            lambda t: (step_flux(t) - step_flux(t - shutoff))[col].item() - level,
+            start,
+            end,
+            xtol=1e-14,
+        )
+
+    reference_times = [
+        [reference_time(col, level) for level in levels] for col in range(len(probes))
+    ]
+
+    def reference_excess(col, level, crossing):
+        def excess(t):
+            return (step_flux(t) - step_flux(t - shutoff))[col].item() - level
+
+        return quad(excess, crossing, end, epsabs=1e-20, epsrel=1e-12)[0]
+
+    excess_reference = [
+        [reference_excess(col, level, crossing) for level, crossing in zip(levels, crossings)]
+        for col, crossings in enumerate(reference_times)
+    ]
+    previous_excess_errors = None
+    previous_arrival_errors = None
+    previous_probe_errors = None
+    for n in (16, 32, 48, 64, 80):
+        dt = 1 / n**2
+        x = torch.arange(n + 1, dtype=torch.float64) / n
+        initial = torch.zeros((3, 4, n + 1), dtype=x.dtype)
+        g = equilibrium_thermal_3d(initial, initial, initial, initial)
+        g = apply_bc(g, 1.0, 0.0)
+        heat = torch.zeros_like(x[:-1])
+        start_step, end_step = round(start / dt), round(end / dt)
+        endpoint_fluxes = []
+        fixed_probes = n in (16, 48, 80)
+        indices = (probes * n).long()
+        samples = []
+        for step in range(1, end_step + 1):
+            post = collide_thermal_bgk_3d(
+                g, macroscopic_thermal_3d(g), initial, initial, initial, tau
+            )
+            if step >= start_step:
+                qx, _, _ = thermal_link_fluxes_3d(
+                    post, dt=dt, spacing=1 / n, volumetric_heat_capacity=capacity
+                )
+                link_flux = qx.mean((0, 1))
+                if fixed_probes:
+                    samples.append(link_flux[indices])
+                if step > start_step:
+                    heat += dt * link_flux
+                if step == start_step:
+                    before_start = link_flux
+                if step == start_step + 1:
+                    endpoint_fluxes.append(0.5 * (before_start + link_flux))
+            g = apply_bc(stream_thermal_3d(post), float(step * dt < shutoff), 0.0)
+            if step == round(start / dt):
+                start_field = macroscopic_thermal_3d(g).mean((0, 1))
+        measured = macroscopic_thermal_3d(g).mean((0, 1))
+        exact = torch.sin(x[:, None] * wave) @ amplitude
+        error = (measured - exact).abs().max().item()
+        record_property(f"n{n}_temperature_error_K", error)
+        faces = 0.5 * (x[:-1] + x[1:])
+        exact_heat = -capacity * alpha * (torch.cos(faces[:, None] * wave) @ (wave * integrated))
+        link_error = (heat - exact_heat).abs().max().item()
+        stored = capacity * (measured - start_field)[1:-1].sum() / n
+        balance = abs((stored - heat[0] + heat[-1]).item())
+        record_property(f"n{n}_link_heat_error_J_m2", link_error)
+        record_property(f"n{n}_storage_balance_J_m2", balance)
+        record_property(f"n{n}_east_link_J_m2", heat[-1].item())
+        record_property(f"n{n}_exact_east_link_J_m2", exact_heat[-1].item())
+        assert heat[0] < 0 and balance < 1e-12
+        if n == 64:
+            assert heat[-1] > 0
+        if n in (16, 32, 64):
+            if previous is not None:
+                assert previous[0] / error > 3.5 and previous[1] / link_error > 2.5
+            previous = error, link_error
+        if fixed_probes:
+            # Kinetic flux is centered half a step before its output time.
+            # One further collision supplies the other half-step sample at end.
+            post = collide_thermal_bgk_3d(
+                g, macroscopic_thermal_3d(g), initial, initial, initial, tau
+            )
+            after_end, _, _ = thermal_link_fluxes_3d(
+                post, dt=dt, spacing=1 / n, volumetric_heat_capacity=capacity
+            )
+            endpoint_fluxes.append(0.5 * (link_flux + after_end.mean((0, 1))))
+            # Clip the half-step flux history to the physical observation window.
+            history = torch.cat(
+                (
+                    endpoint_fluxes[0][indices][None],
+                    torch.stack(samples[1:]),
+                    endpoint_fluxes[1][indices][None],
+                )
+            )
+            sample_times = torch.cat(
+                (
+                    x.new_tensor([start]),
+                    (torch.arange(start_step, end_step, dtype=x.dtype) + 0.5) * dt,
+                    x.new_tensor([end]),
+                )
+            )
+            arrival_errors = []
+            excess_errors = []
+            for col, numerator in enumerate((29, 31)):
+                signal = history[:, col]
+                times = []
+                for level_index, level in enumerate(levels):
+                    above = signal >= level
+                    assert not above[0] and above[-1]
+                    j = torch.where(above[:-1] != above[1:])[0]
+                    fraction = (level - signal[j]) / (signal[j + 1] - signal[j])
+                    events = sample_times[j] + fraction * (sample_times[j + 1] - sample_times[j])
+                    rises, falls = events[::2], events[1::2]
+                    if level == levels[1] or n != 16:
+                        assert len(rises) == 1
+                    record_property(f"n{n}_x{numerator}_rise_crossings_{level:g}", len(rises))
+                    times.append(rises[0].item())
+                    spans = torch.cat((falls, x.new_tensor([end]))) - rises
+                    duration = spans.sum().item()
+                    key = f"n{n}_x{numerator}_above_{level:g}"
+                    expected = end - reference_times[col][level_index]
+                    record_property(f"{key}_s", duration)
+                    record_property(f"{key}_error_s", abs(duration - expected))
+                    arrival_errors.append(abs(duration - expected))
+                    # Each crossing splits a linear sample interval exactly at zero excess.
+                    excess = (signal - level).clamp_min(0)
+                    widths = sample_times.diff()
+                    areas = 0.5 * widths * (excess[:-1] + excess[1:])
+                    areas[j] *= torch.where(above[j], fraction, 1 - fraction)
+                    total_excess = areas.sum().item()
+                    target = excess_reference[col][level_index]
+                    relative_error = abs(total_excess / target - 1)
+                    record_property(f"{key}_excess_J_m2", total_excess)
+                    record_property(f"{key}_reference_excess_J_m2", target)
+                    record_property(f"{key}_relative_excess_error", relative_error)
+                    excess_errors.append(relative_error)
+                    if len(falls):
+                        record_property(
+                            f"{key}_first_excess_J_m2", areas[j[0] : j[1] + 1].sum().item()
+                        )
+                        record_property(f"{key}_first_excursion_s", spans[0].item())
+                        record_property(f"{key}_first_gap_s", (rises[1] - falls[0]).item())
+                arrival = times[1]
+                low_ref, high_ref = reference_times[col]
+                timing_error = abs(arrival - high_ref)
+                key = f"x{numerator}_over_32_threshold"
+                record_property(f"{key}_reference_s", high_ref)
+                record_property(f"n{n}_{key}_s", arrival)
+                record_property(f"n{n}_{key}_error_s", timing_error)
+                rise = times[1] - times[0]
+                rise_error = abs(rise - (high_ref - low_ref))
+                record_property(f"{key}_rise_reference_s", high_ref - low_ref)
+                record_property(f"n{n}_{key}_rise_s", rise)
+                record_property(f"n{n}_{key}_rise_error_s", rise_error)
+                arrival_errors.extend((timing_error, rise_error))
+            if previous_arrival_errors is not None:
+                assert all(
+                    fine < coarse for fine, coarse in zip(arrival_errors, previous_arrival_errors)
+                )
+            previous_arrival_errors = arrival_errors
+            if previous_excess_errors is not None:
+                assert all(
+                    fine < coarse for fine, coarse in zip(excess_errors, previous_excess_errors)
+                )
+            previous_excess_errors = excess_errors
+            endpoint_relative = (
+                torch.stack(endpoint_fluxes)[:, indices] / flux_reference - 1
+            ).abs()
+            for row, label in enumerate(("start", "end")):
+                for col, numerator in enumerate((29, 31)):
+                    key = f"{label}_x{numerator}_over_32"
+                    record_property(f"{key}_reference_W_m2", flux_reference[row, col].item())
+                    record_property(f"n{n}_{key}_W_m2", endpoint_fluxes[row][indices[col]].item())
+                    record_property(
+                        f"n{n}_{key}_relative_error", endpoint_relative[row, col].item()
+                    )
+            if n == 80:
+                assert endpoint_relative[0].max() < 0.5 and endpoint_relative[1].max() < 0.06
+
+            assert torch.equal(faces[indices], probes)
+            relative = ((heat[indices] - reference) / reference).abs()
+            for numerator, computed, target, rel in zip(
+                (29, 31), heat[indices], reference, relative
+            ):
+                record_property(f"x{numerator}_over_32_reference_J_m2", target.item())
+                record_property(f"n{n}_x{numerator}_over_32_heat_J_m2", computed.item())
+                record_property(f"n{n}_x{numerator}_over_32_relative_error", rel.item())
+            if previous_probe_errors is not None:
+                assert torch.all(relative < previous_probe_errors)
+                assert torch.all(heat[indices] > 0)
+            previous_probe_errors = relative
+
+
+def test_fixed_wall_pulse_interior_peak_flux(record_property):
+    from scipy.optimize import brentq
+
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    tau, capacity = 0.8, 2.3
+    alpha = (tau - 0.5) / 4
+    probe, shutoff, start, end = 11 / 32, 1 / 16, 1 / 8, 1 / 4
+    wave = math.pi * torch.arange(1, 81, dtype=torch.float64)
+    rates = alpha * wave.square()
+    # Differentiate the delayed-wall-step sine solution in space to get flux.
+    weights = -2 * capacity * alpha * torch.cos(wave * probe) * (-torch.expm1(-rates * shutoff))
+
+    def flux_terms(t):
+        return weights * torch.exp(-rates * (t - shutoff))
+
+    reference_time = brentq(lambda t: -(rates * flux_terms(t)).sum().item(), start, end, xtol=1e-14)
+    reference_flux = flux_terms(reference_time).sum().item()
+    assert (rates.square() * flux_terms(reference_time)).sum() < 0
+    record_property("peak_reference_s", reference_time)
+    record_property("peak_reference_W_m2", reference_flux)
+    threshold = 0.055  # Fixed physical flux in W/m², on both flanks of the peak.
+
+    def excess(t):
+        return flux_terms(t).sum().item() - threshold
+
+    entry_ref = brentq(excess, start, reference_time, xtol=1e-14)
+    exit_ref = brentq(excess, reference_time, end, xtol=1e-14)
+    reference = (entry_ref, exit_ref, exit_ref - entry_ref)
+    for label, value in zip(("entry", "exit", "duration"), reference):
+        record_property(f"{label}_reference_s", value)
+    # Integrate each decaying mode between the two analytic crossings.
+    duration_ref = exit_ref - entry_ref
+    total_ref = (flux_terms(entry_ref) * (-torch.expm1(-rates * duration_ref)) / rates).sum().item()
+    excess_ref = total_ref - threshold * duration_ref
+    record_property("total_heat_reference_J_m2", total_ref)
+    record_property("excess_heat_reference_J_m2", excess_ref)
+    previous = None
+    for n in (16, 48, 80):
+        dx, dt = 1 / n, 1 / n**2
+        index = int(probe * n)
+        assert (index + 0.5) * dx == probe
+        zero = torch.zeros((3, 4, n + 1), dtype=torch.float64)
+        g = apply_bc(equilibrium_thermal_3d(zero, zero, zero, zero), 1.0, 0.0)
+        samples = []
+        first = round(start / dt) + 1
+        for step in range(1, round(end / dt) + 1):
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
+            if step >= first:
+                qx, _, _ = thermal_link_fluxes_3d(
+                    post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity
+                )
+                samples.append(qx[..., index].mean().item())
+            g = apply_bc(stream_thermal_3d(post), float(step * dt < shutoff), 0.0)
+        j = max(range(len(samples)), key=samples.__getitem__)
+        assert 0 < j < len(samples) - 1
+        # Fit a parabola to the maximum and its two adjacent half-step samples.
+        left, center, right = samples[j - 1 : j + 2]
+        offset = 0.5 * (left - right) / (left - 2 * center + right)
+        peak_time = (first + j - 0.5 + offset) * dt
+        peak_flux = center + 0.25 * (right - left) * offset
+        errors = abs(peak_time - reference_time), abs(peak_flux - reference_flux)
+        record_property(f"n{n}_peak_s", peak_time)
+        record_property(f"n{n}_peak_W_m2", peak_flux)
+        record_property(f"n{n}_time_error_s", errors[0])
+        record_property(f"n{n}_flux_error_W_m2", errors[1])
+        signal = torch.tensor(samples, dtype=wave.dtype)
+        above = signal > threshold
+        crossings = torch.where(above[1:] != above[:-1])[0]
+        assert not above[0] and not above[-1] and len(crossings) == 2
+        fraction = (threshold - signal[crossings]) / (signal[crossings + 1] - signal[crossings])
+        entry, exit_time = ((first + crossings.to(wave.dtype) - 0.5 + fraction) * dt).tolist()
+        for label, value, target in zip(
+            ("entry", "exit", "duration"), (entry, exit_time, exit_time - entry), reference
+        ):
+            record_property(f"n{n}_{label}_s", value)
+            record_property(f"n{n}_{label}_error_s", abs(value - target))
+            errors += (abs(value - target),)
+        # Insert the crossing points so partial first and last steps contribute.
+        times = (first + torch.where(above)[0].to(wave.dtype) - 0.5) * dt
+        times = torch.cat((times.new_tensor([entry]), times, times.new_tensor([exit_time])))
+        boundary = signal.new_tensor([threshold])
+        clipped = torch.cat((boundary, signal[above], boundary))
+        total_heat = torch.trapezoid(clipped, times).item()
+        excess_heat = torch.trapezoid(clipped - threshold, times).item()
+        # Integrate the same interpolant over the continuum crossing times.
+        sample_times = (first + torch.arange(len(signal), dtype=signal.dtype) - 0.5) * dt
+        bounds = signal.new_tensor([entry_ref, exit_ref])
+        right_index = torch.searchsorted(sample_times, bounds)
+        assert torch.all((right_index > 0) & (right_index < len(signal)))
+        left_index = right_index - 1
+        weight = (bounds - sample_times[left_index]) / (
+            sample_times[right_index] - sample_times[left_index]
+        )
+        bound_flux = torch.lerp(signal[left_index], signal[right_index], weight)
+        inside = (sample_times > entry_ref) & (sample_times < exit_ref)
+        fixed_times = torch.cat((bounds[:1], sample_times[inside], bounds[1:]))
+        fixed_flux = torch.cat((bound_flux[:1], signal[inside], bound_flux[1:]))
+        fixed_total = torch.trapezoid(fixed_flux, fixed_times).item()
+        fixed_excess = torch.trapezoid(fixed_flux - threshold, fixed_times).item()
+        for label, value, fixed, target in (
+            ("total", total_heat, fixed_total, total_ref),
+            ("excess", excess_heat, fixed_excess, excess_ref),
+        ):
+            curve_error = fixed - target
+            window_shift = value - fixed
+            record_property(f"n{n}_{label}_fixed_window_J_m2", fixed)
+            record_property(f"n{n}_{label}_curve_error_J_m2", curve_error)
+            record_property(f"n{n}_{label}_window_shift_J_m2", window_shift)
+            errors += (abs(curve_error), abs(window_shift))
+            relative_error = abs(value / target - 1)
+            record_property(f"n{n}_{label}_heat_J_m2", value)
+            record_property(f"n{n}_{label}_heat_relative_error", relative_error)
+            errors += (relative_error,)
+        if previous is not None:
+            assert all(fine < coarse for fine, coarse in zip(errors, previous))
+        previous = errors

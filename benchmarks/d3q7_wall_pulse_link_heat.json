@@ -1,0 +1,25 @@
+{
+  "source_commit": "500b4cc2818dd83412d7c1981aa4e2cfd9bae18d",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_pulse_link_heat.xml",
+  "tests": 8,
+  "failures": 0,
+  "errors": 0,
+  "reference": "Integrate the Fourier flux of the 80-mode delayed wall-step solution over [0.125,0.25] s at every axial link midpoint. Capacity 2.3, alpha=0.075, unit length, unit wall pulse lasting 0.0625 s. Compare interior storage change with signed net link transfer. The coarsest grid gives the wrong sign at the far-wall link.",
+  "measurements": {
+    "n16_temperature_error_K": 0.004223980967104579,
+    "n16_link_heat_error_J_m2": 0.0016142685772919981,
+    "n16_storage_balance_J_m2": 1.419854497811264e-17,
+    "n16_east_link_J_m2": -7.217218035272395e-10,
+    "n16_exact_east_link_J_m2": 5.4350210651095414e-08,
+    "n32_temperature_error_K": 0.001122953646884188,
+    "n32_link_heat_error_J_m2": 0.0005652644457812446,
+    "n32_storage_balance_J_m2": 1.0629380059147263e-17,
+    "n32_east_link_J_m2": 2.3906710284794414e-08,
+    "n32_exact_east_link_J_m2": 4.2482838683161055e-08,
+    "n64_temperature_error_K": 0.00028568818931099665,
+    "n64_link_heat_error_J_m2": 0.00015899791412971737,
+    "n64_storage_balance_J_m2": 4.1021937984423774e-17,
+    "n64_east_link_J_m2": 3.489588339530916e-08,
+    "n64_exact_east_link_J_m2": 3.966264734343167e-08
+  }
+}

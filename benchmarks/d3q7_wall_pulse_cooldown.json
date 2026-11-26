@@ -1,0 +1,13 @@
+{
+  "source_commit": "896c77815b2b63e2dea69f8d419faf584a7aa356",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_wall_pulse.xml",
+  "tests": 8,
+  "failures": 0,
+  "errors": 0,
+  "reference": "Unit slab initially zero, west wall raised by 1 K from t=0 until 1/16 s, then zero. East wall zero, transverse walls insulated. Superpose delayed wall step solutions with 80 sine modes, compare all axial nodes at t=1/4 s. CPU float64 D3Q7 BGK, no flow, tau=0.8, dt=1/n².",
+  "measurements": {
+    "n16_temperature_error_K": 0.004223980967104579,
+    "n32_temperature_error_K": 0.001122953646884188,
+    "n64_temperature_error_K": 0.00028568818931099665
+  }
+}
