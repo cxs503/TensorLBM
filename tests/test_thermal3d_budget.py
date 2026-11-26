@@ -339,3 +339,30 @@ def test_harmonic_walls_recover_temperature_and_link_flux_phasors(record_propert
                 record_property(f"n{n}_{name}_order", order)
                 assert order > {24: 1.2, 48: 1.5, 96: 1.75}[n]
         previous = errors
+
+
+def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
+    # Difference of delayed unit wall steps in a unit slab, initially at zero.
+    # After shutoff both walls are cold and the constant-in-time lift cancels.
+    tau, shutoff, end = .8, 1/16, 1/4
+    alpha = (tau-.5)/4
+    wave = math.pi*torch.arange(1, 81, dtype=torch.float64)
+    rate = alpha*wave.square()
+    amplitude = 2*torch.exp(-rate*(end-shutoff))*(-torch.expm1(-rate*shutoff))/wave
+    previous = None
+    for n in (16, 32, 64):
+        dt = 1/n**2
+        x = torch.arange(n+1, dtype=torch.float64)/n
+        initial = torch.zeros((3, 4, n+1), dtype=x.dtype)
+        g = equilibrium_thermal_3d(initial, initial, initial, initial)
+        g = apply_bc(g, 1., 0.)
+        for step in range(1, round(end/dt)+1):
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), initial, initial, initial, tau)
+            g = apply_bc(stream_thermal_3d(post), float(step*dt < shutoff), 0.)
+        measured = macroscopic_thermal_3d(g).mean((0, 1))
+        exact = torch.sin(x[:, None]*wave) @ amplitude
+        error = (measured-exact).abs().max().item()
+        record_property(f"n{n}_temperature_error_K", error)
+        if previous is not None:
+            assert previous/error > 3.5
+        previous = error
