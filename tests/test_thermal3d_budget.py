@@ -365,9 +365,11 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
     def step_flux(t):
         return capacity*math.sqrt(alpha/(math.pi*t))*torch.exp(-distances.square()/(4*alpha*t)).sum(1)
     flux_reference = torch.stack([step_flux(t)-step_flux(t-shutoff) for t in (start, end)])
-    threshold = 1e-8  # W/m², on the rising signal within the cooling window.
-    arrival_reference = [brentq(lambda t: (step_flux(t)-step_flux(t-shutoff))[col].item()-threshold,
-                                start, end, xtol=1e-14) for col in range(len(probes))]
+    levels = (5e-9, 1e-8)  # W/m², both reached within the cooling window.
+    def reference_time(col, level):
+        return brentq(lambda t: (step_flux(t)-step_flux(t-shutoff))[col].item()-level,
+                      start, end, xtol=1e-14)
+    reference_times = [[reference_time(col, level) for level in levels] for col in range(len(probes))]
     previous_arrival_errors = None
     previous_probe_errors = None
     for n in (16, 32, 48, 64, 80):
@@ -428,17 +430,29 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
             arrival_errors = []
             for col, numerator in enumerate((29, 31)):
                 signal = history[:, col]
-                crossings = torch.where((signal[:-1] < threshold) & (signal[1:] >= threshold))[0]
-                assert signal[0] < threshold and len(crossings) == 1
-                j = crossings.item()
-                fraction = ((threshold-signal[j])/(signal[j+1]-signal[j])).item()
-                arrival = (start_step+j-.5+fraction)*dt
-                timing_error = abs(arrival-arrival_reference[col])
+                times = []
+                for level in levels:
+                    crossings = torch.where((signal[:-1] < level) & (signal[1:] >= level))[0]
+                    assert signal[0] < level and len(crossings) >= 1
+                    if level == levels[1] or n != 16:
+                        assert len(crossings) == 1
+                    record_property(f"n{n}_x{numerator}_rise_crossings_{level:g}", len(crossings))
+                    j = crossings[0].item()
+                    fraction = ((level-signal[j])/(signal[j+1]-signal[j])).item()
+                    times.append((start_step+j-.5+fraction)*dt)
+                arrival = times[1]
+                low_ref, high_ref = reference_times[col]
+                timing_error = abs(arrival-high_ref)
                 key = f"x{numerator}_over_32_threshold"
-                record_property(f"{key}_reference_s", arrival_reference[col])
+                record_property(f"{key}_reference_s", high_ref)
                 record_property(f"n{n}_{key}_s", arrival)
                 record_property(f"n{n}_{key}_error_s", timing_error)
-                arrival_errors.append(timing_error)
+                rise = times[1]-times[0]
+                rise_error = abs(rise-(high_ref-low_ref))
+                record_property(f"{key}_rise_reference_s", high_ref-low_ref)
+                record_property(f"n{n}_{key}_rise_s", rise)
+                record_property(f"n{n}_{key}_rise_error_s", rise_error)
+                arrival_errors.extend((timing_error, rise_error))
             if previous_arrival_errors is not None:
                 assert all(fine < coarse for fine, coarse in zip(arrival_errors, previous_arrival_errors))
             previous_arrival_errors = arrival_errors
