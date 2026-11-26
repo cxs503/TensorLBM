@@ -129,6 +129,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY"),
     ("xval", "XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY"),
     ("xval", "fused_push_pull_aa_pattern"),
+    ("xval", "XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT"),
+    ("xval", "XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT"),
 }
 
 

@@ -1,5 +1,7 @@
 # XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT
 
+> [现址与复跑说明](../development/verification/warp_shift_streaming/README.md)。下文保留原报告中的交付路径和研究结论。
+
 **对标对象**：`PorousMediaSimulation/openLBMPM`（clone commit `3d841891daafe7b6e9f65e51dd9bf20f2b0e1792`，2018-10-15），
 shared-memory streaming with warp shift = `ShanChen2D/AccelerateGPU2D.py:1260` `calStreamingGPU`
 + `:2733` `exchangeDistrGlobalGPU`。
