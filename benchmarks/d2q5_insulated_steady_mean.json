@@ -1,0 +1,20 @@
+{
+  "source_commit": "a47b507d7bb1bcae7f31cb9744382c7bc08d5bf9",
+  "command": "PYTHONPATH=src OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest -q tests/test_scalar_harmonic.py tests/test_scalar_slab.py -o junit_family=legacy --junitxml=/tmp/lbm_dc_mean.xml",
+  "reference": "Unit square with insulating x walls and periodic y. The steady complex scalar is 3+0.25i+cos(pi*x)+0.4i*cos(2*pi*y), diffusivity and heat capacity unity. Lattice heat increment is -dt times the analytic Laplacian. Compare both physical face flux components to minus the gradient.",
+  "metrics": {
+    "flux_error_8_W_per_m2": 0.06577779481701107,
+    "field_error_8_K": 0.0023914573778259216,
+    "max_cell_balance_8_K_per_step": 1.4369542935062915e-15,
+    "flux_error_16_W_per_m2": 0.016222035393086642,
+    "field_error_16_K": 0.0005141777445834642,
+    "max_cell_balance_16_K_per_step": 2.8875207072901444e-15,
+    "flux_error_32_W_per_m2": 0.004041820009357711,
+    "field_error_32_K": 0.00012307697311651812,
+    "max_cell_balance_32_K_per_step": 5.335916253087875e-15,
+    "flux_error_64_W_per_m2": 0.0010096027105777061,
+    "field_error_64_K": 3.0424360603242334e-05,
+    "max_cell_balance_64_K_per_step": 1.0204770377656158e-14
+  },
+  "passed": 19
+}
