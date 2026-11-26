@@ -1,0 +1,31 @@
+{
+  "source_commit": "04ec3480bdafa21022c99dd8003b48f775cb85b3",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_peak_width.xml",
+  "tests": 9,
+  "failures": 0,
+  "errors": 0,
+  "reference": "At x/L=11/32 bracket the two roots of the 80-mode continuous pulse flux minus 0.055 W/m² on either side of its maximum in [0.125,0.25] s. Compare both crossing times and their difference to linear interpolation of the D3Q7 half-step link flux. CPU float64, n=16,48,80, dt=1/n².",
+  "measurements": {
+    "entry_reference_s": 0.1566775000407208,
+    "exit_reference_s": 0.20873410354170377,
+    "duration_reference_s": 0.052056603500982956,
+    "n16_entry_s": 0.139794304214626,
+    "n16_entry_error_s": 0.01688319582609482,
+    "n16_exit_s": 0.21803716301882506,
+    "n16_exit_error_s": 0.00930305947712129,
+    "n16_duration_s": 0.07824285880419907,
+    "n16_duration_error_s": 0.02618625530321611,
+    "n48_entry_s": 0.154389154981493,
+    "n48_entry_error_s": 0.0022883450592278143,
+    "n48_exit_s": 0.20997971716170916,
+    "n48_exit_error_s": 0.0012456136200053869,
+    "n48_duration_s": 0.05559056218021616,
+    "n48_duration_error_s": 0.003533958679233201,
+    "n80_entry_s": 0.1558471953568353,
+    "n80_entry_error_s": 0.0008303046838855077,
+    "n80_exit_s": 0.20917312631443769,
+    "n80_exit_error_s": 0.00043902277273391577,
+    "n80_duration_s": 0.05332593095760238,
+    "n80_duration_error_s": 0.0012693274566194235
+  }
+}
