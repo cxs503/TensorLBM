@@ -296,3 +296,46 @@ def test_reversing_section_heat_in_cooling_slab(record_property):
     record_property("reference_forward_J_m2", exact_forward)
     record_property("reference_reverse_J_m2", exact_reverse)
     record_property("reference_reversal_s", reversal)
+
+
+def test_harmonic_walls_recover_temperature_and_link_flux_phasors(record_property):
+    import cmath
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    # Independent continuum solution of alpha*U''=i*omega*U on [0,1].
+    tau, period, capacity = .8, .5, 2.3
+    alpha = (tau-.5)/4
+    omega = 2*math.pi/period
+    wave = cmath.sqrt(1j*omega/alpha)
+    left, right = .4+.15j, -.2+.3j
+    previous = None
+    for n in (12, 24, 48, 96):
+        dx, dt = 1/n, 1/n**2
+        x = torch.arange(n+1, dtype=torch.float64)*dx
+        face = x[:-1]+dx/2
+        exact_t = (left*torch.sinh(wave*(1-x))+right*torch.sinh(wave*x))/cmath.sinh(wave)
+        exact_q = capacity*alpha*wave*(left*torch.cosh(wave*(1-face))-right*torch.cosh(wave*face))/cmath.sinh(wave)
+        initial = (1.+exact_t.real).expand(3, 4, -1)
+        zero = torch.zeros_like(initial)
+        g = equilibrium_thermal_3d(initial, zero, zero, zero)
+        steps = round(period/dt)
+        measured_t = torch.zeros_like(exact_t)
+        measured_q = torch.zeros_like(exact_q)
+        for step in range(1, 2*steps+1):
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
+            phase = cmath.exp(1j*omega*step*dt)
+            g = apply_bc(stream_thermal_3d(post), 1.+(left*phase).real, 1.+(right*phase).real)
+            if step > steps:
+                # Temperatures are at step ends; link transport spans the step.
+                qx, _, _ = thermal_link_fluxes_3d(post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity)
+                measured_q += qx.mean((0, 1))*cmath.exp(-1j*omega*(step-.5)*dt)*(2/steps)
+                measured_t += (macroscopic_thermal_3d(g).mean((0, 1))-1.)*phase.conjugate()*(2/steps)
+        errors = dict(temperature_K=(measured_t-exact_t).abs().max().item(),
+                      flux_W_m2=(measured_q-exact_q).abs().max().item())
+        for name, error in errors.items():
+            record_property(f"n{n}_{name}_error", error)
+            if previous is not None:
+                order = math.log2(previous[name]/error)
+                record_property(f"n{n}_{name}_order", order)
+                assert order > {24: 1.2, 48: 1.5, 96: 1.75}[n]
+        previous = errors
