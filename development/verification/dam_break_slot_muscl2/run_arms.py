@@ -16,7 +16,7 @@ Same 1-D shallow-water dam break (Ritter 1892, dry bed) run by
   D            clawpack_classic_roe                OSS alternative flux family:
                Roe + entropy fix, minmod MUSCL
 
-Each arm writes ``xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_<name>_nx<N>_cfl<C>[_eps<E>].json``.
+Each arm writes ``development/verification/dam_break_slot_muscl2/artifacts/arm_<name>_nx<N>_cfl<C>[_eps<E>].json``.
 Every downstream volume is measured as a *difference* from the arm's own initial
 downstream volume, so the mass-recovered front law ``x_f = 27 V/(4 h0)`` (the
 integral form of the Ritter solution, used by the frozen matrix case) stays
@@ -24,7 +24,7 @@ valid for arms that start with a positive dry floor.
 
 Usage::
 
-    python xval/dam_break_slot_muscl2_local_hll_ssprk2/run_arms.py [--quick]
+    python development/verification/dam_break_slot_muscl2/run_arms.py [--quick]
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ from pathlib import Path
 import numpy as np
 
 CASE_DIR = Path(__file__).resolve().parent
-REPO_ROOT = CASE_DIR.parents[1]
+REPO_ROOT = CASE_DIR.parents[2]
 RUN_DIR = CASE_DIR / "artifacts"   # versioned next to the harness (runs/ is gitignored)
 
 X_MIN, X_MAX = -4.0, 12.0

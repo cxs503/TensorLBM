@@ -80,6 +80,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "m23124"),
     ("docs", "m23233"),
     ("docs", "m24569"),
+    ("xval", "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION"),
+    ("xval", "dam_break_slot_muscl2_local_hll_ssprk2"),
     ("scripts", "physics_ai"),
     ("docs", "smoke"),
     ("scripts", "maintenance"),

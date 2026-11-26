@@ -42,7 +42,7 @@ from pathlib import Path
 import torch
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 
 _spec = importlib.util.spec_from_file_location("rx", HERE / "run_xval.py")

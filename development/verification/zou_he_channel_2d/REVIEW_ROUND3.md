@@ -2,7 +2,7 @@
 
 **Anchor** `XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION` · **repo** `TensorLBM`
 · **reviewer branch** `agent/m21990` · **reviewed artifact** commit `60ac3409e`
-(merge #2341 / `m18793`) — `xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/`
+(merge #2341 / `m18793`) — `development/verification/zou_he_channel_2d/`
 (`PREREG.md`, `REPORT.md`, `run_xval.py`, `artifacts/zou_he_channel_results.json`)
 
 **Disposition: APPROVE WITH NOTES — PASS stands, but not for the reason round 2 gave.**
@@ -191,7 +191,7 @@ is to be part of the verdict.
 ## Reproduction
 
 ```bash
-cd xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION
+cd development/verification/zou_he_channel_2d
 python3 independent_zouhe.py                 # 3 layers vs independent linear solve
 python3 repro_round2.py                      # round-2 artifact, bitwise diff
 python3 run_xval_r3.py --cases C1,C3 --steps 25000 --drift-tol 1e-6

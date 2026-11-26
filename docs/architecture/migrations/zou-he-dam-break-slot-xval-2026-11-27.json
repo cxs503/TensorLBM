@@ -1,0 +1,1118 @@
+{
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 12,
+  "note": "BB retirement is the shared #3048 dependency; this batch changes only xval children.",
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 40
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION",
+    "xval/dam_break_slot_muscl2_local_hll_ssprk2"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/OSS_DIFF.md",
+      "new_path": "development/verification/zou_he_channel_2d/OSS_DIFF.md",
+      "git_mode": "100644",
+      "original_git_blob": "f1fb0a0853969435f6117a949c8e2b64248f2362",
+      "size_bytes": 6650,
+      "original_sha256": "a02ef7e6adcc928873fb3903f3a6cf6dae63a73d4c15c91e77af2ad7d5d3b8d6",
+      "new_sha256": "a02ef7e6adcc928873fb3903f3a6cf6dae63a73d4c15c91e77af2ad7d5d3b8d6",
+      "new_git_blob": "f1fb0a0853969435f6117a949c8e2b64248f2362",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/PREREG.md",
+      "new_path": "development/verification/zou_he_channel_2d/PREREG.md",
+      "git_mode": "100644",
+      "original_git_blob": "ec8c490371ca248b8c33fd80fd3bbd91bffb617f",
+      "size_bytes": 4967,
+      "original_sha256": "2f592eb318a3c702b6c549c55b5e1e850cbc97da21b9a65c97476f82a0f6cdd9",
+      "new_sha256": "2f592eb318a3c702b6c549c55b5e1e850cbc97da21b9a65c97476f82a0f6cdd9",
+      "new_git_blob": "ec8c490371ca248b8c33fd80fd3bbd91bffb617f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/REPORT.md",
+      "new_path": "development/verification/zou_he_channel_2d/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "6eefe186f28e8d5ea994800ef57aa02b57841a28",
+      "size_bytes": 16346,
+      "original_sha256": "f1092d35cdd8831ee6dc8133282e02b4b01a536851b4126f78af26f82917545d",
+      "new_sha256": "2f37db5ee6bbc0cd080398f9ab4e592b7ebe8f3af068f47fcd9bace76b2033b0",
+      "new_git_blob": "7200b11434ad87437f711e178e4e7ebe0f60a08a",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/REVIEW_ROUND3.md",
+      "new_path": "development/verification/zou_he_channel_2d/REVIEW_ROUND3.md",
+      "git_mode": "100644",
+      "original_git_blob": "c4ed2d3a7956a59f58acc9b40366b8a6cf4095de",
+      "size_bytes": 12152,
+      "original_sha256": "26151a0b09eb5e1a46d0844238ea464ffda5f8bd971387fae9c0e5bafe65cddb",
+      "new_sha256": "c6cdcda15988c354b985eb9e34a0dd6987785f6613baed590d7caf5728e16303",
+      "new_git_blob": "811d33daf41bc7cf29b658c5206787869f52181a",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/r3_part_c1.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/r3_part_c1.json",
+      "git_mode": "100644",
+      "original_git_blob": "dc0f3819fc8d82765fd9caa0cebb1cda4d87f036",
+      "size_bytes": 5563,
+      "original_sha256": "3a457d6e86c80e223eb793523506f7eb9305017a95dee968db09eaacab631c34",
+      "new_sha256": "3a457d6e86c80e223eb793523506f7eb9305017a95dee968db09eaacab631c34",
+      "new_git_blob": "dc0f3819fc8d82765fd9caa0cebb1cda4d87f036",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/r3_part_c3.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/r3_part_c3.json",
+      "git_mode": "100644",
+      "original_git_blob": "4c83af4ee2709d2188c8b52e88331d32e81e3ee2",
+      "size_bytes": 5288,
+      "original_sha256": "1d4c7195dbf4200656555ecaa63680a6373a1b71f0e2fbaa7d0b1271e86c6421",
+      "new_sha256": "1d4c7195dbf4200656555ecaa63680a6373a1b71f0e2fbaa7d0b1271e86c6421",
+      "new_git_blob": "4c83af4ee2709d2188c8b52e88331d32e81e3ee2",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/r3_part_coarse.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/r3_part_coarse.json",
+      "git_mode": "100644",
+      "original_git_blob": "3647d1209d7a536579875c0443c2520ff548fc5c",
+      "size_bytes": 5508,
+      "original_sha256": "441dc75a49c0a11676b605624249881367522717b42443b0e1b7b0cdaecacd73",
+      "new_sha256": "441dc75a49c0a11676b605624249881367522717b42443b0e1b7b0cdaecacd73",
+      "new_git_blob": "3647d1209d7a536579875c0443c2520ff548fc5c",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/r3_steady_gate.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/r3_steady_gate.json",
+      "git_mode": "100644",
+      "original_git_blob": "8fbcd0ee902ad0225187dc4aef8a45caf9fdb278",
+      "size_bytes": 10310,
+      "original_sha256": "744f71b954b5f942078d81268a2ce4126cc015ce93e4bb5b0c4780f8029058e2",
+      "new_sha256": "744f71b954b5f942078d81268a2ce4126cc015ce93e4bb5b0c4780f8029058e2",
+      "new_git_blob": "8fbcd0ee902ad0225187dc4aef8a45caf9fdb278",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/repro_round2.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/repro_round2.json",
+      "git_mode": "100644",
+      "original_git_blob": "c1e83a90091bb4897855519f1e28a798df1aca79",
+      "size_bytes": 2181,
+      "original_sha256": "78ac40579bc10f3073a68bd3452f19fd1194c290ce5241ff41bfbc04fe5d1e22",
+      "new_sha256": "78ac40579bc10f3073a68bd3452f19fd1194c290ce5241ff41bfbc04fe5d1e22",
+      "new_git_blob": "c1e83a90091bb4897855519f1e28a798df1aca79",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/round1_baseline_smoke.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/round1_baseline_smoke.json",
+      "git_mode": "100644",
+      "original_git_blob": "1a9929db212a120a650f0eb78639e17d1122443e",
+      "size_bytes": 6493,
+      "original_sha256": "b2f390ecbb536dc5e68b46c0e985cfea4913353fe81554f915b93c6b461f4f75",
+      "new_sha256": "b2f390ecbb536dc5e68b46c0e985cfea4913353fe81554f915b93c6b461f4f75",
+      "new_git_blob": "1a9929db212a120a650f0eb78639e17d1122443e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/verification.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/verification.json",
+      "git_mode": "100644",
+      "original_git_blob": "9fc3e5534564bd1c6e7b68dc274de0358bb18f92",
+      "size_bytes": 354,
+      "original_sha256": "01daec44e8b79f31df0a428a6bd2541f9d690f60fc80bd566e38d58c975abe21",
+      "new_sha256": "01daec44e8b79f31df0a428a6bd2541f9d690f60fc80bd566e38d58c975abe21",
+      "new_git_blob": "9fc3e5534564bd1c6e7b68dc274de0358bb18f92",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/artifacts/zou_he_channel_results.json",
+      "new_path": "development/verification/zou_he_channel_2d/artifacts/zou_he_channel_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "4c435681c85713327bc64617a09aca7e46b5b6cf",
+      "size_bytes": 27815,
+      "original_sha256": "ea5559a0dd8fdacf62dfe5c574eeb3e29f91fbff8945d9e4331b548340923d75",
+      "new_sha256": "ea5559a0dd8fdacf62dfe5c574eeb3e29f91fbff8945d9e4331b548340923d75",
+      "new_git_blob": "4c435681c85713327bc64617a09aca7e46b5b6cf",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/figures/figures_manifest.json",
+      "new_path": "development/verification/zou_he_channel_2d/figures/figures_manifest.json",
+      "git_mode": "100644",
+      "original_git_blob": "9c926762604bad79e630d7eb13a765bbed148114",
+      "size_bytes": 87,
+      "original_sha256": "ea01dc2f83f5c5d957f1ce745ef5fc7d7b39dba0237a1a0090210f2653d148bc",
+      "new_sha256": "ea01dc2f83f5c5d957f1ce745ef5fc7d7b39dba0237a1a0090210f2653d148bc",
+      "new_git_blob": "9c926762604bad79e630d7eb13a765bbed148114",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/independent_zouhe.py",
+      "new_path": "development/verification/zou_he_channel_2d/independent_zouhe.py",
+      "git_mode": "100644",
+      "original_git_blob": "056dbf476851c788919245427eacec82134bdd0c",
+      "size_bytes": 8334,
+      "original_sha256": "d136b00c4c388350a5200309aae3c2fa53be07918d961e250549fda03a023f5b",
+      "new_sha256": "409fbc2f6490d70898d7a155ceb4c068d358c6a7df6a0911984bd783bbfca01d",
+      "new_git_blob": "88543d2c6851cbf849851e20ecf039a854940a5f",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/make_figures.py",
+      "new_path": "development/verification/zou_he_channel_2d/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "3872db7753d39e454e29a02dd892b81552a07033",
+      "size_bytes": 5057,
+      "original_sha256": "3794a42bab801aaaeb7545149dbcef3220357ef2fe9927e9ae362313f34bec95",
+      "new_sha256": "3794a42bab801aaaeb7545149dbcef3220357ef2fe9927e9ae362313f34bec95",
+      "new_git_blob": "3872db7753d39e454e29a02dd892b81552a07033",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/make_report.py",
+      "new_path": "development/verification/zou_he_channel_2d/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "1d52cba2542448297254892f29d977e66e05717f",
+      "size_bytes": 19823,
+      "original_sha256": "33436df111aa84416e0d13e13a14f952124d986a1fd8390ff70aa137631d922b",
+      "new_sha256": "fe4ee3a8d3f6a2e8f3b6492e7066b66a75b88e6d6531a7f72aef584d7130bf18",
+      "new_git_blob": "f3b72d2467b9e81adaba371a968b4f1fe3b6ec76",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/make_review_figures.py",
+      "new_path": "development/verification/zou_he_channel_2d/make_review_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "0f5e9f2a7c4ec001d954ea444a58666d75a846bf",
+      "size_bytes": 2627,
+      "original_sha256": "07b530505c8508130bf0ba83a2668043652657f5c29e5d02468da628dbc74029",
+      "new_sha256": "07b530505c8508130bf0ba83a2668043652657f5c29e5d02468da628dbc74029",
+      "new_git_blob": "0f5e9f2a7c4ec001d954ea444a58666d75a846bf",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/make_verify.py",
+      "new_path": "development/verification/zou_he_channel_2d/make_verify.py",
+      "git_mode": "100644",
+      "original_git_blob": "d82b9205d77d3c02d4d8072d3f093792383aab1f",
+      "size_bytes": 2225,
+      "original_sha256": "277287f44bf50c83ea89fdca1cb793b32ea66930df4b95e4c28af93a3374e580",
+      "new_sha256": "b637503d2b496739cbe4af3d5adc5449fd9335a4ce3646d9c5e48e84241f8c78",
+      "new_git_blob": "3ee11009067b705caaa6ce827f6cab2ea93cf57b",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/repro_round2.py",
+      "new_path": "development/verification/zou_he_channel_2d/repro_round2.py",
+      "git_mode": "100644",
+      "original_git_blob": "2b5d0d158dcd68cc60b4ea0bb6eec8ca584fa6b0",
+      "size_bytes": 4834,
+      "original_sha256": "bdd278834f5390c84bda535e27194064a747932b974fbe17af2b81b039b63870",
+      "new_sha256": "bdd278834f5390c84bda535e27194064a747932b974fbe17af2b81b039b63870",
+      "new_git_blob": "2b5d0d158dcd68cc60b4ea0bb6eec8ca584fa6b0",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/run_xval.py",
+      "new_path": "development/verification/zou_he_channel_2d/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "5ded260555e1830da74c4c4a023a1d0aecb23df0",
+      "size_bytes": 22163,
+      "original_sha256": "70e5645b8cd9fcbd1f4cee88e0a177331f3cd0b0c337b46584df81fc5ef46616",
+      "new_sha256": "c7597995642954f5119f56c08d78a85e0de99cdc7caf017d38228019967881c7",
+      "new_git_blob": "da626081fac906b7f426f3fc00aaf315f8280283",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/run_xval_r3.py",
+      "new_path": "development/verification/zou_he_channel_2d/run_xval_r3.py",
+      "git_mode": "100644",
+      "original_git_blob": "9fa94ad0e259db62b3b32d7397be732e39e699a9",
+      "size_bytes": 8978,
+      "original_sha256": "9b85822ee1c40b848e4b9298e70fe40557184965ffb639a16a50e545b6970110",
+      "new_sha256": "a535d1770b4d1f5c1fee162859061a2463f8082ec04d19c8877fd2aaa46e1083",
+      "new_git_blob": "c0cc96396f6fbb9b25c4c9aa1bac1964f8b0376b",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/README.md",
+      "new_path": "development/verification/dam_break_slot_muscl2/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "c1d6e3b3f4f18d38fe1aa8b5a4940e7fadf5af9d",
+      "size_bytes": 1465,
+      "original_sha256": "4314da946e3bc59b7f3035a30dd3a46a54fceacb1ebbed87b86bab0503dfc7b7",
+      "new_sha256": "607f9c9dbaace2090b6c6f4896ce832112e3d2cfe72f2d3d5e45717ba8e5a40b",
+      "new_git_blob": "c8434fa6dc91b5840e642dd3f1f963285b7ac067",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/analyze.py",
+      "new_path": "development/verification/dam_break_slot_muscl2/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "4aefcfa0f9328ddad00d9f50cabd5248b9b61ffd",
+      "size_bytes": 20534,
+      "original_sha256": "d8b1dab8cf172a480aa5885d4b8dcbe41deb6a7de720f3ffe231730d8e5cf747",
+      "new_sha256": "691fc047b92babfb84c2cf60d0c0573fdadbb20c7c9b0ae73cdf9c924ba7bfc6",
+      "new_git_blob": "2a8d6fd102e66765cbd790d1d309b9648404268c",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_1storder_nx200_cfl0.4_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx200_cfl0.4_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "f5af246feb9c9ed7aa27412cfd521017942c6710",
+      "size_bytes": 12080,
+      "original_sha256": "b6275a4675850a065b0acc0cba92060bc56298ce25da1ef348d678eceb34800c",
+      "new_sha256": "b6275a4675850a065b0acc0cba92060bc56298ce25da1ef348d678eceb34800c",
+      "new_git_blob": "f5af246feb9c9ed7aa27412cfd521017942c6710",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_1storder_nx400_cfl0.4_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx400_cfl0.4_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "4df99f3c0a1cb4f424441be84ce0890d77a4c321",
+      "size_bytes": 23504,
+      "original_sha256": "98fa9144fd036db28b8ae31d560e4e4236b61d15164afbda499b5322d49b6e33",
+      "new_sha256": "98fa9144fd036db28b8ae31d560e4e4236b61d15164afbda499b5322d49b6e33",
+      "new_git_blob": "4df99f3c0a1cb4f424441be84ce0890d77a4c321",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx100_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx100_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "194f9bde34330adee685020c9a9190d0d5e4bf64",
+      "size_bytes": 6210,
+      "original_sha256": "ac8c4263039c5da671d75435df5a36985ba0336d536095112135f724da9a277b",
+      "new_sha256": "ac8c4263039c5da671d75435df5a36985ba0336d536095112135f724da9a277b",
+      "new_git_blob": "194f9bde34330adee685020c9a9190d0d5e4bf64",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "c1ad2b2e3ba2ac6c90e518d3d11f258d143b7705",
+      "size_bytes": 11766,
+      "original_sha256": "0f7d48c6531fbf8257e458672e3afd9336a310d85a36736839812344441258bf",
+      "new_sha256": "0f7d48c6531fbf8257e458672e3afd9336a310d85a36736839812344441258bf",
+      "new_git_blob": "c1ad2b2e3ba2ac6c90e518d3d11f258d143b7705",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4_eps0.001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4_eps0.001.json",
+      "git_mode": "100644",
+      "original_git_blob": "69af2759d59a7cd1e3cfd4357fd0469b9fd34bf3",
+      "size_bytes": 7469,
+      "original_sha256": "a4095577187eb8ebf709e0983c1bf85f1ac2ba1815da640f56b48f5ae8cea8f7",
+      "new_sha256": "a4095577187eb8ebf709e0983c1bf85f1ac2ba1815da640f56b48f5ae8cea8f7",
+      "new_git_blob": "69af2759d59a7cd1e3cfd4357fd0469b9fd34bf3",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.2.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.2.json",
+      "git_mode": "100644",
+      "original_git_blob": "504b5af126c6c99cf94cdd73e3157246e48fdc91",
+      "size_bytes": 22859,
+      "original_sha256": "cd4d538ca0e319f0faca2661c43ab65e016c88d5eb75541c9f343c7a39e1cfa7",
+      "new_sha256": "cd4d538ca0e319f0faca2661c43ab65e016c88d5eb75541c9f343c7a39e1cfa7",
+      "new_git_blob": "504b5af126c6c99cf94cdd73e3157246e48fdc91",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "f2beb0cc03be81d460ae019c256f0988fb199c57",
+      "size_bytes": 22927,
+      "original_sha256": "434a19de6e803d66d19b908c206accdd604f625b9486aa9067547057ae2020b4",
+      "new_sha256": "434a19de6e803d66d19b908c206accdd604f625b9486aa9067547057ae2020b4",
+      "new_git_blob": "f2beb0cc03be81d460ae019c256f0988fb199c57",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.001.json",
+      "git_mode": "100644",
+      "original_git_blob": "912b338eb14e7eed617a097366c21e11603b5456",
+      "size_bytes": 15064,
+      "original_sha256": "c91405b95247916082401cbec7b8fb4dadac7e6abdf1f880ffb8dfd2b19793fa",
+      "new_sha256": "c91405b95247916082401cbec7b8fb4dadac7e6abdf1f880ffb8dfd2b19793fa",
+      "new_git_blob": "912b338eb14e7eed617a097366c21e11603b5456",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.01.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "d32c4d99f458b189c2ba96989fb962603ce6a528",
+      "size_bytes": 22485,
+      "original_sha256": "58e635129950c3f0bb881f61b859951812042f2d88888b3e8265e8990a318c1d",
+      "new_sha256": "58e635129950c3f0bb881f61b859951812042f2d88888b3e8265e8990a318c1d",
+      "new_git_blob": "d32c4d99f458b189c2ba96989fb962603ce6a528",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.8.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.8.json",
+      "git_mode": "100644",
+      "original_git_blob": "7dbd9c6be04f76a1be62026f1892ae6c90971d4d",
+      "size_bytes": 22892,
+      "original_sha256": "a88634f20119dd20e343f724628d4c36d533dca3aae3f7f8cda36ba0d6beab20",
+      "new_sha256": "a88634f20119dd20e343f724628d4c36d533dca3aae3f7f8cda36ba0d6beab20",
+      "new_git_blob": "7dbd9c6be04f76a1be62026f1892ae6c90971d4d",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_hlle_nx800_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx800_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "4febc4b8cd5e4aecbb134a34d6e27d953429e633",
+      "size_bytes": 45630,
+      "original_sha256": "cc1f64db06287086cf9993b242c84a0a47b619936b78ec0eb206f07a859e20a7",
+      "new_sha256": "cc1f64db06287086cf9993b242c84a0a47b619936b78ec0eb206f07a859e20a7",
+      "new_git_blob": "4febc4b8cd5e4aecbb134a34d6e27d953429e633",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_roe_nx200_cfl0.4_eps0.01.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx200_cfl0.4_eps0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "9fbfb6d858b35900c74aa4843ac1b58720f16d5e",
+      "size_bytes": 11641,
+      "original_sha256": "5c9ed7e05823f2622ccc9b245c1d56751f853120a7ba6a36ecc01b7a55896003",
+      "new_sha256": "5c9ed7e05823f2622ccc9b245c1d56751f853120a7ba6a36ecc01b7a55896003",
+      "new_git_blob": "9fbfb6d858b35900c74aa4843ac1b58720f16d5e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_classic_roe_nx400_cfl0.4_eps0.01.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx400_cfl0.4_eps0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "e24dc5773d2eba2351415b2bca5b2c2de5be28e4",
+      "size_bytes": 21567,
+      "original_sha256": "500eea8b1014f203fe200598727ce8d35dba243244b8992b7cd24c07d5b9179e",
+      "new_sha256": "500eea8b1014f203fe200598727ce8d35dba243244b8992b7cd24c07d5b9179e",
+      "new_git_blob": "e24dc5773d2eba2351415b2bca5b2c2de5be28e4",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_sharpclaw_weno5_nx100_cfl0.4_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx100_cfl0.4_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "ac6144a106215dbc1e2fec7fc414d65b0dc41187",
+      "size_bytes": 6603,
+      "original_sha256": "aef3f3d8f152065971df811640880476a98f3a76bd90db8640db1e1e3918320f",
+      "new_sha256": "aef3f3d8f152065971df811640880476a98f3a76bd90db8640db1e1e3918320f",
+      "new_git_blob": "ac6144a106215dbc1e2fec7fc414d65b0dc41187",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_sharpclaw_weno5_nx200_cfl0.4_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx200_cfl0.4_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "f89394b5cf00cf483c35de62b2f3c2211d56586e",
+      "size_bytes": 12695,
+      "original_sha256": "4a4b41c90ecc90a529cec9ad166e45c2c9005250c8c4cff0d426c3e7cde84224",
+      "new_sha256": "4a4b41c90ecc90a529cec9ad166e45c2c9005250c8c4cff0d426c3e7cde84224",
+      "new_git_blob": "f89394b5cf00cf483c35de62b2f3c2211d56586e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.2_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.2_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "de441da52727056f80b5d736f5c14a0349b47094",
+      "size_bytes": 24892,
+      "original_sha256": "fa312d1d90e64f373418d9359526377eedb2fbd28333cb20955e800a5071e030",
+      "new_sha256": "fa312d1d90e64f373418d9359526377eedb2fbd28333cb20955e800a5071e030",
+      "new_git_blob": "de441da52727056f80b5d736f5c14a0349b47094",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.4_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.4_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "4eaf9449a9e4b3afd0808cd74c3aaba381cdce3b",
+      "size_bytes": 24892,
+      "original_sha256": "113c7134ba2f78eaa25ef5cc435d6601bf99be0d0e9b39401810121ba8ba0e32",
+      "new_sha256": "113c7134ba2f78eaa25ef5cc435d6601bf99be0d0e9b39401810121ba8ba0e32",
+      "new_git_blob": "4eaf9449a9e4b3afd0808cd74c3aaba381cdce3b",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.8_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.8_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "cf9acff8779536d5dd2be2ee1883f4fd8af96d54",
+      "size_bytes": 24892,
+      "original_sha256": "1f22b9b04484ddb59eaa4bcbcefca87b5366bbadafdbc47c830b141882c7e93a",
+      "new_sha256": "1f22b9b04484ddb59eaa4bcbcefca87b5366bbadafdbc47c830b141882c7e93a",
+      "new_git_blob": "cf9acff8779536d5dd2be2ee1883f4fd8af96d54",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_clawpack_sharpclaw_weno5_nx800_cfl0.4_eps0.0001.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx800_cfl0.4_eps0.0001.json",
+      "git_mode": "100644",
+      "original_git_blob": "0a6994a09318c0a5b05cf25997776a98e48ca9d3",
+      "size_bytes": 49227,
+      "original_sha256": "53572968c0b5d1121ce5016487db45e816ec3b5fab8cb2b13766b016b48cebbf",
+      "new_sha256": "53572968c0b5d1121ce5016487db45e816ec3b5fab8cb2b13766b016b48cebbf",
+      "new_git_blob": "0a6994a09318c0a5b05cf25997776a98e48ca9d3",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx100_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx100_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "c1852c2507202b575464d613a3c3cb5a6828988b",
+      "size_bytes": 4602,
+      "original_sha256": "50b481712ce80ae82ecae77c02432b2ad1f0003f2123fefc9ba2d0ab8bfcc4e5",
+      "new_sha256": "50b481712ce80ae82ecae77c02432b2ad1f0003f2123fefc9ba2d0ab8bfcc4e5",
+      "new_git_blob": "c1852c2507202b575464d613a3c3cb5a6828988b",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "d6614616761cfac02f6061946b662003893d4e92",
+      "size_bytes": 8594,
+      "original_sha256": "f86973c2fb58ee00bccdfe7be7659f87b60dfea1948b15d1af8c44617b91859f",
+      "new_sha256": "f86973c2fb58ee00bccdfe7be7659f87b60dfea1948b15d1af8c44617b91859f",
+      "new_git_blob": "d6614616761cfac02f6061946b662003893d4e92",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4_eps0.01.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4_eps0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "42d25ebd67721df57b21f921bce666fa12347236",
+      "size_bytes": 8415,
+      "original_sha256": "fed61d83642557177861d1819dafe74b684962bc78290c336a0f9ffb21fbf472",
+      "new_sha256": "fed61d83642557177861d1819dafe74b684962bc78290c336a0f9ffb21fbf472",
+      "new_git_blob": "42d25ebd67721df57b21f921bce666fa12347236",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.2.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.2.json",
+      "git_mode": "100644",
+      "original_git_blob": "e15b7b1b4d51a28fefd2734afc8923ec8dd516dc",
+      "size_bytes": 16595,
+      "original_sha256": "62a3edb482b1847cd5484466117b19d90c698fa0d41de415a2d908fbac2de0a1",
+      "new_sha256": "62a3edb482b1847cd5484466117b19d90c698fa0d41de415a2d908fbac2de0a1",
+      "new_git_blob": "e15b7b1b4d51a28fefd2734afc8923ec8dd516dc",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "04a6f375f626713007cd14befbf9268d3740a06f",
+      "size_bytes": 16550,
+      "original_sha256": "9c5d959530e1f9f6af671f6dace1c1a10400bd53e1a280b0edb4a77a0ddb0047",
+      "new_sha256": "9c5d959530e1f9f6af671f6dace1c1a10400bd53e1a280b0edb4a77a0ddb0047",
+      "new_git_blob": "04a6f375f626713007cd14befbf9268d3740a06f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4_eps0.01.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4_eps0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "67c283759f0a6794c8d9416170048da5b3610c39",
+      "size_bytes": 16189,
+      "original_sha256": "a91aaec630dd6c2e8c5cacd437899f0f7dd335ea641dff18cc99dd36f8304040",
+      "new_sha256": "a91aaec630dd6c2e8c5cacd437899f0f7dd335ea641dff18cc99dd36f8304040",
+      "new_git_blob": "67c283759f0a6794c8d9416170048da5b3610c39",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.8.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.8.json",
+      "git_mode": "100644",
+      "original_git_blob": "ab23f97938e09eb69ececd8e0cd789748e137811",
+      "size_bytes": 16542,
+      "original_sha256": "d3a257d44404356f888f016913661a7be2ce0c8c1b4a3160c584c3f504ac38df",
+      "new_sha256": "d3a257d44404356f888f016913661a7be2ce0c8c1b4a3160c584c3f504ac38df",
+      "new_git_blob": "ab23f97938e09eb69ececd8e0cd789748e137811",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_icmatched_nx800_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx800_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "4d205323726c040522b4955d6c405b1b3537d114",
+      "size_bytes": 32494,
+      "original_sha256": "ed448192c6bd9f79cab9fe2ebdf776014859d48347daf0081f63896e7737fb2d",
+      "new_sha256": "ed448192c6bd9f79cab9fe2ebdf776014859d48347daf0081f63896e7737fb2d",
+      "new_git_blob": "4d205323726c040522b4955d6c405b1b3537d114",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx100_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx100_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "8e2f177ea9f1552693a215d97a782870991fb3c2",
+      "size_bytes": 4609,
+      "original_sha256": "88e456f54df96457e7e4e748e82b7578f81e5f3550b819a434a2c4dfd40e5ba8",
+      "new_sha256": "88e456f54df96457e7e4e748e82b7578f81e5f3550b819a434a2c4dfd40e5ba8",
+      "new_git_blob": "8e2f177ea9f1552693a215d97a782870991fb3c2",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx200_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx200_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "24b0348a95c0ce927a197a6e7cbb4738df01056d",
+      "size_bytes": 8696,
+      "original_sha256": "422b73d589380126672f85659ef8af6be4028bf6238a384add04469e36ef7c51",
+      "new_sha256": "422b73d589380126672f85659ef8af6be4028bf6238a384add04469e36ef7c51",
+      "new_git_blob": "24b0348a95c0ce927a197a6e7cbb4738df01056d",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.2.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.2.json",
+      "git_mode": "100644",
+      "original_git_blob": "aed4a44933be4bf32f360668c96b7e257b08cbf8",
+      "size_bytes": 16898,
+      "original_sha256": "a5b84c30f4226b8fa9a6d016656855a51ee19fac1cb48aefd82611ee9ddeedd6",
+      "new_sha256": "a5b84c30f4226b8fa9a6d016656855a51ee19fac1cb48aefd82611ee9ddeedd6",
+      "new_git_blob": "aed4a44933be4bf32f360668c96b7e257b08cbf8",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "c810f43483d2c0a9161a71b2c3502f6d80ba35d9",
+      "size_bytes": 16921,
+      "original_sha256": "07f92a7ed2627d12a97c43e368704820edfcbb066fefbbaec0ed1c9ace57780f",
+      "new_sha256": "07f92a7ed2627d12a97c43e368704820edfcbb066fefbbaec0ed1c9ace57780f",
+      "new_git_blob": "c810f43483d2c0a9161a71b2c3502f6d80ba35d9",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.8.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.8.json",
+      "git_mode": "100644",
+      "original_git_blob": "9864b9e642e4dc347aa9558aec3cb37c18618333",
+      "size_bytes": 17002,
+      "original_sha256": "eefd81984391b0a427be87fcc1df906939269d55b143c645e3c930f785bbaee9",
+      "new_sha256": "eefd81984391b0a427be87fcc1df906939269d55b143c645e3c930f785bbaee9",
+      "new_git_blob": "9864b9e642e4dc347aa9558aec3cb37c18618333",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx800_cfl0.4.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx800_cfl0.4.json",
+      "git_mode": "100644",
+      "original_git_blob": "00c15ebd90b7febc2662d4874b847fb9fa5b06bd",
+      "size_bytes": 33366,
+      "original_sha256": "ebf9c00070d4e85edd585ff2a890d43cbd313c9997b1918ee8a557aa6b4ed12f",
+      "new_sha256": "ebf9c00070d4e85edd585ff2a890d43cbd313c9997b1918ee8a557aa6b4ed12f",
+      "new_git_blob": "00c15ebd90b7febc2662d4874b847fb9fa5b06bd",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/report_ingest_friction.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/report_ingest_friction.json",
+      "git_mode": "100644",
+      "original_git_blob": "9af54420a35ae3bd0dae5f3eb861cf4f89bd28fb",
+      "size_bytes": 1814,
+      "original_sha256": "eb0a36763cac2951f34e40f56aada3b690c2bc496e23635374edce8616fa0977",
+      "new_sha256": "eb0a36763cac2951f34e40f56aada3b690c2bc496e23635374edce8616fa0977",
+      "new_git_blob": "9af54420a35ae3bd0dae5f3eb861cf4f89bd28fb",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/result.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "d1d2407610b0c96f3ba3ff44199a274ecb029d95",
+      "size_bytes": 28241,
+      "original_sha256": "ab2e77fbe5d21c5718aed25689d7aa0a72e852a589c0998a9478d2570dc0f6fb",
+      "new_sha256": "ab2e77fbe5d21c5718aed25689d7aa0a72e852a589c0998a9478d2570dc0f6fb",
+      "new_git_blob": "d1d2407610b0c96f3ba3ff44199a274ecb029d95",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/table.csv",
+      "new_path": "development/verification/dam_break_slot_muscl2/artifacts/table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "9f85827931f1705fc06579d22722e5f731a9d0a6",
+      "size_bytes": 7447,
+      "original_sha256": "f02f0a55953ffa16c7e21706de31c2e5cfbe1a27f7a64e4ca4cd0386b2a29ab5",
+      "new_sha256": "f02f0a55953ffa16c7e21706de31c2e5cfbe1a27f7a64e4ca4cd0386b2a29ab5",
+      "new_git_blob": "9f85827931f1705fc06579d22722e5f731a9d0a6",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/make_doc.py",
+      "new_path": "development/verification/dam_break_slot_muscl2/make_doc.py",
+      "git_mode": "100644",
+      "original_git_blob": "ece698adaf3266293215d3215389eacd45a6a45e",
+      "size_bytes": 24908,
+      "original_sha256": "e8819edea2f3dd9f62779abed8fc670a7719e0355ca00e725c4916deca1ddb2c",
+      "new_sha256": "d036c64f540060a9df8fba69b5fb9dd57ab0c16469d05f60476451352db31273",
+      "new_git_blob": "1ccc946cf6a87dac5acc4756263db50b0ff6b8c8",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/predeclared.json",
+      "new_path": "development/verification/dam_break_slot_muscl2/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "83f6df96430025dd4bfbcc043f9d7b5b47ceaec6",
+      "size_bytes": 6470,
+      "original_sha256": "9223eee9b183581483e04410c1242499993a8a2b9bccef55f330ca48cbb0122b",
+      "new_sha256": "9223eee9b183581483e04410c1242499993a8a2b9bccef55f330ca48cbb0122b",
+      "new_git_blob": "83f6df96430025dd4bfbcc043f9d7b5b47ceaec6",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/dam_break_slot_muscl2_local_hll_ssprk2/run_arms.py",
+      "new_path": "development/verification/dam_break_slot_muscl2/run_arms.py",
+      "git_mode": "100644",
+      "original_git_blob": "56c557a86c13e140a4d2086cf7d0e7fb1d32c601",
+      "size_bytes": 10342,
+      "original_sha256": "936d393d18e567c076b008540c70a626931c011478b8f349c7e55a6e1585f6e1",
+      "new_sha256": "8522451bf94f9991a4b0bf12375e55b155da4ae78a6d4f9b7a8f9eb4b599c515",
+      "new_git_blob": "e5dac0c1aefbc847f38becb4ab7d2365f250c317",
+      "byte_identical": false
+    }
+  ],
+  "reference_scan": "Updated two channel test loaders and dam-break test paths, active runner root depths, public report and command paths. Explicit two-name legacy figure compatibility mapping in dam report builder retains original result.json bytes. No canonical source changes.",
+  "compatibility": "Regular analysis figures now write under the owning archive artifacts, not retired root figures/. Published docs retain URLs; reports/raw results unchanged except path-only documentation edits. Original figure images were untracked; newly rendered images are derived from unchanged historical data, not original recovered bytes.",
+  "scientific_scope": "Directory/asset/analysis compatibility only; do not assert new scientific validity. Full solver replays deferred.",
+  "validation": {
+    "targeted_before": "13 passed",
+    "targeted_after": "13 passed; same 3 existing test modules; pre-existing runtime warning retained",
+    "cli_help": "3 runner CLI option lists equal, prose unchanged after normalizing line wrapping and exact migrated paths",
+    "compile": "compileall passed for both archives",
+    "offline_render": "6 channel and 2 slot-dam PNGs rendered identically before and after using tracked historical result data. Channel report generation equal except path strings. Slot-dam report payload identical except path strings; exact legacy figure mapping tested against unchanged stored result.json. Figures derived, not claimed original. No retired figures/ root created after migration.",
+    "canonical_source": "No files in src/ modified.",
+    "lint_format": "Two channel test loader path substitutions required Ruff formatting; verified AST identical before/after the formatter. Full Ruff ratchet passed without relaxing ceilings."
+  },
+  "regenerated_figures": [
+    {
+      "path": "development/verification/zou_he_channel_2d/figures/fig1_profiles.png",
+      "sha256": "fcef51807260a887aa3048e0dc37e64c3ec17ddc9c80039a37522f6f72d91a00",
+      "size_bytes": 110613,
+      "renderer": "development/verification/zou_he_channel_2d/make_figures.py",
+      "source_data": [
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/zou_he_channel_results.json",
+          "sha256": "ea5559a0dd8fdacf62dfe5c574eeb3e29f91fbff8945d9e4331b548340923d75"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/zou_he_channel_2d/figures/fig2_error.png",
+      "sha256": "34d9abe52797fac6fcd80968796a827d1cdaeb80a0181b81ccdba3ecf7efc496",
+      "size_bytes": 83437,
+      "renderer": "development/verification/zou_he_channel_2d/make_figures.py",
+      "source_data": [
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/zou_he_channel_results.json",
+          "sha256": "ea5559a0dd8fdacf62dfe5c574eeb3e29f91fbff8945d9e4331b548340923d75"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/zou_he_channel_2d/figures/fig3_sweep.png",
+      "sha256": "202e917684e2154bc52c79ef987ad96563c600afb7ef32785dd8fa992a8f5f69",
+      "size_bytes": 41338,
+      "renderer": "development/verification/zou_he_channel_2d/make_figures.py",
+      "source_data": [
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/zou_he_channel_results.json",
+          "sha256": "ea5559a0dd8fdacf62dfe5c574eeb3e29f91fbff8945d9e4331b548340923d75"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/zou_he_channel_2d/figures/fig4_convergence.png",
+      "sha256": "c4d6e14ab6384d080072b23ee9c5297734c1fe0cbf80f65e77d13a9295d1edbe",
+      "size_bytes": 44364,
+      "renderer": "development/verification/zou_he_channel_2d/make_figures.py",
+      "source_data": [
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/zou_he_channel_results.json",
+          "sha256": "ea5559a0dd8fdacf62dfe5c574eeb3e29f91fbff8945d9e4331b548340923d75"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/zou_he_channel_2d/figures/fig5_drift_gate.png",
+      "sha256": "6de1d2c561636fd6b5c1f6196fc86ff599d7efff7e77c92a560ec2c2822789f6",
+      "size_bytes": 75505,
+      "renderer": "development/verification/zou_he_channel_2d/make_review_figures.py",
+      "source_data": [
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/r3_steady_gate.json",
+          "sha256": "744f71b954b5f942078d81268a2ce4126cc015ce93e4bb5b0c4780f8029058e2"
+        },
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/repro_round2.json",
+          "sha256": "78ac40579bc10f3073a68bd3452f19fd1194c290ce5241ff41bfbc04fe5d1e22"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/zou_he_channel_2d/figures/fig6_dpmax_convergence.png",
+      "sha256": "5caa8ca35aa6411374223a4912c972d9b9f3379adc9032a0595bba955e7cc0c5",
+      "size_bytes": 44266,
+      "renderer": "development/verification/zou_he_channel_2d/make_review_figures.py",
+      "source_data": [
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/r3_steady_gate.json",
+          "sha256": "744f71b954b5f942078d81268a2ce4126cc015ce93e4bb5b0c4780f8029058e2"
+        },
+        {
+          "path": "development/verification/zou_he_channel_2d/artifacts/repro_round2.json",
+          "sha256": "78ac40579bc10f3073a68bd3452f19fd1194c290ce5241ff41bfbc04fe5d1e22"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_convergence.png",
+      "sha256": "73c7d20b58fb0bd07a46c98a0cab59d57d87be9e74395b926d88fa3817b1799a",
+      "size_bytes": 79882,
+      "renderer": "development/verification/dam_break_slot_muscl2/analyze.py",
+      "source_data": [
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/result.json",
+          "sha256": "ab2e77fbe5d21c5718aed25689d7aa0a72e852a589c0998a9478d2570dc0f6fb"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx200_cfl0.4_eps0.0001.json",
+          "sha256": "b6275a4675850a065b0acc0cba92060bc56298ce25da1ef348d678eceb34800c"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx400_cfl0.4_eps0.0001.json",
+          "sha256": "98fa9144fd036db28b8ae31d560e4e4236b61d15164afbda499b5322d49b6e33"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx100_cfl0.4.json",
+          "sha256": "ac8c4263039c5da671d75435df5a36985ba0336d536095112135f724da9a277b"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4.json",
+          "sha256": "0f7d48c6531fbf8257e458672e3afd9336a310d85a36736839812344441258bf"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4_eps0.001.json",
+          "sha256": "a4095577187eb8ebf709e0983c1bf85f1ac2ba1815da640f56b48f5ae8cea8f7"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.2.json",
+          "sha256": "cd4d538ca0e319f0faca2661c43ab65e016c88d5eb75541c9f343c7a39e1cfa7"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4.json",
+          "sha256": "434a19de6e803d66d19b908c206accdd604f625b9486aa9067547057ae2020b4"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.001.json",
+          "sha256": "c91405b95247916082401cbec7b8fb4dadac7e6abdf1f880ffb8dfd2b19793fa"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.01.json",
+          "sha256": "58e635129950c3f0bb881f61b859951812042f2d88888b3e8265e8990a318c1d"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.8.json",
+          "sha256": "a88634f20119dd20e343f724628d4c36d533dca3aae3f7f8cda36ba0d6beab20"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx800_cfl0.4.json",
+          "sha256": "cc1f64db06287086cf9993b242c84a0a47b619936b78ec0eb206f07a859e20a7"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx200_cfl0.4_eps0.01.json",
+          "sha256": "5c9ed7e05823f2622ccc9b245c1d56751f853120a7ba6a36ecc01b7a55896003"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx400_cfl0.4_eps0.01.json",
+          "sha256": "500eea8b1014f203fe200598727ce8d35dba243244b8992b7cd24c07d5b9179e"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx100_cfl0.4_eps0.0001.json",
+          "sha256": "aef3f3d8f152065971df811640880476a98f3a76bd90db8640db1e1e3918320f"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx200_cfl0.4_eps0.0001.json",
+          "sha256": "4a4b41c90ecc90a529cec9ad166e45c2c9005250c8c4cff0d426c3e7cde84224"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.2_eps0.0001.json",
+          "sha256": "fa312d1d90e64f373418d9359526377eedb2fbd28333cb20955e800a5071e030"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.4_eps0.0001.json",
+          "sha256": "113c7134ba2f78eaa25ef5cc435d6601bf99be0d0e9b39401810121ba8ba0e32"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.8_eps0.0001.json",
+          "sha256": "1f22b9b04484ddb59eaa4bcbcefca87b5366bbadafdbc47c830b141882c7e93a"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx800_cfl0.4_eps0.0001.json",
+          "sha256": "53572968c0b5d1121ce5016487db45e816ec3b5fab8cb2b13766b016b48cebbf"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx100_cfl0.4.json",
+          "sha256": "50b481712ce80ae82ecae77c02432b2ad1f0003f2123fefc9ba2d0ab8bfcc4e5"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4.json",
+          "sha256": "f86973c2fb58ee00bccdfe7be7659f87b60dfea1948b15d1af8c44617b91859f"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4_eps0.01.json",
+          "sha256": "fed61d83642557177861d1819dafe74b684962bc78290c336a0f9ffb21fbf472"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.2.json",
+          "sha256": "62a3edb482b1847cd5484466117b19d90c698fa0d41de415a2d908fbac2de0a1"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4.json",
+          "sha256": "9c5d959530e1f9f6af671f6dace1c1a10400bd53e1a280b0edb4a77a0ddb0047"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4_eps0.01.json",
+          "sha256": "a91aaec630dd6c2e8c5cacd437899f0f7dd335ea641dff18cc99dd36f8304040"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.8.json",
+          "sha256": "d3a257d44404356f888f016913661a7be2ce0c8c1b4a3160c584c3f504ac38df"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx800_cfl0.4.json",
+          "sha256": "ed448192c6bd9f79cab9fe2ebdf776014859d48347daf0081f63896e7737fb2d"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx100_cfl0.4.json",
+          "sha256": "88e456f54df96457e7e4e748e82b7578f81e5f3550b819a434a2c4dfd40e5ba8"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx200_cfl0.4.json",
+          "sha256": "422b73d589380126672f85659ef8af6be4028bf6238a384add04469e36ef7c51"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.2.json",
+          "sha256": "a5b84c30f4226b8fa9a6d016656855a51ee19fac1cb48aefd82611ee9ddeedd6"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.4.json",
+          "sha256": "07f92a7ed2627d12a97c43e368704820edfcbb066fefbbaec0ed1c9ace57780f"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.8.json",
+          "sha256": "eefd81984391b0a427be87fcc1df906939269d55b143c645e3c930f785bbaee9"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx800_cfl0.4.json",
+          "sha256": "ebf9c00070d4e85edd585ff2a890d43cbd313c9997b1918ee8a557aa6b4ed12f"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_profiles.png",
+      "sha256": "9f85772e81d21856830537b19a2ef439ab60ecff3577e1cf0d16df5af6d53166",
+      "size_bytes": 89844,
+      "renderer": "development/verification/dam_break_slot_muscl2/analyze.py",
+      "source_data": [
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/result.json",
+          "sha256": "ab2e77fbe5d21c5718aed25689d7aa0a72e852a589c0998a9478d2570dc0f6fb"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx200_cfl0.4_eps0.0001.json",
+          "sha256": "b6275a4675850a065b0acc0cba92060bc56298ce25da1ef348d678eceb34800c"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx400_cfl0.4_eps0.0001.json",
+          "sha256": "98fa9144fd036db28b8ae31d560e4e4236b61d15164afbda499b5322d49b6e33"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx100_cfl0.4.json",
+          "sha256": "ac8c4263039c5da671d75435df5a36985ba0336d536095112135f724da9a277b"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4.json",
+          "sha256": "0f7d48c6531fbf8257e458672e3afd9336a310d85a36736839812344441258bf"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4_eps0.001.json",
+          "sha256": "a4095577187eb8ebf709e0983c1bf85f1ac2ba1815da640f56b48f5ae8cea8f7"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.2.json",
+          "sha256": "cd4d538ca0e319f0faca2661c43ab65e016c88d5eb75541c9f343c7a39e1cfa7"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4.json",
+          "sha256": "434a19de6e803d66d19b908c206accdd604f625b9486aa9067547057ae2020b4"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.001.json",
+          "sha256": "c91405b95247916082401cbec7b8fb4dadac7e6abdf1f880ffb8dfd2b19793fa"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.01.json",
+          "sha256": "58e635129950c3f0bb881f61b859951812042f2d88888b3e8265e8990a318c1d"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.8.json",
+          "sha256": "a88634f20119dd20e343f724628d4c36d533dca3aae3f7f8cda36ba0d6beab20"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx800_cfl0.4.json",
+          "sha256": "cc1f64db06287086cf9993b242c84a0a47b619936b78ec0eb206f07a859e20a7"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx200_cfl0.4_eps0.01.json",
+          "sha256": "5c9ed7e05823f2622ccc9b245c1d56751f853120a7ba6a36ecc01b7a55896003"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx400_cfl0.4_eps0.01.json",
+          "sha256": "500eea8b1014f203fe200598727ce8d35dba243244b8992b7cd24c07d5b9179e"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx100_cfl0.4_eps0.0001.json",
+          "sha256": "aef3f3d8f152065971df811640880476a98f3a76bd90db8640db1e1e3918320f"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx200_cfl0.4_eps0.0001.json",
+          "sha256": "4a4b41c90ecc90a529cec9ad166e45c2c9005250c8c4cff0d426c3e7cde84224"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.2_eps0.0001.json",
+          "sha256": "fa312d1d90e64f373418d9359526377eedb2fbd28333cb20955e800a5071e030"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.4_eps0.0001.json",
+          "sha256": "113c7134ba2f78eaa25ef5cc435d6601bf99be0d0e9b39401810121ba8ba0e32"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.8_eps0.0001.json",
+          "sha256": "1f22b9b04484ddb59eaa4bcbcefca87b5366bbadafdbc47c830b141882c7e93a"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx800_cfl0.4_eps0.0001.json",
+          "sha256": "53572968c0b5d1121ce5016487db45e816ec3b5fab8cb2b13766b016b48cebbf"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx100_cfl0.4.json",
+          "sha256": "50b481712ce80ae82ecae77c02432b2ad1f0003f2123fefc9ba2d0ab8bfcc4e5"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4.json",
+          "sha256": "f86973c2fb58ee00bccdfe7be7659f87b60dfea1948b15d1af8c44617b91859f"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4_eps0.01.json",
+          "sha256": "fed61d83642557177861d1819dafe74b684962bc78290c336a0f9ffb21fbf472"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.2.json",
+          "sha256": "62a3edb482b1847cd5484466117b19d90c698fa0d41de415a2d908fbac2de0a1"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4.json",
+          "sha256": "9c5d959530e1f9f6af671f6dace1c1a10400bd53e1a280b0edb4a77a0ddb0047"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4_eps0.01.json",
+          "sha256": "a91aaec630dd6c2e8c5cacd437899f0f7dd335ea641dff18cc99dd36f8304040"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.8.json",
+          "sha256": "d3a257d44404356f888f016913661a7be2ce0c8c1b4a3160c584c3f504ac38df"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx800_cfl0.4.json",
+          "sha256": "ed448192c6bd9f79cab9fe2ebdf776014859d48347daf0081f63896e7737fb2d"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx100_cfl0.4.json",
+          "sha256": "88e456f54df96457e7e4e748e82b7578f81e5f3550b819a434a2c4dfd40e5ba8"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx200_cfl0.4.json",
+          "sha256": "422b73d589380126672f85659ef8af6be4028bf6238a384add04469e36ef7c51"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.2.json",
+          "sha256": "a5b84c30f4226b8fa9a6d016656855a51ee19fac1cb48aefd82611ee9ddeedd6"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.4.json",
+          "sha256": "07f92a7ed2627d12a97c43e368704820edfcbb066fefbbaec0ed1c9ace57780f"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.8.json",
+          "sha256": "eefd81984391b0a427be87fcc1df906939269d55b143c645e3c930f785bbaee9"
+        },
+        {
+          "path": "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx800_cfl0.4.json",
+          "sha256": "ebf9c00070d4e85edd585ff2a890d43cbd313c9997b1918ee8a557aa6b4ed12f"
+        }
+      ],
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    }
+  ],
+  "reference_updates": [
+    {
+      "path": "docs/XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2.md",
+      "original_sha256": "fb2dd7d68689a03f5649f03c1fba9d95e6cb86da54b0e7c6fb73cdb009888274",
+      "new_sha256": "79504c74234b5e3ff0cb8c3f48ea8f782832133337bfaaa217b77b73aca68b5a"
+    },
+    {
+      "path": "docs/XVAL-ZOU-HE-CHANNEL-3D-D3Q19-LADDER.md",
+      "original_sha256": "59648aaa41e63e32396de1fe5745379ae03c5c094714c33b2a44f3f4f77e4e51",
+      "new_sha256": "d58dc60eda3bc8e31e91f53877fc68b0e4bc5b23cb5f54542dcf23ea7a72498f"
+    },
+    {
+      "path": "tests/test_xval_dam_break_slot.py",
+      "original_sha256": "8425498512aac7f029e42906230c1d9a2cb9d727ff0bd17eb096ec8c65d47043",
+      "new_sha256": "d7f51079b1f6bbef3eda8f87df1f580d11a6dd53e2d64fa18d7849cb5ead3803"
+    },
+    {
+      "path": "tests/test_xval_zouhe_verdict_steady_gate.py",
+      "original_sha256": "3b6c55ce3858290568e091cc794acfed847b3fcaa767e6e3f97bc5d05a08d401",
+      "new_sha256": "daf5c8ec94f0901f9536dcce41d47675e7f91e06e633ce8bcbdf055959592aa1"
+    },
+    {
+      "path": "tests/test_zou_he_independent_closure.py",
+      "original_sha256": "91e2e1e1a4f454a6b0aa6d82491463559710d4c50000f4ac71e47073fed6a8f8",
+      "new_sha256": "022bab45e217dcb5157f09bacdf9cd46357bb97fe2c4851ab40afa09109218d1"
+    }
+  ]
+}

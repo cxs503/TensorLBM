@@ -386,6 +386,34 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assert_fingerprint(REPO / entry["new_path"], entry["new_sha256"],
                                         entry["new_size_bytes"])
 
+    def test_zou_he_dam_slot_archive_preserves_historical_data_and_derived_figures(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "zou-he-dam-break-slot-xval-2026-11-27.json").read_text()
+        )
+        self.assertEqual(len(ledger["entries"]), 62)
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["new_sha256"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["new_git_blob"]])
+                if item["new_path"].endswith((".json", ".csv")):
+                    self.assertEqual(item["original_sha256"], item["new_sha256"])
+        self.assertEqual(len(ledger["regenerated_figures"]), 8)
+        for item in ledger["regenerated_figures"]:
+            raw = (REPO / item["path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), item["sha256"])
+            for src in item["source_data"]:
+                self.assertEqual(
+                    hashlib.sha256((REPO / src["path"]).read_bytes()).hexdigest(),
+                    src["sha256"],
+                )
+
     def test_november_root_migration_destinations(self):
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             moves = {

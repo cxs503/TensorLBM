@@ -1,0 +1,75 @@
+{
+  "scope": "Historical generic dam-break slot comparison, with stored numerical arm records and analytical/reference comparison. No new solver run.",
+  "criteria": {
+    "historical": {
+      "C1_cross_tool_l2_pct": 15.0,
+      "C2_front_diff_pct": 15.0,
+      "C3_profile_l2_pct_vs_analytic": 5.0,
+      "C4_mass_drift_pct": 1.0,
+      "C5_cross_tool_vs_highorder_l2_pct": 15.0,
+      "owner_precision_standard_pct": 15.0
+    },
+    "current_acceptance": "Not evaluated by relocation."
+  },
+  "source": [
+    "development/verification/dam_break_slot_muscl2/analyze.py",
+    "development/verification/dam_break_slot_muscl2/make_doc.py",
+    "development/verification/dam_break_slot_muscl2/run_arms.py",
+    "src/tensorlbm/shallow_water.py",
+    "tests/test_xval_dam_break_slot.py"
+  ],
+  "config": [
+    "development/verification/dam_break_slot_muscl2/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/dam_break_slot_muscl2/README.md",
+    "development/verification/dam_break_slot_muscl2/README.md",
+    "docs/XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2.md"
+  ],
+  "reference_files": [
+    "development/verification/dam_break_slot_muscl2/predeclared.json"
+  ],
+  "results": [
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx200_cfl0.4_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_1storder_nx400_cfl0.4_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx100_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx200_cfl0.4_eps0.001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.2.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.4_eps0.01.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx400_cfl0.8.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_hlle_nx800_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx200_cfl0.4_eps0.01.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_classic_roe_nx400_cfl0.4_eps0.01.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx100_cfl0.4_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx200_cfl0.4_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.2_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.4_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx400_cfl0.8_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_clawpack_sharpclaw_weno5_nx800_cfl0.4_eps0.0001.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx100_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx200_cfl0.4_eps0.01.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.2.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.4_eps0.01.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx400_cfl0.8.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_icmatched_nx800_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx100_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx200_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.2.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx400_cfl0.8.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/arm_tensorlbm_muscl2_local_hll_ssprk2_nx800_cfl0.4.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/report_ingest_friction.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/result.json",
+    "development/verification/dam_break_slot_muscl2/artifacts/table.csv"
+  ],
+  "evidence": [
+    "development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_convergence.png",
+    "development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_profiles.png",
+    "docs/architecture/migrations/zou-he-dam-break-slot-xval-2026-11-27.json"
+  ]
+}

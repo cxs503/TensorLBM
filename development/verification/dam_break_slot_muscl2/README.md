@@ -10,19 +10,22 @@ HLL + SSP-RK2) against the mature open-source suite **Clawpack 5.14**
   before the OSS arm was run.
 * `run_arms.py` — six arms × resolution ladder × CFL sweep (~30 s CPU).
 * `analyze.py` — metrics, criteria, `artifacts/result.json`, `artifacts/table.csv`,
-  two figures under `figures/`.
+  two figures under `artifacts/figures/`.
 * `make_doc.py` — report `docs/XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2.md`
   (all numbers injected from `result.json`).
 * `artifacts/` — arm profiles + aggregated result (versioned, `runs/` is gitignored).
 
 ```bash
 pip install clawpack                       # 5.14.0; source build on loongarch64
-python xval/dam_break_slot_muscl2_local_hll_ssprk2/run_arms.py
-python xval/dam_break_slot_muscl2_local_hll_ssprk2/analyze.py
-python xval/dam_break_slot_muscl2_local_hll_ssprk2/make_doc.py
+python development/verification/dam_break_slot_muscl2/run_arms.py
+python development/verification/dam_break_slot_muscl2/analyze.py
+python development/verification/dam_break_slot_muscl2/make_doc.py
 pytest tests/test_xval_dam_break_slot.py -q
 ```
 
 Verdict **PASS**: scheme-level agreement with the independent OSS code is
 0.29–1.86 % (< 3 %), the raw 7.2–9.3 % gap is fully attributed to the positive
 dry floor the OSS Riemann solvers require (NaN at eps ≤ 1e-3).
+
+
+[Canonical searchable case index](../../../benchmarks/cross_validation/dam_break_slot_muscl2/README.md). Historical verdict above is not current scientific acceptance.
