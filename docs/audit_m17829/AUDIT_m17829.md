@@ -1,5 +1,7 @@
 # m17829 交差核验：m17728「XVAL-LBM-EDT-TWO-SEGMENT-GEOMETRY-TAG-COMPRESSION」
 
+> [Current archive](../../development/verification/edt_two_segment_geometry_tag_compression/README.md). The report retains its historical paths and findings.
+
 - 被核对象：m17728（TensorLBM，commit `4af97ef7`，branch `agent/m17728`，任务态 succeeded）
 - 核验单：m17829（本单，非重做；取证 → 判级 → 落表）
 - 审计性质：独立重跑 + 独立追加对抗臂 + 基准裁判表对照

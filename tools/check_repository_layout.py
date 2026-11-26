@@ -93,6 +93,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "sdaa"),
     ("xval", "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT"),
     ("scripts", "in25_t6"),
+    ("xval", "fill_gradient_normal"),
+    ("xval", "edt_two_segment_geometry_tag_compression"),
     ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
     ("xval", "fluctuating_lbm_ghost_modes"),
