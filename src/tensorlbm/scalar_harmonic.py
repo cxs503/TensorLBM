@@ -24,10 +24,34 @@ class HarmonicScalarSlab:
     populations: torch.Tensor
     x_transfer: torch.Tensor
     y_transfer: torch.Tensor
+    frequency: float = 0.0
 
     @property
     def scalar(self):
         return self.populations.sum(dim=0)
+
+    def interval_transfer(self, start_step, stop_step):
+        """Sum signed real x and y link transfers for steps [start_step, stop_step).
+
+        Bounds are nonnegative lattice-step indices. Each transfer uses the
+        step midpoint phase. For a thermal scalar in K on a square lattice,
+        multiply by volumetric heat capacity and cell width to obtain J/m².
+        """
+        if any(
+            isinstance(v, (bool, np.bool_)) or not isinstance(v, (int, np.integer))
+            for v in (start_step, stop_step)
+        ):
+            raise ValueError("step bounds must be integers")
+        start, stop = int(start_step), int(stop_step)
+        if start < 0 or stop < start:
+            raise ValueError("step bounds must be nonnegative and nondecreasing")
+        count = stop - start
+        # Geometric sum centered on the interval midpoint. sinc gives the
+        # correct DC limit without subtracting nearly equal complex phases.
+        half = self.frequency / 2
+        amplitude = count * np.sinc(count * half / np.pi) / np.sinc(half / np.pi)
+        phase = amplitude * np.exp(1j * (self.frequency * start + half * count))
+        return (self.x_transfer * phase).real, (self.y_transfer * phase).real
 
 
 def solve_harmonic_scalar_slab(
@@ -182,5 +206,5 @@ def solve_harmonic_scalar_slab(
     if uniform_response != 0:
         populations = populations + torch.from_numpy(weights)[:, None, None] * uniform_response
     return HarmonicScalarSlab(
-        populations, x_transfer, scalar_link_transfer(post, "y", periodic=True)
+        populations, x_transfer, scalar_link_transfer(post, "y", periodic=True), frequency
     )

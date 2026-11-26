@@ -1,0 +1,20 @@
+{
+  "source_commit": "1bd3941b2fc9f463a198c434a2e197a773aff4f0",
+  "reference": "Geometric sum of midpoint phasors compared with independent real collision and streaming advances over steps [3,24). For the rotated anisotropic slab check both oriented transfer arrays and each cell storage balance at DC, 1e-10 and 0.37 radians per step.",
+  "command": "PYTHONPATH=src OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest -q tests/test_scalar_harmonic.py -o junit_family=legacy --junitxml=/tmp/lbm-interval-transfer.xml",
+  "passed": 28,
+  "cases": {
+    "test_interval_transfer_against_real_collision_stream[0.0]": {
+      "max_link_transfer_error_lattice": 3.552713678800501e-15,
+      "max_cell_balance_error_lattice": 3.58046925441613e-15
+    },
+    "test_interval_transfer_against_real_collision_stream[1e-10]": {
+      "max_link_transfer_error_lattice": 4.440892098500626e-16,
+      "max_cell_balance_error_lattice": 1.3322676295501878e-15
+    },
+    "test_interval_transfer_against_real_collision_stream[0.37]": {
+      "max_link_transfer_error_lattice": 4.440892098500626e-16,
+      "max_cell_balance_error_lattice": 3.8163916471489756e-16
+    }
+  }
+}
