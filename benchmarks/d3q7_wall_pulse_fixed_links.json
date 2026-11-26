@@ -1,0 +1,24 @@
+{
+  "source_commit": "58b17a64a45f60aed987c1acd70593153f61f429",
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src:. python -m pytest -q tests/test_thermal3d_budget.py -o junit_family=legacy --junitxml=/tmp/lbm_fixed_link.xml",
+  "tests": 8,
+  "failures": 0,
+  "errors": 0,
+  "reference": "Compare cumulative rightward link heat at the fixed positions x/L=29/32 and 31/32 over [0.125,0.25] s following a wall pulse. Every probe is an actual link midpoint on grids of 16, 48 and 80 intervals. Independent reference integrates the continuous 80-mode Fourier heat flux; dt=1/n².",
+  "measurements": {
+    "x29_over_32_reference_J_m2": 2.494220506951911e-07,
+    "n16_x29_over_32_heat_J_m2": 2.041936337162331e-08,
+    "n16_x29_over_32_relative_error": 0.9181332872746805,
+    "x31_over_32_reference_J_m2": 5.4350210651095414e-08,
+    "n16_x31_over_32_heat_J_m2": -7.217218035272395e-10,
+    "n16_x31_over_32_relative_error": 1.0132790985514368,
+    "n48_x29_over_32_heat_J_m2": 2.1532005164923924e-07,
+    "n48_x29_over_32_relative_error": 0.13672407451908328,
+    "n48_x31_over_32_heat_J_m2": 4.399147831254781e-08,
+    "n48_x31_over_32_relative_error": 0.1905923126047502,
+    "n80_x29_over_32_heat_J_m2": 2.370824396942264e-07,
+    "n80_x29_over_32_relative_error": 0.04947281512028162,
+    "n80_x31_over_32_heat_J_m2": 5.0558616908533336e-08,
+    "n80_x31_over_32_relative_error": 0.06976226397543245
+  }
+}
