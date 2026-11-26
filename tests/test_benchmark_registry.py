@@ -154,6 +154,17 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(paths, sorted(set(paths)))
         self.assertTrue(all((ROOT / path).is_file() for path in paths))
 
+    def test_ibm_epsilon_gram_archive_keeps_original_manifest_and_derivatives(self):
+        (case,) = self.registry("--case", "xval:ibm_epsilon_gram")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        variant = case["variants"][0]
+        archive = "development/verification/ibm_epsilon_gram"
+        self.assertIn(f"{archive}/results.json", variant["results"])
+        self.assertIn(f"{archive}/manifest.json", variant["reference_files"])
+        for name in ("fig1_roundtrip.png", "fig2_epsilon_cost.png",
+                     "fig3_cd.png", "fig4_convergence.png"):
+            self.assertIn(f"{archive}/derived_figures/{name}", variant["evidence"])
+
     def test_matrix_lookup_uses_exact_artifacts_and_preserves_verdict_scope(self):
         (ship,) = self.registry("--case", "matrix:ship_resistance_suboff")
         self.assertEqual(ship["id"], "suboff_re1000")

@@ -7,7 +7,7 @@ so the only changed variable is the box height, and reports a two-point
 blockage extrapolation C_D(B) = C_D(0) (1 + k B).
 
 Usage:
-    PYTHONPATH=src python xval/<anchor>/sweep_blockage.py --steps 1200 --transient 400
+    PYTHONPATH=src python development/verification/ibm_epsilon_gram/sweep_blockage.py --steps 1200 --transient 400
 """
 from __future__ import annotations
 

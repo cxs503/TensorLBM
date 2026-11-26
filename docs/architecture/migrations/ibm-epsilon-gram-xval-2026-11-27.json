@@ -1,0 +1,354 @@
+{
+  "scope": "Retire the complete IBM epsilon-Gram historical campaign directory, preserve current Git objects, register evidence, and label four derived plots.",
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "prerequisite": "#3048 exact candidate, not yet merged; no solver edits in this batch.",
+  "retired_paths": [
+    "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION"
+  ],
+  "root_directories_before": [
+    ".github",
+    "BB",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "root_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 41
+    }
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/REPORT.md",
+      "new_path": "development/verification/ibm_epsilon_gram/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "240d8e79ae4b0d398bdf49b2d5fadce7dccf42c1",
+      "original_sha256": "950db51b8d8512b47de7942da4470e3e735216c1aa7a96e392a2f4ca199bd3d9",
+      "original_size_bytes": 12279,
+      "current_sha256": "7945d9a05a68b39e3b527484ec69adab09bc5103945f7e4c00f4f0094cbc4416",
+      "current_size_bytes": 12308,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/benchmark.json",
+      "new_path": "development/verification/ibm_epsilon_gram/benchmark.json",
+      "git_mode": "100644",
+      "original_git_blob": "150bf17d401c8ecd41a47be8054979a08cc9c1eb",
+      "original_sha256": "e2b721c43bff82471f1cf79e206990cb5d583db7e307d6f2f91f2a92a7e7781a",
+      "original_size_bytes": 9752,
+      "current_sha256": "e2b721c43bff82471f1cf79e206990cb5d583db7e307d6f2f91f2a92a7e7781a",
+      "current_size_bytes": 9752,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/blockage_sweep.json",
+      "new_path": "development/verification/ibm_epsilon_gram/blockage_sweep.json",
+      "git_mode": "100644",
+      "original_git_blob": "92b134c921e31c2ac2b5324396a53af0c76e47a9",
+      "original_sha256": "6c2d2c07f62e736524a606e74f63c9bf30a080bf3d947a50477f59e19d8ab800",
+      "original_size_bytes": 1946,
+      "current_sha256": "6c2d2c07f62e736524a606e74f63c9bf30a080bf3d947a50477f59e19d8ab800",
+      "current_size_bytes": 1946,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/figure_captions.json",
+      "new_path": "development/verification/ibm_epsilon_gram/figure_captions.json",
+      "git_mode": "100644",
+      "original_git_blob": "461c00587b62036d24311e0d19d46f5d054dc909",
+      "original_sha256": "faec96498b52d3ecab58eb60374f54ddf3aabb73275a3a2ddc77fb56f84525c2",
+      "original_size_bytes": 1217,
+      "current_sha256": "faec96498b52d3ecab58eb60374f54ddf3aabb73275a3a2ddc77fb56f84525c2",
+      "current_size_bytes": 1217,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/make_figures.py",
+      "new_path": "development/verification/ibm_epsilon_gram/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "f0fd16fd6752ff991e2b1ed3f446182ed31fb4f1",
+      "original_sha256": "11d11aca6aef7641248d78e7cac1ff3a3571ba5d7501f9999dbd6b50344c9a2e",
+      "original_size_bytes": 7347,
+      "current_sha256": "22a039abe4ba8d46810d60c72632c2ddffc5e84b5cce771bec859a514e4b8605",
+      "current_size_bytes": 7375,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/manifest.json",
+      "new_path": "development/verification/ibm_epsilon_gram/manifest.json",
+      "git_mode": "100644",
+      "original_git_blob": "c8d85e7249ea86978fd0e40f0826610b80dc892c",
+      "original_sha256": "ec025578a37ee54269bc569f1947bf34beef4634d7947df23599a719ec109e41",
+      "original_size_bytes": 3494,
+      "current_sha256": "ec025578a37ee54269bc569f1947bf34beef4634d7947df23599a719ec109e41",
+      "current_size_bytes": 3494,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/physics_A1.json",
+      "new_path": "development/verification/ibm_epsilon_gram/physics_A1.json",
+      "git_mode": "100644",
+      "original_git_blob": "bb4c710d90faed1a52aaee6a5d3cbd88a6676b66",
+      "original_sha256": "e67b05598cd9b8d31866fc7f4426b2a29674f74b5a6807d9e2666595b9fb7611",
+      "original_size_bytes": 114,
+      "current_sha256": "e67b05598cd9b8d31866fc7f4426b2a29674f74b5a6807d9e2666595b9fb7611",
+      "current_size_bytes": 114,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/physics_A2.json",
+      "new_path": "development/verification/ibm_epsilon_gram/physics_A2.json",
+      "git_mode": "100644",
+      "original_git_blob": "be7a5864da4a69acb4178102fae8ff46fd694aef",
+      "original_sha256": "f85c203c8c96287a9679739e90a689f718cf0337ac27745014939a15da6e804f",
+      "original_size_bytes": 115,
+      "current_sha256": "f85c203c8c96287a9679739e90a689f718cf0337ac27745014939a15da6e804f",
+      "current_size_bytes": 115,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/predeclared.json",
+      "new_path": "development/verification/ibm_epsilon_gram/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "bd1ee96d87a22056a902ce7152d48a40156483e3",
+      "original_sha256": "5386176c65f572fb86191ae138608dc8438864864bfcfd83a702a42e869802c8",
+      "original_size_bytes": 5753,
+      "current_sha256": "5386176c65f572fb86191ae138608dc8438864864bfcfd83a702a42e869802c8",
+      "current_size_bytes": 5753,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/results.json",
+      "new_path": "development/verification/ibm_epsilon_gram/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "795a731d1c4f7f66bbda82969b9a1e5007a51af1",
+      "original_sha256": "563d5988acf17af121a9e6594eec90a9f9ba4c2bac381d1810c1475bc850dcb0",
+      "original_size_bytes": 34163,
+      "current_sha256": "563d5988acf17af121a9e6594eec90a9f9ba4c2bac381d1810c1475bc850dcb0",
+      "current_size_bytes": 34163,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run_xval.py",
+      "new_path": "development/verification/ibm_epsilon_gram/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "b7f824eae3d5e9f5539090009d9be95698af792b",
+      "original_sha256": "0940c2e0709a967b105dff66d2957e83c1e7d917f847c3b1dc7b886f9fef3a40",
+      "original_size_bytes": 17681,
+      "current_sha256": "8946b983c6a22db287cd172ebd8281d315864da91282abfa029ccadcdcbc2557",
+      "current_size_bytes": 17678,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/sweep_blockage.py",
+      "new_path": "development/verification/ibm_epsilon_gram/sweep_blockage.py",
+      "git_mode": "100644",
+      "original_git_blob": "73a4a71270286dbd698cb908bf799f8b22880bf4",
+      "original_sha256": "b29cad7df1812816b30ad4776f20a51725fead9c4075f2e8c106f79fa4b48863",
+      "original_size_bytes": 3363,
+      "current_sha256": "b04d46f5e38de559c5ccd4e35c3f1f9823bccbe2b9159293e56c6bf38be3ff3f",
+      "current_size_bytes": 3391,
+      "byte_identical": false
+    }
+  ],
+  "historical_manifest_discrepancies": {
+    "manifest_path": "development/verification/ibm_epsilon_gram/manifest.json",
+    "manifest_sha256": "ec025578a37ee54269bc569f1947bf34beef4634d7947df23599a719ec109e41",
+    "results_json": {
+      "recorded_sha256_16": "7024fccf9f57bf3a",
+      "recorded_size_bytes": 34160,
+      "actual_main_sha256": "563d5988acf17af121a9e6594eec90a9f9ba4c2bac381d1810c1475bc850dcb0",
+      "actual_main_size_bytes": 34163,
+      "status": "pre-existing mismatch; tracked input retained verbatim"
+    },
+    "missing_original_pngs": [
+      "fig1_roundtrip.png",
+      "fig2_epsilon_cost.png",
+      "fig3_cd.png",
+      "fig4_convergence.png"
+    ],
+    "missing_original_logs": [
+      "run.log",
+      "sweep.log"
+    ],
+    "retrieval": "Original audit refers to external mission worktree and commit e2743f0e. Not present in local Git objects or discovered by commit search; original manifest kept intact. Derived files cannot substitute for missing original artifacts."
+  },
+  "restored_derived_figures": [
+    {
+      "path": "development/verification/ibm_epsilon_gram/derived_figures/fig1_roundtrip.png",
+      "sha256": "b279e97b7d5ba16101ff03bdcd6c9bc35e3cbc9c04306f428bfcf825dc9fec41",
+      "size_bytes": 48732,
+      "renderer": "development/verification/ibm_epsilon_gram/make_figures.py",
+      "inputs": {
+        "development/verification/ibm_epsilon_gram/results.json": "563d5988acf17af121a9e6594eec90a9f9ba4c2bac381d1810c1475bc850dcb0"
+      },
+      "verification": "Byte-identical actual offline render before/after relocation; not the missing originally recorded PNG.",
+      "historical_manifest_sha256_16": "bd850bd73cce3dbf",
+      "historical_manifest_size_bytes": 35822,
+      "matches_historical_manifest": false
+    },
+    {
+      "path": "development/verification/ibm_epsilon_gram/derived_figures/fig2_epsilon_cost.png",
+      "sha256": "1a8981d1fbdb99b1dd3f84cf635a53b0e4ce92ca6b76d70012a2bed90cdf18ab",
+      "size_bytes": 71887,
+      "renderer": "development/verification/ibm_epsilon_gram/make_figures.py",
+      "inputs": {
+        "development/verification/ibm_epsilon_gram/results.json": "563d5988acf17af121a9e6594eec90a9f9ba4c2bac381d1810c1475bc850dcb0"
+      },
+      "verification": "Byte-identical actual offline render before/after relocation; not the missing originally recorded PNG.",
+      "historical_manifest_sha256_16": "6efd2b0e4b56a58d",
+      "historical_manifest_size_bytes": 66660,
+      "matches_historical_manifest": false
+    },
+    {
+      "path": "development/verification/ibm_epsilon_gram/derived_figures/fig3_cd.png",
+      "sha256": "8642836c1d957170b39eba16264cc32a33d71dacdce20e028c40ecbdff23e176",
+      "size_bytes": 39126,
+      "renderer": "development/verification/ibm_epsilon_gram/make_figures.py",
+      "inputs": {
+        "development/verification/ibm_epsilon_gram/results.json": "563d5988acf17af121a9e6594eec90a9f9ba4c2bac381d1810c1475bc850dcb0"
+      },
+      "verification": "Byte-identical actual offline render before/after relocation; not the missing originally recorded PNG.",
+      "historical_manifest_sha256_16": "ea456bd5f1f1c32a",
+      "historical_manifest_size_bytes": 36950,
+      "matches_historical_manifest": false
+    },
+    {
+      "path": "development/verification/ibm_epsilon_gram/derived_figures/fig4_convergence.png",
+      "sha256": "8ee3357d3b0c364e3f57449b10d106e0366f8199e1a187d23fc2bf36fff9159a",
+      "size_bytes": 93543,
+      "renderer": "development/verification/ibm_epsilon_gram/make_figures.py",
+      "inputs": {
+        "development/verification/ibm_epsilon_gram/results.json": "563d5988acf17af121a9e6594eec90a9f9ba4c2bac381d1810c1475bc850dcb0"
+      },
+      "verification": "Byte-identical actual offline render before/after relocation; not the missing originally recorded PNG.",
+      "historical_manifest_sha256_16": "af9121cbd4f69065",
+      "historical_manifest_size_bytes": 94417,
+      "matches_historical_manifest": false
+    }
+  ],
+  "dependencies": {
+    "canonical_solver": "src/tensorlbm/ibm_epsilon_gram.py",
+    "historical_audits": "Absolute external /srv/tensor/agent/work/m18141 paths and SQL remain immutable. Existing older m17862 audit is historical, not new acceptance."
+  },
+  "registry": [
+    "benchmarks/cross_validation/ibm_epsilon_gram/benchmark_case.json"
+  ],
+  "validation": {
+    "before": "12 targeted tests passed on exact shared prerequisite",
+    "after": "12 targeted tests passed on actual CPU runtime; before/after run and sweep --help byte-identical; four offline plots and captions byte-identical",
+    "current_scientific_acceptance": "not_evaluated",
+    "full_replay": "not run; offline rendering only"
+  },
+  "deferred_directories_at_actual_main": [
+    {
+      "directory": "xval/XVAL-LBM-SINGLE-COMPONENT-POISEUILLE-FORCE-ANCHOR",
+      "test": "tests/test_xval_poiseuille_force_anchor.py",
+      "actual_main_result": "1 failed, 3 passed",
+      "failed_tests": [
+        "FAILED tests/test_xval_poiseuille_force_anchor.py::test_reference_profile_is_symmetric_about_midplane"
+      ],
+      "reason": "Existing analytic profile helper does not match the stored symmetric halfway-wall reference. Numerical correction out of migration scope.",
+      "disposition": "leave in place; do not alter numerical methods or relax checks as part of layout migration"
+    },
+    {
+      "directory": "xval/XVAL-LBM-PLUGGABLE-PSEUDOPOTENTIAL-GUO-FORCING",
+      "test": "tests/test_xval_pp_guo_forcing.py",
+      "actual_main_result": "3 failed, 17 passed",
+      "failed_tests": [
+        "FAILED tests/test_xval_pp_guo_forcing.py::test_momentum_identity_repo[0.8-guo]",
+        "FAILED tests/test_xval_pp_guo_forcing.py::test_momentum_identity_repo[1.0-guo]",
+        "FAILED tests/test_xval_pp_guo_forcing.py::test_momentum_identity_repo[1.2-guo]"
+      ],
+      "reason": "Three Guo momentum identities exceed the existing 1e-12 bound; historical plot also requires missing runs/ time series.",
+      "disposition": "leave in place; do not alter numerical methods or relax checks as part of layout migration"
+    },
+    {
+      "directory": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY",
+      "test": "tests/test_xval_no_mcmp_two_phase_only.py",
+      "actual_main_result": "1 failed, 10 passed",
+      "failed_tests": [
+        "FAILED tests/test_xval_no_mcmp_two_phase_only.py::test_results_json_shape_and_thresholds"
+      ],
+      "reason": "Recorded results.json does not contain the predeclared minimum 15 runs; installed round-3 source additionally loads a repository-relative round-1 reference.",
+      "disposition": "leave in place; do not alter numerical methods or relax checks as part of layout migration"
+    },
+    {
+      "directory": "xval/XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+      "test": "tests/test_xval_pointwise_tolerance_policy.py",
+      "actual_main_result": "1 failed, 12 passed",
+      "failed_tests": [
+        "FAILED tests/test_xval_pointwise_tolerance_policy.py::test_policy_matches_recomputation"
+      ],
+      "reason": "Recomputation differs beyond the existing fixed comparison tolerance.",
+      "disposition": "leave in place; do not alter numerical methods or relax checks as part of layout migration"
+    },
+    {
+      "directory": "xval/XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED",
+      "test": "tests/test_xval_mpi_ghost_fused_tgv_reference.py",
+      "actual_main_result": "4 failed, 4 passed",
+      "failed_tests": [
+        "FAILED tests/test_xval_mpi_ghost_fused_tgv_reference.py::test_decay_rate_is_three_nu_k_squared",
+        "FAILED tests/test_xval_mpi_ghost_fused_tgv_reference.py::test_analytic_velocity_decays_with_three_nu_k_squared",
+        "FAILED tests/test_xval_mpi_ghost_fused_tgv_reference.py::test_measured_decay_rate_matches_3d_exponent_not_2d[0.04]",
+        "FAILED tests/test_xval_mpi_ghost_fused_tgv_reference.py::test_measured_decay_rate_matches_3d_exponent_not_2d[0.004]"
+      ],
+      "reason": "Decay API mismatch and analytic reference mismatch. Native MPI/platform replay not performed.",
+      "disposition": "leave in place; do not alter numerical methods or relax checks as part of layout migration"
+    },
+    {
+      "directory": "xval/XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE",
+      "test": "tests/test_multiphase_psi_self_coupling.py",
+      "actual_main_result": "5 failed, 1 passed",
+      "failed_tests": [
+        "FAILED tests/test_multiphase_psi_self_coupling.py::test_default_path_is_bit_identical",
+        "FAILED tests/test_multiphase_psi_self_coupling.py::test_force_matches_explicit_neighbour_sum_with_potential_and_self_term",
+        "FAILED tests/test_multiphase_psi_self_coupling.py::test_edm_rejects_potential_and_self_coupling",
+        "FAILED tests/test_multiphase_psi_self_coupling.py::test_shape_preserving_potential_guard",
+        "FAILED tests/test_multiphase_psi_self_coupling.py::test_self_coupling_only_touches_its_own_component"
+      ],
+      "reason": "Existing tests fail on canonical source; archive runner intentionally depends on frozen legacy source.",
+      "disposition": "leave in place; do not alter numerical methods or relax checks as part of layout migration"
+    },
+    {
+      "directory": "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER",
+      "test": "tests/test_les_bptt.py",
+      "actual_main_result": "1 error",
+      "failed_tests": [
+        "ERROR tests/test_les_bptt.py"
+      ],
+      "reason": "Cannot import collide_bgk_les from canonical tensorlbm.solver.",
+      "disposition": "leave in place; do not alter numerical methods or relax checks as part of layout migration"
+    },
+    {
+      "directory": "xval/XVAL-LBM-LINEAR-INTERPOLATED-BB-ALPHA-SCHEME",
+      "targeted_tests": "24 passed, 1 expected failure on shared candidate baseline",
+      "offline_render": "V3/V4/V5 generated from committed input; V1 fails because artifacts/main/results.json is absent. Historical OSS shim was not run.",
+      "disposition": "leave in place pending recovery of V1 input and compatibility review"
+    }
+  ]
+}

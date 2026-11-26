@@ -7,7 +7,7 @@ Reads ``results.json`` (written by ``run_xval.py``) and renders:
   fig3_cd.png          drag coefficient vs literature band / in-repo baseline
   fig4_convergence.png running mean of the instantaneous drag (averaging window)
 
-Usage: ``PYTHONPATH=src python xval/<anchor>/make_figures.py``
+Usage: ``PYTHONPATH=src python development/verification/ibm_epsilon_gram/make_figures.py``
 """
 from __future__ import annotations
 

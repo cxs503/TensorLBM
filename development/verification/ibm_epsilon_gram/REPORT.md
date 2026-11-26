@@ -31,8 +31,8 @@ spread 权重变为 `f·ε·ds·δ`。要回答：把这套做法移植进 Tenso
   以及 **集成面** `make_life_ibm_stencil()`（返回仓内 `IBMStencil`，`kernel="life3"`）+
   `spread_with_correction()`（走 `IBMStencil.spread`，即主求解器力传递路径）+
   `life_correction()` / `life_epsilon_gram_diagnostics()` / `selftest()`（`python -m` 入口）。
-* 入口：`python -m tensorlbm.ibm_epsilon_gram`（自检）；`xval/<anchor>/run_xval.py`（XVAL 主入口）。
-* 集成调用方：`xval/<anchor>/run_xval.py::cylinder_drag` 用 `d2q9.equilibrium/macroscopic`+
+* 入口：`python -m tensorlbm.ibm_epsilon_gram`（自检）；`development/verification/ibm_epsilon_gram/run_xval.py`（XVAL 主入口）。
+* 集成调用方：`development/verification/ibm_epsilon_gram/run_xval.py::cylinder_drag` 用 `d2q9.equilibrium/macroscopic`+
   `solver.collide_bgk/stream`+`ibm_force_transfer.IBMStencil/body_source_2d` 跑真实 LBM 时推进；
   `tests/test_ibm_epsilon_gram_solver_smoke.py` 用同一路径做 12 步烟测。
 
@@ -143,11 +143,11 @@ u=0.1 的可压缩误差 O(Ma²)≈3%。方法验收依据仍是 §4.1（<2.2e-3
 **复现命令**
 
 ```bash
-cd <repo> && PYTHONPATH=src python xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run_xval.py
-PYTHONPATH=src python xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/make_figures.py
+cd <repo> && PYTHONPATH=src python development/verification/ibm_epsilon_gram/run_xval.py
+PYTHONPATH=src python development/verification/ibm_epsilon_gram/make_figures.py
 PYTHONPATH=src python -m tensorlbm.ibm_epsilon_gram            # 模块自检（解析判据）
 PYTHONPATH=src python -m pytest tests/test_ibm_epsilon_gram.py tests/test_ibm_epsilon_gram_solver_smoke.py -q
-PYTHONPATH=src python xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/sweep_blockage.py --steps 700 --transient 300 --boxes 192x96
+PYTHONPATH=src python development/verification/ibm_epsilon_gram/sweep_blockage.py --steps 700 --transient 300 --boxes 192x96
 ```
 
 ## 7. 本仓 vs OSS 差异清单与移植取舍

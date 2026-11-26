@@ -23,7 +23,7 @@ Thresholds live in ``predeclared.json`` and are not tuned after the fact.
 
 Usage
 -----
-    PYTHONPATH=src python xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run_xval.py
+    PYTHONPATH=src python development/verification/ibm_epsilon_gram/run_xval.py
     ... --quick                       # N=16 arms + 200-step physics smoke
     ... --steps 1200 --transient 800  # longer cylinder average
     ... --ny 96 --nx 192              # lower-blockage box (sensitivity point)
@@ -42,7 +42,7 @@ import time
 import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from tensorlbm.ibm_epsilon_gram import (  # noqa: E402

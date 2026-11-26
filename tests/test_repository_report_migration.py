@@ -330,6 +330,41 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertIn(destination, resolved)
                 self.assertFalse((REPO / item["old_path"]).exists())
 
+    def test_ibm_epsilon_gram_relocation_preserves_tracked_inputs_and_provenance(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "ibm-epsilon-gram-xval-2026-11-27.json").read_text()
+        )
+        self.assertEqual(len(ledger["entries"]), 12)
+        self.assertEqual(len(ledger["restored_derived_figures"]), 4)
+        archive = REPO / "development/verification/ibm_epsilon_gram"
+        manifest = json.loads((archive / "manifest.json").read_text())
+        for entry in ledger["entries"]:
+            with self.subTest(path=entry["new_path"]):
+                self.assertFalse((REPO / entry["old_path"]).exists())
+                p = REPO / entry["new_path"]
+                self.assertEqual(hashlib.sha256(p.read_bytes()).hexdigest(),
+                                 entry["current_sha256"])
+                self.assertEqual(
+                    subprocess.check_output(
+                        ["git", "ls-files", "-s", "--", entry["new_path"]],
+                        cwd=REPO, text=True,
+                    ).split()[0], entry["git_mode"],
+                )
+                if p.suffix == ".json":
+                    self.assertTrue(entry["byte_identical"])
+                    self.assertEqual(entry["original_sha256"], entry["current_sha256"])
+        for figure in ledger["restored_derived_figures"]:
+            p = REPO / figure["path"]
+            self.assertEqual(hashlib.sha256(p.read_bytes()).hexdigest(), figure["sha256"])
+            self.assertEqual(p.parent.name, "derived_figures")
+            self.assertFalse(figure["matches_historical_manifest"])
+            self.assertEqual(manifest["files"][p.name]["sha256_16"],
+                             figure["historical_manifest_sha256_16"])
+            for path, sha in figure["inputs"].items():
+                self.assertEqual(hashlib.sha256((REPO / path).read_bytes()).hexdigest(), sha)
+        self.assertEqual(ledger["validation"]["current_scientific_acceptance"],
+                         "not_evaluated")
+
     def test_sod_figures_and_m26765_publisher_preserve_assets(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "sod-figures-and-m26765-2026-11-21.json").read_text()
