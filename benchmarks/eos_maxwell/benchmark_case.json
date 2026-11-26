@@ -14,13 +14,25 @@
   ],
   "documentation": [
     "benchmarks/eos_maxwell/README.md",
-    "benchmarks/eos_maxwell/evidence/m18366/REPORT.md"
+    "benchmarks/eos_maxwell/evidence/m18366/REPORT.md",
+    "docs/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL.md",
+    "docs/audit_m18221/AUDIT_M18221.md",
+    "development/verification/peng-robinson-pseudopotential/REPORT.md"
   ],
   "reference_files": [
-    "benchmarks/eos_maxwell/CRITERION.md"
+    "benchmarks/eos_maxwell/CRITERION.md",
+    "development/verification/peng-robinson-pseudopotential/prereg.md",
+    "development/verification/peng-robinson-pseudopotential/artifacts/oss_facts.json"
   ],
   "results": [
     "benchmarks/eos_maxwell/out/results.json",
     "benchmarks/eos_maxwell/evidence/m18366/results.json"
+  ],
+  "evidence": [
+    "development/verification/peng-robinson-pseudopotential/artifacts/results.json",
+    "development/verification/peng-robinson-pseudopotential/artifacts/cells.jsonl",
+    "development/verification/peng-robinson-pseudopotential/artifacts/pilot.json",
+    "development/verification/peng-robinson-pseudopotential/artifacts/snapshot.npz",
+    "development/verification/peng-robinson-pseudopotential/artifacts/NUMBERS.md"
   ]
 }

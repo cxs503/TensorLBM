@@ -1,5 +1,7 @@
 # XVAL — TensorLBM Peng–Robinson pseudopotential vs openLBMPM
 
+> Repository migration note: the historical campaign is now at [development/verification/peng-robinson-pseudopotential](../development/verification/peng-robinson-pseudopotential/). The published report URL, independent audit, original measured data and historical verdict are retained; this is not a current scientific acceptance.
+
 **Anchor** `XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL` · mission 18128 · repo TensorLBM ·
 branch `agent/m18128` · evidence class **REAL** (cross-implementation conformance +
 analytic thermodynamic reference) · verdict **D1 conformant (0.0 %), D2 accurate at the

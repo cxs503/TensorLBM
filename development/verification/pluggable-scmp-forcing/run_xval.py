@@ -34,7 +34,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Repo import — use the work directory directly
 # ---------------------------------------------------------------------------
-_REPO = Path(__file__).resolve().parents[2] / "development/legacy/TensorLBM"
+_REPO = Path(__file__).resolve().parents[3] / "development/legacy/TensorLBM"
 sys.path.insert(0, str(_REPO / "src"))
 
 from tensorlbm.d2q9 import C, W, equilibrium, macroscopic, stream  # noqa: E402

@@ -1,0 +1,278 @@
+{
+  "source_commit": "881e15324d7439edfec5c0c580d36024e68d90a5",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 40
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL",
+    "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/REPORT.md",
+      "new_path": "development/verification/peng-robinson-pseudopotential/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "2bbd866c30af0252eb20d1b8d8834d38731dd0d7",
+      "size_bytes": 17323,
+      "original_sha256": "a7b9e7c6f61da0d1d7671c0a17d20a615bc682c0cd68e3d3eda74d19d63a17dd",
+      "new_sha256": "a7b9e7c6f61da0d1d7671c0a17d20a615bc682c0cd68e3d3eda74d19d63a17dd"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/REPORT_BODY.md",
+      "new_path": "development/verification/peng-robinson-pseudopotential/REPORT_BODY.md",
+      "git_mode": "100644",
+      "original_git_blob": "4bac8e042af683e9a4f359b11522abec1a93ab64",
+      "size_bytes": 13100,
+      "original_sha256": "2bdeac05743715bdd51fa35c85e3459a0e550800df6a125dc1121171167b4832",
+      "new_sha256": "2bdeac05743715bdd51fa35c85e3459a0e550800df6a125dc1121171167b4832"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/artifacts/NUMBERS.md",
+      "new_path": "development/verification/peng-robinson-pseudopotential/artifacts/NUMBERS.md",
+      "git_mode": "100644",
+      "original_git_blob": "962061466ba83445b12bb9c2a9ba7f42e44a2026",
+      "size_bytes": 4126,
+      "original_sha256": "c1c9e43e355f5dc9f304907873413e734e33133335c4d97ca8a30cff682c1c38",
+      "new_sha256": "c1c9e43e355f5dc9f304907873413e734e33133335c4d97ca8a30cff682c1c38"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/artifacts/cells.jsonl",
+      "new_path": "development/verification/peng-robinson-pseudopotential/artifacts/cells.jsonl",
+      "git_mode": "100644",
+      "original_git_blob": "3792ae04a882bdade5e0674672fdef5ec05c3475",
+      "size_bytes": 13500,
+      "original_sha256": "af68d807427e247ccb8ec0513fd97e9c57ed0da9083b37c6d0564310c1274bd8",
+      "new_sha256": "af68d807427e247ccb8ec0513fd97e9c57ed0da9083b37c6d0564310c1274bd8"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/artifacts/oss_facts.json",
+      "new_path": "development/verification/peng-robinson-pseudopotential/artifacts/oss_facts.json",
+      "git_mode": "100644",
+      "original_git_blob": "de00bed73f6840497a9216c49c97082556b2d228",
+      "size_bytes": 6409,
+      "original_sha256": "d08972d35b017a862243d9dfbe6e26e5a1b9fba6fcf366fd2045b6538b568bce",
+      "new_sha256": "d08972d35b017a862243d9dfbe6e26e5a1b9fba6fcf366fd2045b6538b568bce"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/artifacts/pilot.json",
+      "new_path": "development/verification/peng-robinson-pseudopotential/artifacts/pilot.json",
+      "git_mode": "100644",
+      "original_git_blob": "2fb6e20ff151c32609a6bbb8fa9c9d731636c3ed",
+      "size_bytes": 66412,
+      "original_sha256": "258fdfb7bb8d764ca3bb695ea68910095c566bed97378fbd9849cc0eb4151e57",
+      "new_sha256": "258fdfb7bb8d764ca3bb695ea68910095c566bed97378fbd9849cc0eb4151e57"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/artifacts/results.json",
+      "new_path": "development/verification/peng-robinson-pseudopotential/artifacts/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "14a67f5df766911d004ecc6f54235410cf9a097f",
+      "size_bytes": 79276,
+      "original_sha256": "7f00d7a8a4095556313797c45b5c31aab61336c692b491bf4a850b6278b59784",
+      "new_sha256": "7f00d7a8a4095556313797c45b5c31aab61336c692b491bf4a850b6278b59784"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/artifacts/snapshot.npz",
+      "new_path": "development/verification/peng-robinson-pseudopotential/artifacts/snapshot.npz",
+      "git_mode": "100644",
+      "original_git_blob": "3ab1cdc1940fe9d24ec25361e4e404679695eecc",
+      "size_bytes": 138177,
+      "original_sha256": "69726af56156595468581d4b7d4213576e3172cd02b51d5fbdb1bcf12b25d2e2",
+      "new_sha256": "69726af56156595468581d4b7d4213576e3172cd02b51d5fbdb1bcf12b25d2e2"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/oss_probe.py",
+      "new_path": "development/verification/peng-robinson-pseudopotential/oss_probe.py",
+      "git_mode": "100644",
+      "original_git_blob": "76c47be22d4f9e94e7b610606a39e21141f011a7",
+      "size_bytes": 11443,
+      "original_sha256": "6607c91338defcdd72338cf029bf7ab422b7232e14504ecab3f4620e7658ea04",
+      "new_sha256": "6607c91338defcdd72338cf029bf7ab422b7232e14504ecab3f4620e7658ea04"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/plot_results.py",
+      "new_path": "development/verification/peng-robinson-pseudopotential/plot_results.py",
+      "git_mode": "100644",
+      "original_git_blob": "70b8691a2d79923abeff11f07b567438a6fa31ec",
+      "size_bytes": 14418,
+      "original_sha256": "8614af607cddce11c200b10d4da5bc23bde89310a45fe13f5962bd3a5cfcc229",
+      "new_sha256": "8614af607cddce11c200b10d4da5bc23bde89310a45fe13f5962bd3a5cfcc229"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/prereg.md",
+      "new_path": "development/verification/peng-robinson-pseudopotential/prereg.md",
+      "git_mode": "100644",
+      "original_git_blob": "391bb82f460157197698e56140f89e28f1c2361a",
+      "size_bytes": 7173,
+      "original_sha256": "2596396def0811bd81b65973f7b68ec030c035e7ff307b33ad563759455673b7",
+      "new_sha256": "2596396def0811bd81b65973f7b68ec030c035e7ff307b33ad563759455673b7"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/run_one.py",
+      "new_path": "development/verification/peng-robinson-pseudopotential/run_one.py",
+      "git_mode": "100644",
+      "original_git_blob": "3660ede512ec45e5ee0a1f3246e8deb436dd8f5f",
+      "size_bytes": 2326,
+      "original_sha256": "1e2685523e329c7938fd20d6a1b3b69d3df784a7f70aa3695f57bc48e9b67fb3",
+      "new_sha256": "1e2685523e329c7938fd20d6a1b3b69d3df784a7f70aa3695f57bc48e9b67fb3"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/snapshot.py",
+      "new_path": "development/verification/peng-robinson-pseudopotential/snapshot.py",
+      "git_mode": "100644",
+      "original_git_blob": "adce0372ab93ae9dc7bbb48a9b14d57ec4b55475",
+      "size_bytes": 2819,
+      "original_sha256": "321fe5d6427e576e0a619e94ade4d521965d3898adec612bd0ddee27c20d24c9",
+      "new_sha256": "30ff563cea305ccadbfcc2b4fb8c0b29b4225b46ded7598ab4a03fe453c6e245"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL/xval_driver.py",
+      "new_path": "development/verification/peng-robinson-pseudopotential/xval_driver.py",
+      "git_mode": "100644",
+      "original_git_blob": "a0f46b233099afa2acb3dc11a476e0d689803f1a",
+      "size_bytes": 15274,
+      "original_sha256": "e371506c7430128b31a107e8f89b3a249a02177b95251bc2d5d43f42a595b511",
+      "new_sha256": "cdc4333f094264d2aeaeedf6de134ba228383c30afba0305779117de88d856dd"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT/DIFF_OSS_VS_TENSORLBM.md",
+      "new_path": "development/verification/pluggable-scmp-forcing/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "ccdb9ad939883257b761efd939145d10e3b32a26",
+      "size_bytes": 1888,
+      "original_sha256": "ed23000f87a43daa36a29dc377c1bebb1af32c287530a71ca609b761a65502c8",
+      "new_sha256": "ed23000f87a43daa36a29dc377c1bebb1af32c287530a71ca609b761a65502c8"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT/REPORT.md",
+      "new_path": "development/verification/pluggable-scmp-forcing/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "abe03bb4566f3a63ad017acfd86bcfc156d4afd6",
+      "size_bytes": 4953,
+      "original_sha256": "3f8b03f8e21bed1fcb90357e2921c8a8b882f5525d8a0ec761eba372d32443b3",
+      "new_sha256": "3f8b03f8e21bed1fcb90357e2921c8a8b882f5525d8a0ec761eba372d32443b3"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT/predeclared.json",
+      "new_path": "development/verification/pluggable-scmp-forcing/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "9cb6690a941d3c75e433911e725ae7dededb4f55",
+      "size_bytes": 1480,
+      "original_sha256": "743588609a96a20feb045a1fdbcd5b62a8e860d7c512776c5ea974342cc0a666",
+      "new_sha256": "743588609a96a20feb045a1fdbcd5b62a8e860d7c512776c5ea974342cc0a666"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT/results.json",
+      "new_path": "development/verification/pluggable-scmp-forcing/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "0fb867c62236bc32b2cddfab89b6a303b950f44f",
+      "size_bytes": 3979,
+      "original_sha256": "bc82228b159110edc37a5b1dfdf4c2dfe4822586d392024188d6d3771b05cdd4",
+      "new_sha256": "bc82228b159110edc37a5b1dfdf4c2dfe4822586d392024188d6d3771b05cdd4"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT/run_xval.py",
+      "new_path": "development/verification/pluggable-scmp-forcing/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "c971c85a0e5432ac6032cea62950815ebe12536a",
+      "size_bytes": 21375,
+      "original_sha256": "5ac707c38ed44979fe6c61ba65e6ca5c046e6df9f3013403bd63b9464da588ae",
+      "new_sha256": "f91a4ce7e3b458a87ce65526333dd002979e70efdea7b8d6f3f70b9aec39e346"
+    }
+  ],
+  "verification": [
+    "All 19 original Git blobs and destination SHA-256 values verified. 14 archive links resolve. Current PR-EOS driver --help succeeds before and after; compileall on both moved trees passed.",
+    "Existing PR-EOS renderer read committed measured outputs and field snapshot before and after, generated byte-identical NUMBERS.md and four PNGs; restored original tracked NUMBERS.md and kept regenerated outputs outside Git. No new scientific solver campaign, external reference or historical pinned runner executed.",
+    "Existing source authority gate passed with active nested references 34 -> 33. Active root boundaries, canonical package, all other expected references and frozen historical Git tree unchanged. The historical runner still picks exactly the original frozen source, now under development.",
+    "Existing campaign:eos_maxwell case resolves related historical result JSON, snapshot, protocol and audit as supporting references/evidence, retaining its original criteria and results. New dedicated registry test passed; current acceptance remains not_evaluated.",
+    "Before migration adjacent independent tests/test_xval_pp_guo_forcing.py and tests/test_multiphase_psi_self_coupling.py: 18 passed, 8 failed (three Guo momentum identities and five psi/self-coupling checks). Those two campaigns, tests and production algorithms remain entirely unchanged; deliberately keep their roots pending independent scientific resolution.",
+    "Standalone governance: 88 tests passed; 227 registry entries; 35 tutorials, 33 PDF and 33 Word manuals, zero hard ledger violations and 16 pre-existing soft violations. Ruff existing main metrics unchanged (3021/2198 against 3023/2195); independent #3048 needed. No baseline relaxations."
+  ],
+  "reference_scan": "Checked literal and path-constructed references across tests, source, workflow, tools, benchmark and archived audit files. Peng drivers import the maintained EOS probe; two root-depth paths adjusted, active registry links updated. SCMP uses frozen historical solver explicitly; adjusted only root depth, no active test or formal runner consumes that location. Historical independent audit references to mission worktree remain frozen.",
+  "compatibility": "Published PR-EOS report URL and original audit URLs unchanged. All original tracked data and reports remain byte-identical. Historical SCMP runner retains its original frozen solver pin; do not activate or rerun it as current production. Retired directory policy forbids reintroduction. Source-tree policy moves one archived consumer out of active roots without changing active root boundaries or historical tree.",
+  "source_authority_transition": {
+    "old_active_consumer": "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT/run_xval.py",
+    "new_historical_path": "development/verification/pluggable-scmp-forcing/run_xval.py",
+    "original_active_reference": {
+      "matches": 1,
+      "matching_lines_sha256": "6e0b49a29b0887c4e648c4370647a59b171ab83fa30eec603dceaf17a5243c82"
+    },
+    "active_count_before": 34,
+    "active_count_after": 33,
+    "frozen_tree_oid": "f482f80c56e861d7a5c038d1b6647394edaa1ba2"
+  },
+  "scientific_scope": "Path migration and rendering already measured data only, no numerical algorithm edits. Full scientific validation deferred. Historical verdicts not current acceptance.",
+  "remaining_blockers": [
+    "Two adjacent legacy directories retained: XVAL-LBM-PLUGGABLE-PSEUDOPOTENTIAL-GUO-FORCING and XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE. Exact base test pair before any move: 18 passed, 8 failed (three Guo momentum identities and five psi/self-coupling tests). Do not change algorithms/assertions for path migration.",
+    "Missing original run environment for full external reference and historical pinned SCMP execution; archive retained without making a new gate claim."
+  ],
+  "file_counts": {
+    "moved": 19,
+    "byte_identical": 16,
+    "path_only_edited": 3
+  },
+  "renderer_replay": {
+    "numbers_sha256": "c1c9e43e355f5dc9f304907873413e734e33133335c4d97ca8a30cff682c1c38",
+    "figures": [
+      {
+        "file": "fig1_psi_conformance.png",
+        "sha256": "d0dad557720de8e2fa958ae57ac5dc86d004131dd85ed04cbc6ab257d501044d"
+      },
+      {
+        "file": "fig2_planar_profiles.png",
+        "sha256": "314f53ecd8253e19ab6b4f2d0f145921a9ca3f27872d57b49be530550c171855"
+      },
+      {
+        "file": "fig3_convergence.png",
+        "sha256": "6e85022346a8c326387377c5de1ca2770390b64971f45e12422a930dd8f5473a"
+      },
+      {
+        "file": "fig4_droplet_fields.png",
+        "sha256": "c679a86faa2edb1e1e9b53686e9e8a5060d773a832bc43d142bee0ebdccbdd6b"
+      }
+    ],
+    "before_after_byte_identical": true
+  },
+  "unchanged_baseline_failures": [
+    "FAILED tests/test_xval_pp_guo_forcing.py::test_momentum_identity_repo[0.8-guo]",
+    "FAILED tests/test_xval_pp_guo_forcing.py::test_momentum_identity_repo[1.0-guo]",
+    "FAILED tests/test_xval_pp_guo_forcing.py::test_momentum_identity_repo[1.2-guo]",
+    "FAILED tests/test_multiphase_psi_self_coupling.py::test_default_path_is_bit_identical",
+    "FAILED tests/test_multiphase_psi_self_coupling.py::test_force_matches_explicit_neighbour_sum_with_potential_and_self_term",
+    "FAILED tests/test_multiphase_psi_self_coupling.py::test_edm_rejects_potential_and_self_coupling",
+    "FAILED tests/test_multiphase_psi_self_coupling.py::test_shape_preserving_potential_guard",
+    "FAILED tests/test_multiphase_psi_self_coupling.py::test_self_coupling_only_touches_its_own_component"
+  ],
+  "compatibility_edits": [
+    {
+      "path": "benchmarks/eos_maxwell/benchmark_case.json",
+      "original_sha256": "c6e8ceb21168b5dbe80855aae68982944b3de71d909382047469b5d76f37d9c3",
+      "new_sha256": "1c9f2da72d2a3b2b2257a6aae0dafec21be0ca1e8b6516108cd6057b6d4583b7"
+    },
+    {
+      "path": "docs/XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL.md",
+      "original_sha256": "a7b9e7c6f61da0d1d7671c0a17d20a615bc682c0cd68e3d3eda74d19d63a17dd",
+      "new_sha256": "965c4d5a5b3ade400d9de5702816df491c12c4caffbfac0fd7fd4606045416d4"
+    },
+    {
+      "path": "docs/architecture/source_authority_policy.json",
+      "original_sha256": "73f9f6b7656e0fd95588b36d280b54cd5a484d0e976fc9e8a2d862b2e9baf0f0",
+      "new_sha256": "9e8e1e0c6dc050e72760cf9023d72cbf59fcb1f38a9dbd54635e042cd6c5b660"
+    },
+    {
+      "path": "tests/test_benchmark_registry.py",
+      "original_sha256": "afaabf1fbc09e2680e763715d855d39e72401d2a97e218770d0d3f74d743908a",
+      "new_sha256": "ec6076fb469b61f8afa7cb29f41bd9a28d8a1caa1c4c66337340e7f029127557"
+    },
+    {
+      "path": "tools/check_repository_layout.py",
+      "original_sha256": "fd88b0a859cf5361a3bb38f3a538f24a25cf1382091afa5811636fc8827db3d4",
+      "new_sha256": "63a841555f608b26f80031f6ab7c958310100b487ffb2f1ce620f249b6cac85e"
+    }
+  ]
+}

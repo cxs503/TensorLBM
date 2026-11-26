@@ -137,10 +137,6 @@
       "matches": 1,
       "matching_lines_sha256": "2da357fcbf4c667d8a8dcf2e04fea48af0d7320d15a516c9e39368f4f0dc2fce"
     },
-    "xval/XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT/run_xval.py": {
-      "matches": 1,
-      "matching_lines_sha256": "6e0b49a29b0887c4e648c4370647a59b171ab83fa30eec603dceaf17a5243c82"
-    },
     "xval/XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE/tl_arm.py": {
       "matches": 1,
       "matching_lines_sha256": "683d874325c3145d822f8cdadabb1573c4ab23d6caf9d16f71b9f55fdb51f369"
