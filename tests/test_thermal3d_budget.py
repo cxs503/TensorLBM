@@ -355,7 +355,11 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
     start_amplitude = 2*torch.exp(-rate*(start-shutoff))*(-torch.expm1(-rate*shutoff))/wave
     integrated = start_amplitude*(-torch.expm1(-rate*(end-start)))/rate
     previous = None
-    for n in (16, 32, 64):
+    # Odd multiples of 16 put both probes exactly at kinetic link midpoints.
+    probes = torch.tensor([29/32, 31/32], dtype=wave.dtype)
+    reference = -capacity*alpha*(torch.cos(probes[:, None]*wave) @ (wave*integrated))
+    previous_probe_errors = None
+    for n in (16, 32, 48, 64, 80):
         dt = 1/n**2
         x = torch.arange(n+1, dtype=torch.float64)/n
         initial = torch.zeros((3, 4, n+1), dtype=x.dtype)
@@ -386,6 +390,19 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
         assert heat[0] < 0 and balance < 1e-12
         if n == 64:
             assert heat[-1] > 0
-        if previous is not None:
-            assert previous[0]/error > 3.5 and previous[1]/link_error > 2.5
-        previous = error, link_error
+        if n in (16, 32, 64):
+            if previous is not None:
+                assert previous[0]/error > 3.5 and previous[1]/link_error > 2.5
+            previous = error, link_error
+        if n in (16, 48, 80):
+            indices = (probes*n).long()
+            assert torch.equal(faces[indices], probes)
+            relative = ((heat[indices]-reference)/reference).abs()
+            for numerator, computed, target, rel in zip((29, 31), heat[indices], reference, relative):
+                record_property(f"x{numerator}_over_32_reference_J_m2", target.item())
+                record_property(f"n{n}_x{numerator}_over_32_heat_J_m2", computed.item())
+                record_property(f"n{n}_x{numerator}_over_32_relative_error", rel.item())
+            if previous_probe_errors is not None:
+                assert torch.all(relative < previous_probe_errors)
+                assert torch.all(heat[indices] > 0)
+            previous_probe_errors = relative
