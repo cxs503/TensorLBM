@@ -1,5 +1,7 @@
 # XVAL-LBM 周期 x + 常压降 通道 R4：启动瞬态（脉冲启动）复核
 
+> Repository migration note: the current case and replay commands are in [benchmarks/cross_validation/periodic_channel_dpdx](../../benchmarks/cross_validation/periodic_channel_dpdx/). Original mission paths below identify the archived revision. Historical scientific verdicts are not new acceptance.
+
 锚点 `XVAL-LBM-SINGLE-PHASE-PERIODIC-X-PLUS-CONSTANT-DP`（OSS `joconnor22/LIFE`，tag `single-phase-periodic-x-plus-constant-dpdx-driving`）。R1–R3 复核的是**定常**解；R4 补齐**瞬态**证据链：把整套启动历程与 脉冲启动的精确 Fourier 级数解对比。
 
 ## ⓪ R4 结论

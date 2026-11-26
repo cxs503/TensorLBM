@@ -1,5 +1,7 @@
 # XVAL-LBM 周期 x + 常压降 通道：R3 网格阶/马赫数/有效壁位复核
 
+> Repository migration note: the current case and replay commands are in [benchmarks/cross_validation/periodic_channel_dpdx](../../benchmarks/cross_validation/periodic_channel_dpdx/). Original mission paths below identify the archived revision. Historical scientific verdicts are not new acceptance.
+
 锚点 `XVAL-LBM-SINGLE-PHASE-PERIODIC-X-PLUS-CONSTANT-DP`（OSS `joconnor22/LIFE`，tag `single-phase-periodic-x-plus-constant-dpdx-driving`）。
 
 ## ⓪ R3 结论

@@ -64,6 +64,16 @@ class BenchmarkRegistryTests(unittest.TestCase):
         )
         self.assertEqual(record["current_acceptance"], "not_evaluated")
 
+    def test_periodic_channel_benchmark_retains_historical_replays(self):
+        directory = "benchmarks/cross_validation/periodic_channel_dpdx"
+        (record,) = self.registry("--case", "xval:periodic_channel_dpdx")
+        variant = record["variants"][0]
+        self.assertIn(f"{directory}/run_xval_r4.py", variant["source"])
+        self.assertIn(f"{directory}/out/xval_life_periodic_dpdx_r2.json", variant["results"])
+        self.assertIn(f"{directory}/out/xval_life_periodic_dpdx_r4.json", variant["results"])
+        self.assertIn("docs/reports/figures/xval_periodic_dpdx_r4_profiles.png", variant["evidence"])
+        self.assertEqual(record["current_acceptance"], "not_evaluated")
+
     def test_asset_index_covers_every_tracked_benchmark_path(self):
         data = subprocess.check_output([sys.executable, "tools/benchmark_registry.py", "--asset-index"], cwd=ROOT)
         inventory = json.loads(data)
