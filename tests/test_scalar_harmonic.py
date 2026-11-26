@@ -359,3 +359,47 @@ def test_physical_interval_heat_against_two_wall_slab(record_property):
             assert previous[0] > 3.7*wall_error and previous[1] > 3.7*interior_error
         previous = (wall_error, interior_error)
         assert balance_error < 2e-11
+
+
+@pytest.mark.parametrize("cross", [-.3, .3])
+def test_traveling_temperature_wave_interval_heat(cross, record_property):
+    # A decaying wave T=Re(exp(r*x + i*b*y + i*omega*t)) on the unit square.
+    # The axial rate solves kx*r² + 2i*b*kxy*r - ky*b² = i*omega*C.
+    kx, ky, capacity, omega, b = 2., 1., 4., 2*math.pi, 2*math.pi
+    r = -1j*b*cross/kx - cmath.sqrt((b*b*(ky-cross**2/kx)+1j*omega*capacity)/kx)
+    previous = None
+    for n in (8, 16, 32, 64):
+        dx, dt = 1/n, .25/n**2
+        faces = torch.arange(n+1, dtype=torch.float64)*dx
+        centers = (faces[:-1]+faces[1:])/2
+        # Exact spatial means over the transverse width of each link face.
+        ymean = torch.exp(1j*b*centers)*math.sin(b*dx/2)/(b*dx/2)
+        xmean = torch.exp(r*faces[:-1])*torch.expm1(faces.new_tensor(dx)*r)/(dx*r)
+        qx = -(kx*r+1j*b*cross)*ymean[:,None]*torch.exp(r*faces)
+        qy = -(cross*r+1j*b*ky)*torch.exp(1j*b*faces[1:,None])*xmean
+        slab = solve_harmonic_scalar_slab(
+            n,n,.5+3*kx*dt/(capacity*dx**2),omega*dt,ymean,ymean*cmath.exp(r),
+            tau_y=.5+3*ky*dt/(capacity*dx**2),tau_xy=3*cross*dt/(capacity*dx**2))
+        errors = [0., 0.]
+        balance = 0.
+        for start, stop in ((0., .25), (.25, .5), (.0625, .5)):
+            first, last = round(start/dt), round(stop/dt)
+            assert (first*dt, last*dt) == (start, stop)
+            tx, ty = slab.interval_transfer(first, last)
+            phase_change = cmath.exp(1j*omega*stop)-cmath.exp(1j*omega*start)
+            for j,(actual, reference) in enumerate(((tx,qx),(ty,qy))):
+                exact = (reference*phase_change/(1j*omega)).real
+                errors[j] = max(errors[j], (capacity*dx*actual-exact).abs().max().item())
+            storage = capacity*dx**2*(slab.scalar*phase_change).real
+            residual = storage+capacity*dx**2*(tx.diff(dim=1)+ty-ty.roll(1,0))
+            balance = max(balance, residual.abs().max().item())
+        for axis, error in zip(("x", "y"), errors):
+            record_property(f"{axis}_interval_error_{n}_J_m2", error)
+        record_property(f"cell_balance_{n}_J_per_m_depth", balance)
+        assert balance < 1e-12
+        if previous is not None:
+            assert all(old > 2.8*new for old,new in zip(previous,errors))
+            if n == 64:
+                assert all(old > 3.7*new for old,new in zip(previous,errors))
+                assert max(errors) < .0015
+        previous = errors
