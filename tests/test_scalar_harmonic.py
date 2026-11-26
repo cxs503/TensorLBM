@@ -323,3 +323,39 @@ def test_interval_transfer_against_real_collision_stream(omega, record_property)
     for bounds in ((2, 1), (-1, 2), (True, 3), (.5, 1)):
         with pytest.raises(ValueError, match="step bounds"):
             result.interval_transfer(*bounds)
+
+
+def test_physical_interval_heat_against_two_wall_slab(record_property):
+    # Unit-length slab; both prescribed wall temperatures oscillate. For
+    # T = Re(X(x) exp(i omega t)), X'' = i omega C/k X, q = -k X'.
+    capacity, k, omega = 4., 2., 2*math.pi
+    west, east = 1.+.3j, -.2+.5j
+    tau = .875
+    wave = cmath.sqrt(1j*omega*capacity/k)
+    previous = None
+    for n in (8, 16, 32, 64):
+        dx = 1/n
+        dt = (tau-.5)*dx**2/(3*(k/capacity))
+        slab = solve_harmonic_scalar_slab(n, 1, tau, omega*dt, west, east)
+        faces = torch.arange(n+1, dtype=torch.float64)*dx
+        flux = k*wave*(west*torch.cosh(wave*(1-faces))-east*torch.cosh(wave*faces))/cmath.sinh(wave)
+        wall_error = interior_error = balance_error = 0.
+        for start, stop in ((0., .25), (.25, .5), (.5, 1.), (.0625, .5)):
+            a, b = round(start/dt), round(stop/dt)
+            assert (a*dt, b*dt) == (start, stop)
+            transfer, _ = slab.interval_transfer(a, b)
+            heat = capacity*dx*transfer[0]
+            phase_change = cmath.exp(1j*omega*stop)-cmath.exp(1j*omega*start)
+            exact = (flux*phase_change/(1j*omega)).real
+            errors = (heat-exact).abs()
+            wall_error = max(wall_error, errors[[0,-1]].max().item())
+            interior_error = max(interior_error, errors[1:-1].max().item())
+            stored = capacity*dx*(slab.scalar*phase_change).real.sum()
+            balance_error = max(balance_error, abs((heat[0]-heat[-1]-stored).item()))
+        record_property(f"wall_error_{n}_J_m2", wall_error)
+        record_property(f"interior_error_{n}_J_m2", interior_error)
+        record_property(f"storage_balance_{n}_J_m2", balance_error)
+        if previous is not None:
+            assert previous[0] > 3.7*wall_error and previous[1] > 3.7*interior_error
+        previous = (wall_error, interior_error)
+        assert balance_error < 2e-11
