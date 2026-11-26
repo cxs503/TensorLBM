@@ -24,7 +24,7 @@ class HarmonicScalarSlab:
     populations: torch.Tensor
     x_transfer: torch.Tensor
     y_transfer: torch.Tensor
-    frequency: float = 0.
+    frequency: float = 0.0
 
     @property
     def scalar(self):
@@ -37,24 +37,37 @@ class HarmonicScalarSlab:
         step midpoint phase. For a thermal scalar in K on a square lattice,
         multiply by volumetric heat capacity and cell width to obtain J/m².
         """
-        if any(isinstance(v, (bool, np.bool_)) or not isinstance(v, (int, np.integer))
-               for v in (start_step, stop_step)):
+        if any(
+            isinstance(v, (bool, np.bool_)) or not isinstance(v, (int, np.integer))
+            for v in (start_step, stop_step)
+        ):
             raise ValueError("step bounds must be integers")
         start, stop = int(start_step), int(stop_step)
         if start < 0 or stop < start:
             raise ValueError("step bounds must be nonnegative and nondecreasing")
-        count = stop-start
+        count = stop - start
         # Geometric sum centered on the interval midpoint. sinc gives the
         # correct DC limit without subtracting nearly equal complex phases.
-        half = self.frequency/2
-        amplitude = count*np.sinc(count*half/np.pi)/np.sinc(half/np.pi)
-        phase = amplitude*np.exp(1j*(self.frequency*start + half*count))
-        return (self.x_transfer*phase).real, (self.y_transfer*phase).real
+        half = self.frequency / 2
+        amplitude = count * np.sinc(count * half / np.pi) / np.sinc(half / np.pi)
+        phase = amplitude * np.exp(1j * (self.frequency * start + half * count))
+        return (self.x_transfer * phase).real, (self.y_transfer * phase).real
 
 
 def solve_harmonic_scalar_slab(
-    nx, ny, tau, frequency, west, east, *, tau_y=None, tau_even=None, tau_xy=0.0, source=None,
-    mean_temperature=None, wall_transfer=(None, None)
+    nx,
+    ny,
+    tau,
+    frequency,
+    west,
+    east,
+    *,
+    tau_y=None,
+    tau_even=None,
+    tau_xy=0.0,
+    source=None,
+    mean_temperature=None,
+    wall_transfer=(None, None),
 ):
     """Solve the discrete D2Q5 collision/streaming equations at one frequency.
 
@@ -100,7 +113,7 @@ def solve_harmonic_scalar_slab(
         # A constant scalar satisfies the steady collision and streaming
         # equations and carries no flux. Solve relative to a fixed wall.
         uniform_response = next(w[0] for w in wall_values if w is not None)
-        wall_values = [None if w is None else w-uniform_response for w in wall_values]
+        wall_values = [None if w is None else w - uniform_response for w in wall_values]
     west, east = wall_values
     weights = np.asarray(_W5_EXACT)
     # Apply the same linear collision to the five basis populations.
@@ -129,7 +142,7 @@ def solve_harmonic_scalar_slab(
     if len(wall_transfer) != 2:
         raise ValueError("supply a transfer entry for each wall")
     wall_mean = 0j
-    wall_scale = 0.
+    wall_scale = 0.0
     for flux, (wall, q, col) in zip(wall_transfer, ((west, 1, 0), (east, 3, -1))):
         if flux is not None:
             if wall is not None:
@@ -138,19 +151,25 @@ def solve_harmonic_scalar_slab(
             if not np.isfinite(values).all():
                 raise ValueError("wall transfer must be finite")
             forcing[q, :, col] += midpoint * np.fft.fft(values)
-            wall_mean += values.mean()/nx
-            wall_scale += np.abs(values).mean()/nx
+            wall_mean += values.mean() / nx
+            wall_scale += np.abs(values).mean() / nx
     if source is not None or (closed and any(v is not None for v in wall_transfer)):
-        increment = np.broadcast_to(np.asarray(0. if source is None else source, dtype=complex), (ny, nx))
+        increment = np.broadcast_to(
+            np.asarray(0.0 if source is None else source, dtype=complex), (ny, nx)
+        )
         if not np.isfinite(increment).all():
             raise ValueError("source phasors must be finite")
         if closed:
             average = increment.mean() + wall_mean
             if closed_dc:
-                if abs(average) > 64*np.finfo(float).eps*(np.abs(increment).mean()+wall_scale):
-                    raise ValueError("the steady slab requires zero net source including wall transfers")
+                if abs(average) > 64 * np.finfo(float).eps * (
+                    np.abs(increment).mean() + wall_scale
+                ):
+                    raise ValueError(
+                        "the steady slab requires zero net source including wall transfers"
+                    )
             else:
-                uniform_response = average / (2j*math.sin(frequency/2))
+                uniform_response = average / (2j * math.sin(frequency / 2))
             increment = increment - average
         forcing += weights[:, None, None] * midpoint * np.fft.fft(increment, axis=0)
     modes = np.zeros_like(forcing)
@@ -171,10 +190,10 @@ def solve_harmonic_scalar_slab(
             # The remaining response has zero total population. Enforce its
             # known mean in place of the redundant global balance.
             system = system.tolil()
-            system[0, :] = 1.
+            system[0, :] = 1.0
             system = system.tocsc()
             rhs = rhs.copy()
-            rhs[0] = 0.
+            rhs[0] = 0.0
         state = spsolve(system, rhs)
         modes[:, j, :] = state.reshape(5, nx)
     populations = torch.from_numpy(np.fft.ifft(modes, axis=1))
@@ -185,7 +204,7 @@ def solve_harmonic_scalar_slab(
         (exchange[0, :, None], scalar_link_transfer(post, "x"), -exchange[1, :, None]), dim=1
     )
     if uniform_response != 0:
-        populations = populations + torch.from_numpy(weights)[:, None, None]*uniform_response
+        populations = populations + torch.from_numpy(weights)[:, None, None] * uniform_response
     return HarmonicScalarSlab(
         populations, x_transfer, scalar_link_transfer(post, "y", periodic=True), frequency
     )
