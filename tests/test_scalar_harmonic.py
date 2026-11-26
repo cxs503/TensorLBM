@@ -243,3 +243,41 @@ def test_steady_wall_input_balances_uniform_volume_sink(record_property):
     record_property("max_link_transfer_error", error)
     assert error < 5e-15
     assert abs(sol.scalar.mean()-4.) < 1e-14
+
+
+def test_anisotropic_traveling_wall_flux_refines_against_continuum(record_property):
+    # Unit square, unit volumetric heat capacity. Both walls have traveling
+    # inward fluxes with a quarter-period phase offset. The bounded solution
+    # is exp(i*b*y)*X(x), where kx*X''=(ky*b²+i*omega)*X.
+    kx, ky = 1., .5
+    omega, b = 8., 2*math.pi
+    west, east = 1., .5j
+    wave = ((ky*b*b+1j*omega)/kx)**.5
+    refinements = []
+    for n in (8, 16, 32, 64):
+        dx = 1/n
+        dt = (.9-.5)*dx**2/(3*kx)
+        faces = torch.arange(n+1, dtype=torch.float64)*dx
+        centers = (faces[1:]+faces[:-1])/2
+        y_average = torch.exp(1j*b*centers)*math.sin(b*dx/2)/(b*dx/2)
+        denominator = torch.sinh(wave*faces[-1])
+        # Exact x-cell average of the two wall contributions.
+        x_average = (-west*torch.sinh(wave*(1-faces)).diff() +
+                     east*torch.sinh(wave*faces).diff())/(dx*kx*wave**2*denominator)
+        qx = (west*torch.sinh(wave*(1-faces))-east*torch.sinh(wave*faces))/denominator
+        sol = solve_harmonic_scalar_slab(
+            n, n, .9, omega*dt, None, None, tau_y=.5+3*ky*dt/dx**2,
+            wall_transfer=(west*y_average*dt/dx, east*y_average*dt/dx))
+        exact_y_flux = -1j*b*ky*torch.exp(1j*b*faces[1:, None])*x_average
+        errors = (
+            (sol.scalar-y_average[:, None]*x_average).abs().max().item(),
+            (sol.x_transfer*dx/dt-y_average[:, None]*qx).abs().max().item(),
+            (sol.y_transfer*dx/dt-exact_y_flux).abs().max().item(),
+        )
+        for name, error in zip(("temperature_K", "x_flux_W_m2", "y_flux_W_m2"), errors):
+            record_property(f"max_error_{name}_{n}", error)
+        refinements.append(errors)
+    for previous, current in zip(refinements, refinements[1:]):
+        assert all(old > 3*new for old, new in zip(previous, current))
+    assert all(old > 3.7*new for old, new in zip(refinements[-2], refinements[-1]))
+    assert errors[0] < .001 and max(errors[1:]) < .003
