@@ -290,3 +290,36 @@ def test_anisotropic_traveling_wall_flux_refines_against_continuum(kxy, record_p
         assert all(old > 3*new for old, new in zip(previous, current))
     assert all(old > 3.7*new for old, new in zip(refinements[-2], refinements[-1]))
     assert errors[0] < .001 and max(errors[1:]) < .003
+
+
+@pytest.mark.parametrize("omega", [0., 1e-10, .37])
+def test_interval_transfer_against_real_collision_stream(omega, record_property):
+    from tensorlbm.scalar import scalar_collide_diffusion, scalar_link_transfer
+
+    nx, ny = 5, 4
+    west = torch.tensor([1., .1j, -.7, .4-.1j], dtype=torch.complex128)
+    east = .15-.2j
+    result = solve_harmonic_scalar_slab(nx, ny, .91, omega, west, east,
+                                       tau_y=1.1, tau_xy=.12)
+    start, stop = 3, 24
+    state = (result.populations*cmath.exp(1j*omega*start)).real
+    initial = state.sum(0)
+    reference_x = torch.zeros_like(result.x_transfer.real)
+    reference_y = torch.zeros_like(result.y_transfer.real)
+    for j in range(start, stop):
+        phase = cmath.exp(1j*omega*(j+.5))
+        post = scalar_collide_diffusion(state, .91, 1.1, .91, tau_xy=.12)
+        state, wall = scalar_stream_slab(post, (west*phase).real, (east*phase).real)
+        reference_x += torch.cat((wall[0,:,None], scalar_link_transfer(post, "x"), -wall[1,:,None]), dim=1)
+        reference_y += scalar_link_transfer(post, "y", periodic=True)
+    qx, qy = result.interval_transfer(start, stop)
+    error = max((qx-reference_x).abs().max().item(), (qy-reference_y).abs().max().item())
+    balance = (state.sum(0)-initial+qx.diff(dim=1)+qy-qy.roll(1,0)).abs().max().item()
+    record_property("max_link_transfer_error_lattice", error)
+    record_property("max_cell_balance_error_lattice", balance)
+    assert max(error, balance) < 3e-14
+    for value in result.interval_transfer(7, 7):
+        assert torch.count_nonzero(value) == 0
+    for bounds in ((2, 1), (-1, 2), (True, 3), (.5, 1)):
+        with pytest.raises(ValueError, match="step bounds"):
+            result.interval_transfer(*bounds)
