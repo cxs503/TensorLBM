@@ -1,10 +1,12 @@
 # XVAL — OSS `fused-push-pull-aa-pattern` cross-validation (TensorLBM, mission 17839)
 
+> Archived [m17839 driver and evidence](../benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/README.md) are linked from the maintained case.
+
 **Anchor**: `XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN` · **Gate**: 15 % (owner standard) · **Target**: 3 % · **Verdict**: PASS / PASS
 
 ## 1. Case: what was cross-validated and where the reference comes from
 
-Reference implementation: `lbm-principles-practice/code` (MIT; Krüger, Kusumaatmaja, Kuzmin, Shardt, Silva, Viggen, *The LBM: Principles and Practice*, Springer 2016), chapter 13 GPU code. Source files were fetched through the GitHub contents API and snapshotted under `xval/fused_push_pull_aa_pattern/ref/` with sha256:
+Reference implementation: `lbm-principles-practice/code` (MIT; Krüger, Kusumaatmaja, Kuzmin, Shardt, Silva, Viggen, *The LBM: Principles and Practice*, Springer 2016), chapter 13 GPU code. Source files were fetched through the GitHub contents API and snapshotted under `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/ref/` with sha256:
 
 | file | bytes | sha256 |
 |---|---|---|
@@ -24,11 +26,11 @@ Physical case: 2-D Taylor-Green vortex, periodic, `rho = rho0 + 3P` with the pre
 
 | piece | what | where |
 |---|---|---|
-| upstream kernel transliteration (NumPy) | arm `oss_numpy` | `xval/fused_push_pull_aa_pattern/oss_port.py` |
+| upstream kernel transliteration (NumPy) | arm `oss_numpy` | `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/oss_port.py` |
 | fused push-pull stepper (torch, repo) | arm `torch_fused` / `torch_single` | `src/tensorlbm/fused_push_pull.py` |
 | repo AB reference | arm `torch_ab` | `solver.stream` + `collide_bgk` |
-| bench / controls / tables | — | `xval/fused_push_pull_aa_pattern/run.py` |
-| renderer (this document + figures) | — | `xval/fused_push_pull_aa_pattern/make_report.py` |
+| bench / controls / tables | — | `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/run.py` |
+| renderer (this document + figures) | — | `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/make_report.py` |
 | tests | 12 | `tests/test_fused_push_pull_xval.py` |
 
 All arms run in float64, same IC, same `tau`, same step count, same sampling (`chapter13/gpu/LBM.h`: `scale=2`), so any difference is implementation, not physics. Environment: python 3.11.6, torch 2.7.1, numpy 2.4.6, loongarch64.
@@ -152,19 +154,13 @@ The L2 norm of that standing wave alternates with envelope period 28.57 steps; t
 
 ## 7. Figures
 
-![fig1](xval/fused_push_pull_aa_pattern/figures/fig1_decay_and_errors.png)
+The [archived figure index](../benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/figures/index.json) records the four filenames. The original PNG files are absent from the tracked snapshot. Run the renderer in a separate worktree to regenerate them.
 
 *fig1_decay_and_errors.png — fig1_decay_and_errors*
 
-![fig2](xval/fused_push_pull_aa_pattern/figures/fig2_resolution.png)
-
 *fig2_resolution.png — fig2_resolution*
 
-![fig3](xval/fused_push_pull_aa_pattern/figures/fig3_rho_acoustic.png)
-
 *fig3_rho_acoustic.png — fig3_rho_acoustic*
-
-![fig4](xval/fused_push_pull_aa_pattern/figures/fig4_cross_arm.png)
 
 *fig4_cross_arm.png — fig4_cross_arm*
 
@@ -183,8 +179,8 @@ Verdict: **PASS** on the owner's 15 % gate for every graded quantity; the veloci
 ## 9. Reproduction
 
 ```bash
-cd xval/fused_push_pull_aa_pattern
-python run.py --out result.json          # ~2 min on 1 core
-python make_report.py                    # figures/ + this document
-python -m pytest ../../tests/test_fused_push_pull_xval.py -q
+cd benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839
+python run.py                           # writes to outputs/historical_xval/
+# In a separate worktree: python make_report.py  # reads the archived result
+python -m pytest ../../../../../tests/test_fused_push_pull_xval.py -q
 ```

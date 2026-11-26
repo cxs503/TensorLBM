@@ -38,6 +38,16 @@ class BenchmarkRegistryTests(unittest.TestCase):
         )
         self.assertEqual(norberg["current_acceptance"], "not_evaluated")
 
+    def test_fused_streaming_archive_retains_case_ownership(self):
+        case_path = "benchmarks/verified/fused_push_pull_aa_pattern"
+        (record,) = self.registry("--case", case_path)
+        evidence = next(variant["evidence"] for variant in record["variants"]
+                        if variant["path"] == case_path)
+        archive = f"{case_path}/evidence/m17839"
+        for item in ("result.json", "ref/PROVENANCE.json", "run.py", "figures/index.json"):
+            self.assertIn(f"{archive}/{item}", evidence)
+        self.assertEqual(record["current_acceptance"], "not_evaluated")
+
     def test_asset_index_covers_every_tracked_benchmark_path(self):
         data = subprocess.check_output([sys.executable, "tools/benchmark_registry.py", "--asset-index"], cwd=ROOT)
         inventory = json.loads(data)

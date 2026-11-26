@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[4]
 FIGS = HERE / "figures"
 DOC = REPO / "docs" / "XVAL_m17839_FUSED_PUSH_PULL_AA_PATTERN.md"
 
@@ -147,7 +147,7 @@ def render(r: dict, figs: dict[str, Path]) -> str:
     A("Reference implementation: `lbm-principles-practice/code` (MIT; Krüger, Kusumaatmaja, "
       "Kuzmin, Shardt, Silva, Viggen, *The LBM: Principles and Practice*, Springer 2016), "
       "chapter 13 GPU code. Source files were fetched through the GitHub contents API and "
-      "snapshotted under `xval/fused_push_pull_aa_pattern/ref/` with sha256:")
+      "snapshotted under `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/ref/` with sha256:")
     A("")
     A("| file | bytes | sha256 |")
     A("|---|---|---|")
@@ -175,11 +175,11 @@ def render(r: dict, figs: dict[str, Path]) -> str:
     A("")
     A("| piece | what | where |")
     A("|---|---|---|")
-    A("| upstream kernel transliteration (NumPy) | arm `oss_numpy` | `xval/fused_push_pull_aa_pattern/oss_port.py` |")
+    A("| upstream kernel transliteration (NumPy) | arm `oss_numpy` | `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/oss_port.py` |")
     A("| fused push-pull stepper (torch, repo) | arm `torch_fused` / `torch_single` | `src/tensorlbm/fused_push_pull.py` |")
     A("| repo AB reference | arm `torch_ab` | `solver.stream` + `collide_bgk` |")
-    A("| bench / controls / tables | — | `xval/fused_push_pull_aa_pattern/run.py` |")
-    A("| renderer (this document + figures) | — | `xval/fused_push_pull_aa_pattern/make_report.py` |")
+    A("| bench / controls / tables | — | `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/run.py` |")
+    A("| renderer (this document + figures) | — | `benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839/make_report.py` |")
     A("| tests | 12 | `tests/test_fused_push_pull_xval.py` |")
     A("")
     A("All arms run in float64, same IC, same `tau`, same step count, same sampling "
@@ -348,7 +348,7 @@ def render(r: dict, figs: dict[str, Path]) -> str:
     A("## 7. Figures")
     A("")
     for name, cap in figs.items():
-        A(f"![{name}]({cap.relative_to(REPO)})")
+        A(f"![{name}](../{cap.relative_to(REPO)})")
         A("")
         A(f"*{figs[name].name} — {cap.stem}*")
         A("")
@@ -372,10 +372,10 @@ def render(r: dict, figs: dict[str, Path]) -> str:
     A("## 9. Reproduction")
     A("")
     A("```bash")
-    A("cd xval/fused_push_pull_aa_pattern")
-    A("python run.py --out result.json          # ~2 min on 1 core")
-    A("python make_report.py                    # figures/ + this document")
-    A("python -m pytest ../../tests/test_fused_push_pull_xval.py -q")
+    A("cd benchmarks/verified/fused_push_pull_aa_pattern/evidence/m17839")
+    A("python run.py                           # writes to outputs/historical_xval/")
+    A("# In a separate worktree: python make_report.py  # reads the archived result")
+    A("python -m pytest ../../../../../tests/test_fused_push_pull_xval.py -q")
     A("```")
     return "\n".join(L) + "\n"
 

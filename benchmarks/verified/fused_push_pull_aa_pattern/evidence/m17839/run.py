@@ -49,7 +49,7 @@ import numpy as np
 import torch
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[4]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 
@@ -310,7 +310,10 @@ def rho_mode_analysis(cfg: dict, nsteps: int = 400) -> dict:
 # ------------------------------------------------------------------------------ main
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(HERE / "result.json"))
+    ap.add_argument(
+        "--out", type=Path,
+        default=REPO / "outputs/historical_xval/fused_push_pull_aa_pattern/result.json",
+    )
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args()
 
@@ -462,7 +465,8 @@ def main() -> int:
         verdict["rho_period_rel_err"] = result["rho_mode"]["period_rel_err"]
 
     result["verdict"] = verdict
-    Path(args.out).write_text(json.dumps(result, indent=1))
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(result, indent=1))
     print(json.dumps(verdict, indent=1))
     print("wrote", args.out)
     return 0
