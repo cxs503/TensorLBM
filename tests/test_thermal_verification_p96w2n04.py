@@ -23,8 +23,13 @@ import pytest
 import torch
 
 from tensorlbm.d2q9 import equilibrium, macroscopic
+from tensorlbm.rb_continuum_stability import (
+    critical_at,
+    critical_rayleigh_continuous,
+    full_spectrum,
+    growth,
+)
 from tensorlbm.thermal import (
-    temperature_collision,
     buoyancy_force,
     cavity_wall_mask,
     collide_bgk_force,
@@ -32,6 +37,7 @@ from tensorlbm.thermal import (
     nusselt_number,
     pre_streaming_bounce_back,
     simulate_natural_convection,
+    temperature_collision,
     temperature_equilibrium,
     temperature_stream,
     thermal_params,
@@ -46,13 +52,6 @@ from tensorlbm.thermal_verification import (
     simulate_dhc_2d,
     simulate_rayleigh_benard_2d,
 )
-from tensorlbm.rb_continuum_stability import (
-    critical_at,
-    critical_rayleigh_continuous,
-    full_spectrum,
-    growth,
-)
-
 
 # ============================================================================
 # C1: Critical Rayleigh number — linear stability (continuum)
@@ -465,10 +464,12 @@ class TestRegression:
 
     def test_thermal_imports(self):
         """All thermal modules import cleanly."""
-        from tensorlbm import thermal
-        from tensorlbm import thermal_common
-        from tensorlbm import thermal_verification
-        from tensorlbm import heat_convection_benchmarks
+        from tensorlbm import (
+            heat_convection_benchmarks,
+            thermal,
+            thermal_common,
+            thermal_verification,
+        )
         assert hasattr(thermal, "simulate_natural_convection")
         assert hasattr(thermal_verification, "simulate_rayleigh_benard_2d")
 

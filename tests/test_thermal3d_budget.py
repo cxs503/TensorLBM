@@ -128,65 +128,89 @@ def test_transient_slab_with_isothermal_and_insulated_walls(record_property):
 
     # Isothermal x surfaces pass through nodes; transverse insulating walls
     # lie half a lattice link beyond the first and last nodes.
-    tau, time = .8, 1/32
-    alpha = (tau-.5)/4
-    hot, cold = 1.2, .4
-    wave = (math.pi, 2*math.pi, 4*math.pi/3)
-    decay = math.exp(-alpha*sum(k*k for k in wave)*time)
+    tau, time = 0.8, 1 / 32
+    alpha = (tau - 0.5) / 4
+    hot, cold = 1.2, 0.4
+    wave = (math.pi, 2 * math.pi, 4 * math.pi / 3)
+    decay = math.exp(-alpha * sum(k * k for k in wave) * time)
     previous = None
     for n in (16, 32, 64):
         z, y, x = torch.meshgrid(
-            (torch.arange(3*n//4, dtype=torch.float64)+.5)/n,
-            (torch.arange(n//2, dtype=torch.float64)+.5)/n,
-            torch.arange(n+1, dtype=torch.float64)/n, indexing="ij")
-        transverse = torch.cos(wave[1]*y)*torch.cos(wave[2]*z)
-        perturbation = .3*torch.sin(wave[0]*x)*transverse
-        baseline = hot+(cold-hot)*x
-        initial = baseline+perturbation
+            (torch.arange(3 * n // 4, dtype=torch.float64) + 0.5) / n,
+            (torch.arange(n // 2, dtype=torch.float64) + 0.5) / n,
+            torch.arange(n + 1, dtype=torch.float64) / n,
+            indexing="ij",
+        )
+        transverse = torch.cos(wave[1] * y) * torch.cos(wave[2] * z)
+        perturbation = 0.3 * torch.sin(wave[0] * x) * transverse
+        baseline = hot + (cold - hot) * x
+        initial = baseline + perturbation
         zero = torch.zeros_like(initial)
         g = equilibrium_thermal_3d(initial, zero, zero, zero)
-        for _ in range(int(time*n*n)):
+        for _ in range(int(time * n * n)):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
             g = apply_bc(stream_thermal_3d(post), hot, cold)
         field = macroscopic_thermal_3d(g)
         # Second-order one-sided Fourier estimates, both positive toward +x.
-        left = -alpha*n*(-3*field[..., 0]+4*field[..., 1]-field[..., 2])/2
-        right = -alpha*n*(3*field[..., -1]-4*field[..., -2]+field[..., -3])/2
-        varying = .3*wave[0]*decay*transverse[..., 0]
-        errors = dict(field=(field-baseline-decay*perturbation).abs().max().item(),
-                      left_flux=(left+alpha*(cold-hot+varying)).abs().max().item(),
-                      right_flux=(right+alpha*(cold-hot-varying)).abs().max().item())
+        left = -alpha * n * (-3 * field[..., 0] + 4 * field[..., 1] - field[..., 2]) / 2
+        right = -alpha * n * (3 * field[..., -1] - 4 * field[..., -2] + field[..., -3]) / 2
+        varying = 0.3 * wave[0] * decay * transverse[..., 0]
+        errors = dict(
+            field=(field - baseline - decay * perturbation).abs().max().item(),
+            left_flux=(left + alpha * (cold - hot + varying)).abs().max().item(),
+            right_flux=(right + alpha * (cold - hot - varying)).abs().max().item(),
+        )
         # The last streaming step transports energy between neighboring nodes.
         # Compare its face fluxes with Fourier's law at link and time midpoints.
-        dx, dt = 1/n, 1/n**2
+        dx, dt = 1 / n, 1 / n**2
         qx, qy, qz = thermal_link_fluxes_3d(post, spacing=dx, dt=dt)
-        mid_decay = math.exp(-alpha*sum(k*k for k in wave)*(time-dt/2))
-        amplitude = .3*alpha*mid_decay
-        exact_x = alpha*(hot-cold) - amplitude*wave[0]*torch.cos(wave[0]*(x[..., :-1]+dx/2))*transverse[..., :-1]
-        exact_y = (amplitude*wave[1]*torch.sin(wave[0]*x[:, :-1])*torch.sin(wave[1]*(y[:, :-1]+dx/2))
-                   *torch.cos(wave[2]*z[:, :-1]))
-        exact_z = (amplitude*wave[2]*torch.sin(wave[0]*x[:-1])*torch.cos(wave[1]*y[:-1])
-                   *torch.sin(wave[2]*(z[:-1]+dx/2)))
-        errors.update(x_link_flux=(qx-exact_x).abs().max().item(),
-                      y_link_flux=(qy-exact_y).abs().max().item(),
-                      z_link_flux=(qz-exact_z).abs().max().item())
+        mid_decay = math.exp(-alpha * sum(k * k for k in wave) * (time - dt / 2))
+        amplitude = 0.3 * alpha * mid_decay
+        exact_x = (
+            alpha * (hot - cold)
+            - amplitude
+            * wave[0]
+            * torch.cos(wave[0] * (x[..., :-1] + dx / 2))
+            * transverse[..., :-1]
+        )
+        exact_y = (
+            amplitude
+            * wave[1]
+            * torch.sin(wave[0] * x[:, :-1])
+            * torch.sin(wave[1] * (y[:, :-1] + dx / 2))
+            * torch.cos(wave[2] * z[:, :-1])
+        )
+        exact_z = (
+            amplitude
+            * wave[2]
+            * torch.sin(wave[0] * x[:-1])
+            * torch.cos(wave[1] * y[:-1])
+            * torch.sin(wave[2] * (z[:-1] + dx / 2))
+        )
+        errors.update(
+            x_link_flux=(qx - exact_x).abs().max().item(),
+            y_link_flux=(qy - exact_y).abs().max().item(),
+            z_link_flux=(qz - exact_z).abs().max().item(),
+        )
 
         # The x boundary nodes are reservoirs. All other nodes, including
         # transverse wall nodes, have no source and zero exterior y/z flux.
         div_y = torch.diff(torch.nn.functional.pad(qy, (0, 0, 1, 1)), dim=1)
         div_z = torch.diff(torch.nn.functional.pad(qz, (0, 0, 0, 0, 1, 1)), dim=0)
-        delta = (field-post.sum(dim=0))[..., 1:-1]
-        balance = delta + (dt/dx)*(qx.diff(dim=2)+(div_y+div_z)[..., 1:-1])
+        delta = (field - post.sum(dim=0))[..., 1:-1]
+        balance = delta + (dt / dx) * (qx.diff(dim=2) + (div_y + div_z)[..., 1:-1])
         residual = balance.abs().max().item()
         record_property(f"n{n}_local_balance_error", residual)
         assert residual < 2e-14
-        boundary = max((field[..., 0]-hot).abs().max().item(), (field[..., -1]-cold).abs().max().item())
+        boundary = max(
+            (field[..., 0] - hot).abs().max().item(), (field[..., -1] - cold).abs().max().item()
+        )
         record_property(f"n{n}_wall_temperature_error", boundary)
         assert boundary < 1e-14
         for name, error in errors.items():
             record_property(f"n{n}_{name}_error", error)
             if previous is not None:
-                order = math.log2(previous[name]/error)
+                order = math.log2(previous[name] / error)
                 record_property(f"n{n}_{name}_order", order)
                 if name == "field" or name.endswith("_link_flux"):
                     assert order > 1.9
@@ -200,45 +224,56 @@ def test_cumulative_link_heat_and_slab_storage(record_property):
 
     # Unit-length slab with constant x-wall temperatures, insulated transverse
     # walls and unit-area reporting. A decaying mode gives nonzero net cooling.
-    tau, capacity, end_time = .8, 2.3, .125
-    alpha = (tau-.5)/4
-    hot, cold = 1.2, .4
-    amplitude = .35
+    tau, capacity, end_time = 0.8, 2.3, 0.125
+    alpha = (tau - 0.5) / 4
+    hot, cold = 1.2, 0.4
+    amplitude = 0.35
     previous = None
     for n in (16, 32, 64):
-        dx, dt = 1/n, 1/n**2
-        x = torch.arange(n+1, dtype=torch.float64)*dx
-        initial = (hot+(cold-hot)*x+amplitude*torch.sin(math.pi*x)).expand(3, 4, -1)
+        dx, dt = 1 / n, 1 / n**2
+        x = torch.arange(n + 1, dtype=torch.float64) * dx
+        initial = (hot + (cold - hot) * x + amplitude * torch.sin(math.pi * x)).expand(3, 4, -1)
         zero = torch.zeros_like(initial)
         g = equilibrium_thermal_3d(initial, zero, zero, zero)
         heat = torch.zeros_like(x[:-1])
-        faces = x[:-1]+.5*dx
-        worst_cell = worst_slab = 0.
-        for step in range(1, int(end_time/dt)+1):
+        faces = x[:-1] + 0.5 * dx
+        worst_cell = worst_slab = 0.0
+        for step in range(1, int(end_time / dt) + 1):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
-            qx, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=dx, volumetric_heat_capacity=capacity)
-            heat += dt*qx.mean(dim=(0, 1))
+            qx, _, _ = thermal_link_fluxes_3d(
+                post, dt=dt, spacing=dx, volumetric_heat_capacity=capacity
+            )
+            heat += dt * qx.mean(dim=(0, 1))
             g = apply_bc(stream_thermal_3d(post), hot, cold)
-            delta = macroscopic_thermal_3d(g)-initial
-            stored = capacity*dx*delta[..., 1:-1].mean(dim=(0, 1))
-            worst_cell = max(worst_cell, (stored+heat.diff()).abs().max().item())
-            worst_slab = max(worst_slab, abs((stored.sum()-heat[0]+heat[-1]).item()))
+            delta = macroscopic_thermal_3d(g) - initial
+            stored = capacity * dx * delta[..., 1:-1].mean(dim=(0, 1))
+            worst_cell = max(worst_cell, (stored + heat.diff()).abs().max().item())
+            worst_slab = max(worst_slab, abs((stored.sum() - heat[0] + heat[-1]).item()))
         # Integrate -C*alpha*T_x in time at each face. Integrate the change
         # in C*T separately in space between the two reservoir-adjacent links.
-        decay_change = math.expm1(-alpha*math.pi**2*end_time)
-        exact_heat = capacity*(alpha*(hot-cold)*end_time
-                               + amplitude*torch.cos(math.pi*faces)*decay_change/math.pi)
-        exact_storage = capacity*amplitude*decay_change*(
-            math.cos(math.pi*faces[0])-math.cos(math.pi*faces[-1]))/math.pi
-        errors = dict(link_heat=(heat-exact_heat).abs().max().item(),
-                      slab_storage=abs(stored.sum().item()-exact_storage))
+        decay_change = math.expm1(-alpha * math.pi**2 * end_time)
+        exact_heat = capacity * (
+            alpha * (hot - cold) * end_time
+            + amplitude * torch.cos(math.pi * faces) * decay_change / math.pi
+        )
+        exact_storage = (
+            capacity
+            * amplitude
+            * decay_change
+            * (math.cos(math.pi * faces[0]) - math.cos(math.pi * faces[-1]))
+            / math.pi
+        )
+        errors = dict(
+            link_heat=(heat - exact_heat).abs().max().item(),
+            slab_storage=abs(stored.sum().item() - exact_storage),
+        )
         record_property(f"n{n}_max_cell_balance_J_m2", worst_cell)
         record_property(f"n{n}_max_slab_balance_J_m2", worst_slab)
         assert max(worst_cell, worst_slab) < 1e-12
         for name, error in errors.items():
             record_property(f"n{n}_{name}_error_J_m2", error)
             if previous is not None:
-                order = math.log2(previous[name]/error)
+                order = math.log2(previous[name] / error)
                 record_property(f"n{n}_{name}_order", order)
                 assert order > 1.8
         previous = errors
@@ -249,47 +284,53 @@ def test_reversing_section_heat_in_cooling_slab(record_property):
 
     # At x=1/4 the initial sine gradient dominates the imposed wall gradient.
     # Its exponential decay leaves a positive steady flux after one reversal.
-    capacity, tau, amplitude, end_time = 2.3, .8, .43, .5
-    hot, cold = 1.2, .4
-    alpha = (tau-.5)/4
-    steady = capacity*alpha*(hot-cold)
-    transient = capacity*alpha*amplitude*math.pi*math.cos(math.pi/4)
-    decay = alpha*math.pi**2
-    reversal = math.log(transient/steady)/decay
+    capacity, tau, amplitude, end_time = 2.3, 0.8, 0.43, 0.5
+    hot, cold = 1.2, 0.4
+    alpha = (tau - 0.5) / 4
+    steady = capacity * alpha * (hot - cold)
+    transient = capacity * alpha * amplitude * math.pi * math.cos(math.pi / 4)
+    decay = alpha * math.pi**2
+    reversal = math.log(transient / steady) / decay
 
     def net_heat(t):
-        return steady*t+transient*math.expm1(-decay*t)/decay
+        return steady * t + transient * math.expm1(-decay * t) / decay
 
     exact_reverse = -net_heat(reversal)
-    exact_forward = net_heat(end_time)+exact_reverse
+    exact_forward = net_heat(end_time) + exact_reverse
     previous = None
+    previous_n = None
     for n in (18, 34, 66):
         # n=4m+2 places the same physical section at a link midpoint on every grid.
-        dx, dt = 1/n, 1/n**2
-        x = torch.arange(n+1, dtype=torch.float64)*dx
-        initial = (hot+(cold-hot)*x+amplitude*torch.sin(math.pi*x)).expand(3, 4, -1)
+        dx, dt = 1 / n, 1 / n**2
+        x = torch.arange(n + 1, dtype=torch.float64) * dx
+        initial = (hot + (cold - hot) * x + amplitude * torch.sin(math.pi * x)).expand(3, 4, -1)
         zero = torch.zeros_like(initial)
         g = equilibrium_thermal_3d(initial, zero, zero, zero)
         rates = []
-        for _ in range(round(end_time/dt)):
+        for _ in range(round(end_time / dt)):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
-            qx, _, _ = thermal_link_fluxes_3d(post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity)
-            rates.append(qx[..., n//4].mean().item())
+            qx, _, _ = thermal_link_fluxes_3d(
+                post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity
+            )
+            rates.append(qx[..., n // 4].mean().item())
             g = apply_bc(stream_thermal_3d(post), hot, cold)
         flux = torch.tensor(rates, dtype=torch.float64)
         assert flux[0] < 0 and flux[-1] > 0
         crossings = torch.nonzero((flux[:-1] < 0) != (flux[1:] < 0)).flatten()
         assert crossings.numel() == 1
         j = crossings.item()
-        crossing = dt*(j+.5-flux[j].item()/(flux[j+1]-flux[j]).item())
-        forward = dt*flux.clamp_min(0).sum().item()
-        reverse = dt*(-flux).clamp_min(0).sum().item()
-        errors = dict(forward_J_m2=abs(forward-exact_forward), reverse_J_m2=abs(reverse-exact_reverse),
-                      reversal_s=abs(crossing-reversal))
+        crossing = dt * (j + 0.5 - flux[j].item() / (flux[j + 1] - flux[j]).item())
+        forward = dt * flux.clamp_min(0).sum().item()
+        reverse = dt * (-flux).clamp_min(0).sum().item()
+        errors = dict(
+            forward_J_m2=abs(forward - exact_forward),
+            reverse_J_m2=abs(reverse - exact_reverse),
+            reversal_s=abs(crossing - reversal),
+        )
         for name, error in errors.items():
             record_property(f"n{n}_{name}_error", error)
             if previous is not None:
-                order = math.log(previous[name]/error)/math.log(n/previous_n)
+                order = math.log(previous[name] / error) / math.log(n / previous_n)
                 record_property(f"n{n}_{name}_order", order)
                 assert order > 1.8
         previous, previous_n = errors, n
@@ -300,42 +341,61 @@ def test_reversing_section_heat_in_cooling_slab(record_property):
 
 def test_harmonic_walls_recover_temperature_and_link_flux_phasors(record_property):
     import cmath
+
     from tensorlbm.thermal_common import thermal_link_fluxes_3d
 
     # Independent continuum solution of alpha*U''=i*omega*U on [0,1].
-    tau, period, capacity = .8, .5, 2.3
-    alpha = (tau-.5)/4
-    omega = 2*math.pi/period
-    wave = cmath.sqrt(1j*omega/alpha)
-    left, right = .4+.15j, -.2+.3j
+    tau, period, capacity = 0.8, 0.5, 2.3
+    alpha = (tau - 0.5) / 4
+    omega = 2 * math.pi / period
+    wave = cmath.sqrt(1j * omega / alpha)
+    left, right = 0.4 + 0.15j, -0.2 + 0.3j
     previous = None
     for n in (12, 24, 48, 96):
-        dx, dt = 1/n, 1/n**2
-        x = torch.arange(n+1, dtype=torch.float64)*dx
-        face = x[:-1]+dx/2
-        exact_t = (left*torch.sinh(wave*(1-x))+right*torch.sinh(wave*x))/cmath.sinh(wave)
-        exact_q = capacity*alpha*wave*(left*torch.cosh(wave*(1-face))-right*torch.cosh(wave*face))/cmath.sinh(wave)
-        initial = (1.+exact_t.real).expand(3, 4, -1)
+        dx, dt = 1 / n, 1 / n**2
+        x = torch.arange(n + 1, dtype=torch.float64) * dx
+        face = x[:-1] + dx / 2
+        exact_t = (left * torch.sinh(wave * (1 - x)) + right * torch.sinh(wave * x)) / cmath.sinh(
+            wave
+        )
+        exact_q = (
+            capacity
+            * alpha
+            * wave
+            * (left * torch.cosh(wave * (1 - face)) - right * torch.cosh(wave * face))
+            / cmath.sinh(wave)
+        )
+        initial = (1.0 + exact_t.real).expand(3, 4, -1)
         zero = torch.zeros_like(initial)
         g = equilibrium_thermal_3d(initial, zero, zero, zero)
-        steps = round(period/dt)
+        steps = round(period / dt)
         measured_t = torch.zeros_like(exact_t)
         measured_q = torch.zeros_like(exact_q)
-        for step in range(1, 2*steps+1):
+        for step in range(1, 2 * steps + 1):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
-            phase = cmath.exp(1j*omega*step*dt)
-            g = apply_bc(stream_thermal_3d(post), 1.+(left*phase).real, 1.+(right*phase).real)
+            phase = cmath.exp(1j * omega * step * dt)
+            g = apply_bc(
+                stream_thermal_3d(post), 1.0 + (left * phase).real, 1.0 + (right * phase).real
+            )
             if step > steps:
                 # Temperatures are at step ends; link transport spans the step.
-                qx, _, _ = thermal_link_fluxes_3d(post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity)
-                measured_q += qx.mean((0, 1))*cmath.exp(-1j*omega*(step-.5)*dt)*(2/steps)
-                measured_t += (macroscopic_thermal_3d(g).mean((0, 1))-1.)*phase.conjugate()*(2/steps)
-        errors = dict(temperature_K=(measured_t-exact_t).abs().max().item(),
-                      flux_W_m2=(measured_q-exact_q).abs().max().item())
+                qx, _, _ = thermal_link_fluxes_3d(
+                    post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity
+                )
+                measured_q += (
+                    qx.mean((0, 1)) * cmath.exp(-1j * omega * (step - 0.5) * dt) * (2 / steps)
+                )
+                measured_t += (
+                    (macroscopic_thermal_3d(g).mean((0, 1)) - 1.0) * phase.conjugate() * (2 / steps)
+                )
+        errors = dict(
+            temperature_K=(measured_t - exact_t).abs().max().item(),
+            flux_W_m2=(measured_q - exact_q).abs().max().item(),
+        )
         for name, error in errors.items():
             record_property(f"n{n}_{name}_error", error)
             if previous is not None:
-                order = math.log2(previous[name]/error)
+                order = math.log2(previous[name] / error)
                 record_property(f"n{n}_{name}_order", order)
                 assert order > {24: 1.2, 48: 1.5, 96: 1.75}[n]
         previous = errors
