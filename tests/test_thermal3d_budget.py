@@ -242,3 +242,57 @@ def test_cumulative_link_heat_and_slab_storage(record_property):
                 record_property(f"n{n}_{name}_order", order)
                 assert order > 1.8
         previous = errors
+
+
+def test_reversing_section_heat_in_cooling_slab(record_property):
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    # At x=1/4 the initial sine gradient dominates the imposed wall gradient.
+    # Its exponential decay leaves a positive steady flux after one reversal.
+    capacity, tau, amplitude, end_time = 2.3, .8, .43, .5
+    hot, cold = 1.2, .4
+    alpha = (tau-.5)/4
+    steady = capacity*alpha*(hot-cold)
+    transient = capacity*alpha*amplitude*math.pi*math.cos(math.pi/4)
+    decay = alpha*math.pi**2
+    reversal = math.log(transient/steady)/decay
+
+    def net_heat(t):
+        return steady*t+transient*math.expm1(-decay*t)/decay
+
+    exact_reverse = -net_heat(reversal)
+    exact_forward = net_heat(end_time)+exact_reverse
+    previous = None
+    for n in (18, 34, 66):
+        # n=4m+2 places the same physical section at a link midpoint on every grid.
+        dx, dt = 1/n, 1/n**2
+        x = torch.arange(n+1, dtype=torch.float64)*dx
+        initial = (hot+(cold-hot)*x+amplitude*torch.sin(math.pi*x)).expand(3, 4, -1)
+        zero = torch.zeros_like(initial)
+        g = equilibrium_thermal_3d(initial, zero, zero, zero)
+        rates = []
+        for _ in range(round(end_time/dt)):
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
+            qx, _, _ = thermal_link_fluxes_3d(post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity)
+            rates.append(qx[..., n//4].mean().item())
+            g = apply_bc(stream_thermal_3d(post), hot, cold)
+        flux = torch.tensor(rates, dtype=torch.float64)
+        assert flux[0] < 0 and flux[-1] > 0
+        crossings = torch.nonzero((flux[:-1] < 0) != (flux[1:] < 0)).flatten()
+        assert crossings.numel() == 1
+        j = crossings.item()
+        crossing = dt*(j+.5-flux[j].item()/(flux[j+1]-flux[j]).item())
+        forward = dt*flux.clamp_min(0).sum().item()
+        reverse = dt*(-flux).clamp_min(0).sum().item()
+        errors = dict(forward_J_m2=abs(forward-exact_forward), reverse_J_m2=abs(reverse-exact_reverse),
+                      reversal_s=abs(crossing-reversal))
+        for name, error in errors.items():
+            record_property(f"n{n}_{name}_error", error)
+            if previous is not None:
+                order = math.log(previous[name]/error)/math.log(n/previous_n)
+                record_property(f"n{n}_{name}_order", order)
+                assert order > 1.8
+        previous, previous_n = errors, n
+    record_property("reference_forward_J_m2", exact_forward)
+    record_property("reference_reverse_J_m2", exact_reverse)
+    record_property("reference_reversal_s", reversal)
