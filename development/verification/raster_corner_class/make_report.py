@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-DOC = HERE.parents[1] / "docs" / "XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK.md"
+DOC = HERE.parents[2] / "docs" / "XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK.md"
 
 
 def fmt(x, nd=4):
@@ -183,6 +183,7 @@ OSS phase-field physics, and the drag error is a derived quantity whose sensitiv
 geometry-dependent.
 """
     DOC.parent.mkdir(parents=True, exist_ok=True)
+    md += '\n\nRepository relocation: [case index and original figures](../benchmarks/cross_validation/raster_corner_class/README.md). Original numerical evidence is unchanged.\n'
     DOC.write_text(md)
     print(f"[report] {DOC}")
     return 0

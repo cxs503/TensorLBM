@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-HERE = Path(__file__).resolve().parents[1] / "xval" / "XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK"
+HERE = Path(__file__).resolve().parents[1] / "development" / "verification" / "raster_corner_class"
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 

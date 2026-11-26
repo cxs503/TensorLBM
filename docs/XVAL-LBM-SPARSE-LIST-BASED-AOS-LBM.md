@@ -2,8 +2,8 @@
 
 Round 1, mission 18376, repo **TensorLBM**. Judge: owner accuracy standard
 (>15 % vs the reference is unacceptable). Predeclared protocol:
-`xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/predeclared.json`.
-Driver: `xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/run_xval.py` (full run 432.8 s,
+`development/verification/sparse_list_aos/predeclared.json`.
+Driver: `development/verification/sparse_list_aos/run_xval.py` (full run 432.8 s,
 single core). Tests: `tests/test_xval_sparse_list_aos.py` (11 passed, 14.9 s).
 
 ---
@@ -222,3 +222,5 @@ driver `run_xval.py`, protocol `predeclared.json`, module
 **Scope not covered (round-2 candidates)**: 3-D (D3Q19/D3Q27) lists, TRT/MRT
 collisions, moving-wall/UBB boundaries, and a C/CUDA kernel for the gather loop
 (the NumPy port is a correctness vehicle, not a performance one).
+
+Repository relocation: [case index and historical artifacts](../benchmarks/cross_validation/sparse_list_aos/README.md). Original numerical evidence is unchanged.

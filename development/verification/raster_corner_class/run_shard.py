@@ -3,7 +3,7 @@
 Used by the platform cluster queue::
 
     python run_shard.py --index 3/12 \
-        --outroot xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/runs
+        --outroot development/verification/raster_corner_class/runs
 
 The ladder is enumerated deterministically (config order of ``CONFIGS`` x
 ``("oss", "mask")``), so shard k always runs the same case.

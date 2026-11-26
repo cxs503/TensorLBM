@@ -1,0 +1,52 @@
+{
+  "scope": "Archived generic raster-obstacle operator comparison and channel reference; original evidence and scope only.",
+  "criteria": {
+    "historical": "Apply original preregistration and recorded limits only; no claims are broadened.",
+    "current_acceptance": "Not evaluated by relocation.",
+    "archived_protocol_thresholds": {
+      "R1": {
+        "accept_pct": 15.0,
+        "analytic_anchor_accept_pct": 3.0,
+        "operator_equivalence_rule": "every exact solid link must be in the OSS table set (missed_links = 0); the table may add links, each of which must be classified and counted",
+        "convergence_rule": "stop when max|u(t) - u(t-check_every)| / |u_bar| < u_rel_tol, capped at the predeclared step budget; no run extended or truncated after inspecting K",
+        "u_rel_tol": 1e-07,
+        "u_rel_tol_C0": 1e-08,
+        "failure_rule": "non-finite fields or non-convergence inside the budget are reported as FAILED / NOT_CONVERGED, never re-tuned"
+      }
+    }
+  },
+  "source": [
+    "development/verification/raster_corner_class/make_figures.py",
+    "development/verification/raster_corner_class/make_report.py",
+    "development/verification/raster_corner_class/raster_case.py",
+    "development/verification/raster_corner_class/run_shard.py",
+    "development/verification/raster_corner_class/run_xval.py",
+    "src/tensorlbm/bitflag_neighbour_mask.py",
+    "tests/test_xval_raster_corner_class.py"
+  ],
+  "config": [
+    "development/verification/raster_corner_class/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/raster_corner_class/README.md",
+    "docs/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK.md",
+    "docs/audit_m18356_m18239.md",
+    "development/verification/raster_corner_class/README.md"
+  ],
+  "reference_files": [
+    "development/verification/raster_corner_class/predeclared.json",
+    "docs/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK.md",
+    "docs/audit_m18356_m18239.md"
+  ],
+  "results": [
+    "development/verification/raster_corner_class/results.json"
+  ],
+  "evidence": [
+    "development/verification/raster_corner_class/figures/fig1_fields.png",
+    "development/verification/raster_corner_class/figures/fig2_corner_links.png",
+    "development/verification/raster_corner_class/figures/fig3_convergence.png",
+    "development/verification/raster_corner_class/figures/fig4_anchor.png",
+    "development/audit/m18313/report_payload.json",
+    "docs/architecture/migrations/sparse-raster-xval-2026-11-26.json"
+  ]
+}
