@@ -1,0 +1,20 @@
+{
+  "source_commit": "d7b04734c71002869d1874043df6003aaf138f99",
+  "command": "PYTHONPATH=src OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest -q tests/test_scalar_harmonic.py -o junit_family=legacy --junitxml=/tmp/lbm-physical-interval.xml",
+  "reference": "Two sinusoidal Dirichlet wall temperatures on a one-metre slab. Integrate the analytic complex Fourier flux at each face over four fixed physical time windows. Diffusive scaling dt=dx\u00b2/4, capacity 4 J/(m\u00b3 K), conductivity 2 W/(m K). Errors and discrete storage balances in J/m\u00b2.",
+  "passed": 29,
+  "measurements": {
+    "wall_error_8_J_m2": 0.011609584767883208,
+    "interior_error_8_J_m2": 0.010754204812822077,
+    "storage_balance_8_J_m2": 8.881784197001252e-15,
+    "wall_error_16_J_m2": 0.0028961932188188433,
+    "interior_error_16_J_m2": 0.002786790477841472,
+    "storage_balance_16_J_m2": 7.771561172376096e-15,
+    "wall_error_32_J_m2": 0.0007236853466101589,
+    "interior_error_32_J_m2": 0.0007097924406670453,
+    "storage_balance_32_J_m2": 1.127986593019159e-13,
+    "wall_error_64_J_m2": 0.00018089904300322424,
+    "interior_error_64_J_m2": 0.00017914705826194144,
+    "storage_balance_64_J_m2": 2.0383694732117874e-13
+  }
+}
