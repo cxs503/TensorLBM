@@ -1,0 +1,44 @@
+{
+  "scope": "Historical Young\u2013Laplace static-droplet surface-tension comparison and analysis regression, retaining the original measurement scope.",
+  "criteria": {
+    "historical_protocol": {
+      "tol_pct": 15.0,
+      "tight_diagnostic_pct": 5.0,
+      "rest_tol_u_over_cs": 0.001,
+      "mass_tol_rel": 1e-06,
+      "sigma_linearity_slope_tol": 0.15,
+      "analytic_identity_tol": 1e-12,
+      "falsifiability_min_caught_of_5": 3
+    },
+    "current_acceptance": "Not evaluated by relocation."
+  },
+  "source": [
+    "development/verification/young_laplace_analytic/make_report.py",
+    "development/verification/young_laplace_analytic/run_xval.py",
+    "development/verification/young_laplace_analytic/xval_lib.py",
+    "src/tensorlbm/multiphase_soy_dropin.py",
+    "tests/test_xval_young_laplace_analytic.py"
+  ],
+  "config": [
+    "development/verification/young_laplace_analytic/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/young_laplace_analytic/README.md",
+    "development/verification/young_laplace_analytic/README.md",
+    "development/verification/young_laplace_analytic/REPORT.md"
+  ],
+  "reference_files": [
+    "development/verification/young_laplace_analytic/xval_lib.py",
+    "development/verification/young_laplace_analytic/artifacts/hero_fields.npz"
+  ],
+  "results": [
+    "development/verification/young_laplace_analytic/artifacts/summary.json"
+  ],
+  "evidence": [
+    "development/verification/young_laplace_analytic/artifacts/fig_hero.png",
+    "development/verification/young_laplace_analytic/artifacts/fig_laplace.png",
+    "development/verification/young_laplace_analytic/artifacts/fig_sensitivity.png",
+    "development/verification/young_laplace_analytic/artifacts/report_payload.json",
+    "docs/architecture/migrations/young-laplace-two-pdf-xval-2026-11-26.json"
+  ]
+}

@@ -34,7 +34,7 @@ nothing is hand-typed.  ``--quick`` halves the step budget for smoke runs and is
 
 Usage::
 
-    python xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/run_xval.py --jobs 6
+    python development/verification/young_laplace_analytic/run_xval.py --jobs 6
     python .../run_xval.py --quick --jobs 4
 """
 
@@ -53,7 +53,7 @@ from multiprocessing import Pool
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_ROOT = os.path.dirname(os.path.dirname(_HERE))
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))
 sys.path.insert(0, os.path.join(_ROOT, "src"))
 sys.path.insert(0, _HERE)
 

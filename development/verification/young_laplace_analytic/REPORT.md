@@ -64,8 +64,8 @@ sigma  = sqrt(8 kappa A^3 / (9 B^2))  ==  (4/3) kappa psi0^2 / xi          (两�
 |---|---|---|
 | 被测内核 | `src/tensorlbm/multiphase_soy_dropin.py::SOYFreeEnergyD2Q9` | `step()` / `init_droplet()` / 场 `psi,rho,u,p,grad_*` |
 | 库驱动（冒烟用） | `src/tensorlbm/multiphase_static_droplet.py::soy_free_energy_droplet` | `dp`、`dp_analytical`、`sigma_from_capillary_energy` |
-| 解析/测量库 | `xval/.../xval_lib.py` | `soy_constants`、`analytic_sigma_*`、`pressure_jump`、`gradient_energy_sigma`、`leave_one_radius_out`、`planted_defects` |
-| 驱动 | `xval/.../run_xval.py` | 9 个算例、20 时间窗平均、`artifacts/summary.json` |
+| 解析/测量库 | `development/verification/young_laplace_analytic/xval_lib.py` | `soy_constants`、`analytic_sigma_*`、`pressure_jump`、`gradient_energy_sigma`、`leave_one_radius_out`、`planted_defects` |
+| 驱动 | `development/verification/young_laplace_analytic/run_xval.py` | 9 个算例、20 时间窗平均、`artifacts/summary.json` |
 | 晶格/时间步 | — | D2Q9，`tau_g=1/(3-sqrt3)=0.7887`，`gamma=0.1`，`eta_n=1/6`（`tau_f=1`） |
 
 ## ③ 参数表（全为晶格单位 lu；匹配密度模型，无密度比）
@@ -150,8 +150,8 @@ sigma  = sqrt(8 kappa A^3 / (9 B^2))  ==  (4/3) kappa psi0^2 / xi          (两�
 
 ```bash
 # 全量（9 算例，9 核并行，约 298 s 单核串行等价）
-python xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/run_xval.py --jobs 9
-python xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/make_report.py
+python development/verification/young_laplace_analytic/run_xval.py --jobs 9
+python development/verification/young_laplace_analytic/make_report.py
 python -m pytest tests/test_xval_young_laplace_analytic.py -q
 ```
 

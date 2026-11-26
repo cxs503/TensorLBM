@@ -666,6 +666,34 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertEqual(index[:2], [item["git_mode"], expected_blob])
                 self.assertFalse((REPO / item["old_path"]).exists())
 
+    def test_young_laplace_two_pdf_archive_preserves_original_evidence(self):
+        import base64
+
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "young-laplace-two-pdf-xval-2026-11-26.json").read_text()
+        )
+        self.assertEqual(len(ledger["entries"]), 16)
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["new_sha256"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["new_git_blob"]])
+        for item in ledger["recovered_figures"]:
+            with self.subTest(image=item["path"]):
+                payload = (REPO / item["source_payload"]).read_bytes()
+                self.assertEqual(hashlib.sha256(payload).hexdigest(), item["source_payload_sha256"])
+                name = Path(item["path"]).name
+                (figure,) = [f for f in json.loads(payload)["figures"] if f["name"] == name]
+                raw = (REPO / item["path"]).read_bytes()
+                self.assertEqual(raw, base64.b64decode(figure["png_base64"], validate=True))
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["sha256"])
+
     def test_aircraft_icing_sdaa_evidence_belongs_to_the_benchmark(self):
         ledger_path = (
             LEDGER_PATH.parent / "aircraft-icing-sdaa-artifacts-2026-11-22.json"

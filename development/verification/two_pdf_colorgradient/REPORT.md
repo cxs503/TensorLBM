@@ -167,10 +167,10 @@ stdout logs `/tmp/xval_pois.log`, `/tmp/xval_lapl.log` (transcribed, provenance 
 
 ```bash
 # frozen arms (poiseuille) — 2 arms completed here
-PYTHONPATH=src python3 xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/run_xval.py \
-    --suites poiseuille --out xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/artifacts
+PYTHONPATH=src python3 development/verification/two_pdf_colorgradient/run_xval.py \
+    --suites poiseuille --out development/verification/two_pdf_colorgradient/artifacts
 # Laplace law
-PYTHONPATH=src python3 xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/run_xval.py \
+PYTHONPATH=src python3 development/verification/two_pdf_colorgradient/run_xval.py \
     --suites laplace --laplace-beta 0.9 --out .../artifacts
 # unit / invariant tests (7 tests, pass)
 PYTHONPATH=src python3 -m pytest tests/test_color_gradient_two_pdf.py -q

@@ -1,0 +1,241 @@
+{
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 12,
+  "note": "BB retirement is the shared #3048 dependency; this batch changes only xval children.",
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 40
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI",
+    "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/REPORT.md",
+      "new_path": "development/verification/young_laplace_analytic/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "070a4cbc297b39ab2ae690bfa8983e35e29c18d8",
+      "size_bytes": 12571,
+      "original_sha256": "c5682d113dca7a0616b54e261b3f9c71c537534179eea786d3f61ebd040cfec8",
+      "new_sha256": "23b71120c7decf0df0f419e60bd8a19ac68f65a77aedce65857a2f81ce1ccc44",
+      "new_git_blob": "d34f9ca460effd81c2f6fb562d23a13a50068ab7",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/artifacts/hero_fields.npz",
+      "new_path": "development/verification/young_laplace_analytic/artifacts/hero_fields.npz",
+      "git_mode": "100644",
+      "original_git_blob": "07e15704ae075f1b005e8e6c25316e23231aea21",
+      "size_bytes": 12730,
+      "original_sha256": "e62a42e7dd4d0cf77a010f4702636dd5ef55587f63a6bdd84a75c12a850ccdf9",
+      "new_sha256": "e62a42e7dd4d0cf77a010f4702636dd5ef55587f63a6bdd84a75c12a850ccdf9",
+      "new_git_blob": "07e15704ae075f1b005e8e6c25316e23231aea21",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/artifacts/report_payload.json",
+      "new_path": "development/verification/young_laplace_analytic/artifacts/report_payload.json",
+      "git_mode": "100644",
+      "original_git_blob": "62fbad70ddf4f495a6f8be1b20e14bd81649d423",
+      "size_bytes": 416055,
+      "original_sha256": "a9268d977b5cdf30ea9eec9f182abf351a2f1c71efe94c8e8943123e44e266db",
+      "new_sha256": "a9268d977b5cdf30ea9eec9f182abf351a2f1c71efe94c8e8943123e44e266db",
+      "new_git_blob": "62fbad70ddf4f495a6f8be1b20e14bd81649d423",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/artifacts/summary.json",
+      "new_path": "development/verification/young_laplace_analytic/artifacts/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "6400626a2c05e4c2ed8e902107aac9f71a6c4eaf",
+      "size_bytes": 28525,
+      "original_sha256": "bcdb23206a254663984b0592bcf2f0d816b676ec940a1127557d949184df9383",
+      "new_sha256": "bcdb23206a254663984b0592bcf2f0d816b676ec940a1127557d949184df9383",
+      "new_git_blob": "6400626a2c05e4c2ed8e902107aac9f71a6c4eaf",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/make_report.py",
+      "new_path": "development/verification/young_laplace_analytic/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "8daf2f164c4eb258e6bb112bacc5296fa78722fa",
+      "size_bytes": 24510,
+      "original_sha256": "010752332e6967b30b506a8c77d579d5a2f06f0bc9170585d923c7bcfb2d2786",
+      "new_sha256": "28b5d2ea54f9a11586d635b89b1a9dfdf64697cb2a5573d20dd923c8301da021",
+      "new_git_blob": "c2479ad81ba552dfd963a55f4e3bed52b870a80b",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/predeclared.json",
+      "new_path": "development/verification/young_laplace_analytic/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "83c4fce6757b6b2c644573d48e05c6e70be32886",
+      "size_bytes": 11682,
+      "original_sha256": "44ff6683bc4b3c63e666d6a7b8a5a48569f42f00e84644a10aa0defbf4e495f4",
+      "new_sha256": "44ff6683bc4b3c63e666d6a7b8a5a48569f42f00e84644a10aa0defbf4e495f4",
+      "new_git_blob": "83c4fce6757b6b2c644573d48e05c6e70be32886",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/run_xval.py",
+      "new_path": "development/verification/young_laplace_analytic/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "61e12126945a24cbed70814011345efa16432fa0",
+      "size_bytes": 23507,
+      "original_sha256": "7a9810550c659788fc81aa1dd6a0aba98fbc89132f7709295bb059f128516139",
+      "new_sha256": "d4c44e08a546a1348016a9329fab0cbf83e05bb85765a8267b378981431cae4e",
+      "new_git_blob": "53d6d6584d510687fdb5b789cfe88336f7edcf85",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/xval_lib.py",
+      "new_path": "development/verification/young_laplace_analytic/xval_lib.py",
+      "git_mode": "100644",
+      "original_git_blob": "2b97f4fbc5a0157ffc2bbdfe1760092b1f1cfe86",
+      "size_bytes": 15077,
+      "original_sha256": "1e531516e20fce3be3a9812b0a017c81c99acb8866d209d8c4612579e3d12880",
+      "new_sha256": "1e531516e20fce3be3a9812b0a017c81c99acb8866d209d8c4612579e3d12880",
+      "new_git_blob": "2b97f4fbc5a0157ffc2bbdfe1760092b1f1cfe86",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/REPORT.md",
+      "new_path": "development/verification/two_pdf_colorgradient/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "4f88083aeb1ee095b9e0d05b8b369d4778222f7f",
+      "size_bytes": 11159,
+      "original_sha256": "5cc3d004f07f5b38f24f3d033740083a71c0126c43af7c78c13aeda320584ba3",
+      "new_sha256": "8bda37f36c04b1550f5edbf5f0798592d552077d641f71c6a90dc50b160a7a57",
+      "new_git_blob": "60c93f50e5c209be8cff78403959814747cdd615",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/artifacts/laplace_log.json",
+      "new_path": "development/verification/two_pdf_colorgradient/artifacts/laplace_log.json",
+      "git_mode": "100644",
+      "original_git_blob": "cc00c10cd38e54af045cd1ce5aabaeec16bd4045",
+      "size_bytes": 1195,
+      "original_sha256": "4a676a3c29bf45955661e39cf9f3704fdd00e46ee9b6aaa7671a35d843b929cf",
+      "new_sha256": "4a676a3c29bf45955661e39cf9f3704fdd00e46ee9b6aaa7671a35d843b929cf",
+      "new_git_blob": "cc00c10cd38e54af045cd1ce5aabaeec16bd4045",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/artifacts/resolution_probe.json",
+      "new_path": "development/verification/two_pdf_colorgradient/artifacts/resolution_probe.json",
+      "git_mode": "100644",
+      "original_git_blob": "e1178c5d533fa292cad75064532fa069af470292",
+      "size_bytes": 1078,
+      "original_sha256": "ff52e13a508f257037c4445d0744adf3167e60176c6e0a8988f2593b83126606",
+      "new_sha256": "ff52e13a508f257037c4445d0744adf3167e60176c6e0a8988f2593b83126606",
+      "new_git_blob": "e1178c5d533fa292cad75064532fa069af470292",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/cg_reference.py",
+      "new_path": "development/verification/two_pdf_colorgradient/cg_reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "546445733210620bf751afe9bb159e88d3dfb398",
+      "size_bytes": 6233,
+      "original_sha256": "860726eb04a11fc23c11fdee6f10bda2858485109975624dfa927f54e922d1fd",
+      "new_sha256": "860726eb04a11fc23c11fdee6f10bda2858485109975624dfa927f54e922d1fd",
+      "new_git_blob": "546445733210620bf751afe9bb159e88d3dfb398",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/oss_solutions.json",
+      "new_path": "development/verification/two_pdf_colorgradient/oss_solutions.json",
+      "git_mode": "100644",
+      "original_git_blob": "9bff313ec87054f37fc8286a51390c7ced62dba3",
+      "size_bytes": 2124,
+      "original_sha256": "386b4a38a822d5dfb000aabb00f95247c3a51d3df01ea68c87d6d3624a6bf699",
+      "new_sha256": "386b4a38a822d5dfb000aabb00f95247c3a51d3df01ea68c87d6d3624a6bf699",
+      "new_git_blob": "9bff313ec87054f37fc8286a51390c7ced62dba3",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/predeclared.json",
+      "new_path": "development/verification/two_pdf_colorgradient/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "1ea829ed5af91f994597a4173d8b4b33ae632b6e",
+      "size_bytes": 3612,
+      "original_sha256": "2660f0afbd7f27b6789da0f57004e9c948466c95b33fbd6e4bc8e61d5fd8b3e2",
+      "new_sha256": "2660f0afbd7f27b6789da0f57004e9c948466c95b33fbd6e4bc8e61d5fd8b3e2",
+      "new_git_blob": "1ea829ed5af91f994597a4173d8b4b33ae632b6e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/run_xval.py",
+      "new_path": "development/verification/two_pdf_colorgradient/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "d719c9931b1d86b6ea314bfe65c6964273563177",
+      "size_bytes": 18054,
+      "original_sha256": "b86c021a31b9556944f226e59c21355a78d86956266e0c69d14417c28036eabc",
+      "new_sha256": "afe4a0b2b0dd0ada39a5cac57b1b9f4c316a43ada9ae99a9e5f55bf4def958e4",
+      "new_git_blob": "25981cf1a84766022a3322c112af866c16d8b325",
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/upsert_oss_solutions.sql",
+      "new_path": "development/verification/two_pdf_colorgradient/upsert_oss_solutions.sql",
+      "git_mode": "100644",
+      "original_git_blob": "c6a2916e38bfcc11a11465cf6983614ac239c83a",
+      "size_bytes": 2319,
+      "original_sha256": "1d704b6c14b0fd0103283749e78c473e9216de673314a0dad8b0896d5d495407",
+      "new_sha256": "1d704b6c14b0fd0103283749e78c473e9216de673314a0dad8b0896d5d495407",
+      "new_git_blob": "c6a2916e38bfcc11a11465cf6983614ac239c83a",
+      "byte_identical": true
+    }
+  ],
+  "recovered_figures": [
+    {
+      "path": "development/verification/young_laplace_analytic/artifacts/fig_laplace.png",
+      "sha256": "2cfa855e9a4f0705a206f6926ae11d521ad6c91ddc469be1fdbcb4180ec9aece",
+      "size_bytes": 123253,
+      "source_payload": "development/verification/young_laplace_analytic/artifacts/report_payload.json",
+      "source_payload_sha256": "a9268d977b5cdf30ea9eec9f182abf351a2f1c71efe94c8e8943123e44e266db",
+      "payload_field": "figures[].png_base64",
+      "kind": "original_payload_recovery"
+    },
+    {
+      "path": "development/verification/young_laplace_analytic/artifacts/fig_hero.png",
+      "sha256": "93de8df67b66b26c4b3003f3f6144bb83444e49e97374086eed215c85f0442c3",
+      "size_bytes": 89160,
+      "source_payload": "development/verification/young_laplace_analytic/artifacts/report_payload.json",
+      "source_payload_sha256": "a9268d977b5cdf30ea9eec9f182abf351a2f1c71efe94c8e8943123e44e266db",
+      "payload_field": "figures[].png_base64",
+      "kind": "original_payload_recovery"
+    },
+    {
+      "path": "development/verification/young_laplace_analytic/artifacts/fig_sensitivity.png",
+      "sha256": "b2a73b54b355422ada01beaa3589dcf7d9ad67cd59881ef9e7969a2fef96b097",
+      "size_bytes": 85541,
+      "source_payload": "development/verification/young_laplace_analytic/artifacts/report_payload.json",
+      "source_payload_sha256": "a9268d977b5cdf30ea9eec9f182abf351a2f1c71efe94c8e8943123e44e266db",
+      "payload_field": "figures[].png_base64",
+      "kind": "original_payload_recovery"
+    }
+  ],
+  "reference_scan": "Updated active test loader, runner launch/root depths, report paths and exactly one canonical-source docstring path. Historical protocols, original report payload, numerical measurements and other historical metadata remain byte-identical.",
+  "compatibility": "Default runners use canonical src. Existing explicit TENSORLBM_SRC override retained, no arbitrary fallback added. The original Young\u2013Laplace report payload remains immutable; the report publisher only renders local files. Two-PDF original full results.json and PNG remain absent.",
+  "scientific_scope": "Directory, file integrity, report render and test compatibility only. No new scientific solver replay or acceptance, no algorithm or tolerance edits.",
+  "validation": {
+    "targeted_before": "22 passed (tests/test_xval_young_laplace_analytic.py and tests/test_color_gradient_two_pdf.py; existing tests)",
+    "targeted_after": "22 passed on the same tests",
+    "cli_help": "Both runner argument options identical; prose identical after normalization of path substitutions and argparse line wrapping. Imported both runners and verified default source resolves to canonical src.",
+    "compile": "compileall passed for both relocated archives",
+    "offline_render": "Local before/after report renderer on committed summary and field snapshot produced byte-identical 3 PNGs and same report after normalizing only migrated path strings. Re-render hashes differ from original payload due to historical environment; original recovered images, not re-rendered images, are tracked.",
+    "canonical_source": "One exact docstring path substitution; no other canonical source bytes changed.",
+    "missing": "Two-PDF original full results.json and original PNG remained absent; no full scientific replay."
+  },
+  "offline_render_sha256": {
+    "fig_hero.png": "143807c354849a698a8f47746b08c38ac33718cce345243e1020831ad52a1f30",
+    "fig_laplace.png": "b90ff25f68d67880b12502fd78a2749fc75c3cc40eab13067a11dd49f2873428",
+    "fig_sensitivity.png": "a92f5ef5e99c9f21314479b12fcba183a5a9f7e0575e899a306d8f7826dc262f"
+  }
+}

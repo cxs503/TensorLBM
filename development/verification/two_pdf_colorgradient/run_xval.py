@@ -39,8 +39,8 @@ Acceptance (owner 15 % band, judge criterion of this anchor)
 
 Usage::
 
-    PYTHONPATH=src python3 xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/run_xval.py \
-        --out xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/artifacts
+    PYTHONPATH=src python3 development/verification/two_pdf_colorgradient/run_xval.py \
+        --out development/verification/two_pdf_colorgradient/artifacts
 
     # subsets / quick smoke
     ... --suites poiseuille --arms sp_ny64
@@ -65,7 +65,7 @@ def _resolve_src() -> Path:
     cands = []
     if os.environ.get("TENSORLBM_SRC"):
         cands.append(Path(os.environ["TENSORLBM_SRC"]))
-    cands.append(HERE.parents[1] / "src")
+    cands.append(HERE.parents[2] / "src")
     for c in cands:
         if (c / "tensorlbm" / "d2q9.py").is_file():
             return c
@@ -434,9 +434,8 @@ def main() -> int:
         verdicts["laplace_pass"] = result["suites"]["laplace"]["fit"]["pass_15pct"]
     verdicts["all_pass"] = all(verdicts.values()) if verdicts else False
     result["verdict"] = verdicts
-    result["repro_cmd"] = ("PYTHONPATH=src python3 xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-"
-                           "COLORGRADIENT/run_xval.py --out xval/XVAL-LBM-TWO-PDF-PARTIAL-"
-                           "DENSITY-COLORGRADIENT/artifacts")
+    result["repro_cmd"] = ("PYTHONPATH=src python3 development/verification/two_pdf_colorgradient/"
+                           "run_xval.py --out development/verification/two_pdf_colorgradient/artifacts")
     dest = out / "results.json"
     dest.write_text(json.dumps(result, indent=1))
     print(f"saved -> {dest}\nVERDICT {verdicts}")

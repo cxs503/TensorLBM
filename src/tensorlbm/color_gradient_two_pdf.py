@@ -215,7 +215,7 @@ def colorgradient_two_pdf_step(
             main axes ``4/9``, diagonals ``1/(36 sqrt 2)``).  Both are exactly
             mass conserving, but ``"mf"`` at this amplitude scaling drives the
             minority partial density negative in the interface band -- see
-            ``xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/REPORT.md``
+            ``development/verification/two_pdf_colorgradient/REPORT.md``
             section "recolour stencil selection"; use ``"iso"`` for production.
 
     Returns:

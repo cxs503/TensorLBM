@@ -30,7 +30,7 @@ import numpy as np
 import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-XV = os.path.join(REPO, "xval", "XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI")
+XV = os.path.join(REPO, "development", "verification", "young_laplace_analytic")
 sys.path.insert(0, os.path.join(REPO, "src"))
 sys.path.insert(0, XV)
 

@@ -150,7 +150,7 @@ def test_recolor_keeps_partial_densities_non_negative():
     stencil is rejected on this evidence: with the same amplitude scaling it
     drives the minority partial density negative (measured min rho_sigma
     -0.11 at ny=32 after 1000 steps; recorded in
-    ``xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/artifacts``)."""
+    ``development/verification/two_pdf_colorgradient/artifacts``)."""
     ny, nx = 32, 4
     j = torch.arange(ny, dtype=DT).view(ny, 1)
     fa = 0.5 * (1.0 - torch.tanh((j - ny // 2) / 2.0)).expand(ny, nx).contiguous()
