@@ -426,20 +426,36 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
             post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), initial, initial, initial, tau)
             after_end, _, _ = thermal_link_fluxes_3d(post, dt=dt, spacing=1/n, volumetric_heat_capacity=capacity)
             endpoint_fluxes.append(.5*(link_flux+after_end.mean((0, 1))))
-            history = torch.stack(samples)
+            # Clip the half-step flux history to the physical observation window.
+            history = torch.cat((endpoint_fluxes[0][indices][None], torch.stack(samples[1:]),
+                                 endpoint_fluxes[1][indices][None]))
+            sample_times = torch.cat((x.new_tensor([start]), (torch.arange(start_step, end_step,
+                                      dtype=x.dtype)+.5)*dt, x.new_tensor([end])))
             arrival_errors = []
             for col, numerator in enumerate((29, 31)):
                 signal = history[:, col]
                 times = []
-                for level in levels:
-                    crossings = torch.where((signal[:-1] < level) & (signal[1:] >= level))[0]
-                    assert signal[0] < level and len(crossings) >= 1
+                for level_index, level in enumerate(levels):
+                    above = signal >= level
+                    assert not above[0] and above[-1]
+                    j = torch.where(above[:-1] != above[1:])[0]
+                    fraction = (level-signal[j])/(signal[j+1]-signal[j])
+                    events = sample_times[j]+fraction*(sample_times[j+1]-sample_times[j])
+                    rises, falls = events[::2], events[1::2]
                     if level == levels[1] or n != 16:
-                        assert len(crossings) == 1
-                    record_property(f"n{n}_x{numerator}_rise_crossings_{level:g}", len(crossings))
-                    j = crossings[0].item()
-                    fraction = ((level-signal[j])/(signal[j+1]-signal[j])).item()
-                    times.append((start_step+j-.5+fraction)*dt)
+                        assert len(rises) == 1
+                    record_property(f"n{n}_x{numerator}_rise_crossings_{level:g}", len(rises))
+                    times.append(rises[0].item())
+                    spans = torch.cat((falls, x.new_tensor([end])))-rises
+                    duration = spans.sum().item()
+                    key = f"n{n}_x{numerator}_above_{level:g}"
+                    expected = end-reference_times[col][level_index]
+                    record_property(f"{key}_s", duration)
+                    record_property(f"{key}_error_s", abs(duration-expected))
+                    arrival_errors.append(abs(duration-expected))
+                    if len(falls):
+                        record_property(f"{key}_first_excursion_s", spans[0].item())
+                        record_property(f"{key}_first_gap_s", (rises[1]-falls[0]).item())
                 arrival = times[1]
                 low_ref, high_ref = reference_times[col]
                 timing_error = abs(arrival-high_ref)
