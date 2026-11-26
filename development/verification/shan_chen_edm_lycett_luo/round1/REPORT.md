@@ -159,7 +159,7 @@ shan-chen-edm-lycett-luo 做法）｜**仓库** TensorLBM｜**分支** `agent/m2
 ## 复现
 
 ```bash
-cd xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO
+cd development/verification/shan_chen_edm_lycett_luo/round1
 PYTHONPATH=../../src python run_coexistence.py --list            # 29 例清单（冻结）
 PYTHONPATH=../../src python run_coexistence.py --all --steps 10000 --nx 160 --out artifacts/run.json
 PYTHONPATH=../../src python analyze.py                            # 表 + 四图

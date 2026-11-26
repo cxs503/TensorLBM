@@ -27,7 +27,7 @@ the anchor's question answerable, all on ``tensorlbm.multiphase
 
 The tests are deliberately cheap (``L <= 56``, ``<= 2000`` steps) so that they
 can run in the default suite; the full 45-case sweep lives in
-``xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/run_xval.py``.
+``development/verification/shan_chen_edm_lycett_luo/round2/run_xval.py``.
 """
 
 from __future__ import annotations

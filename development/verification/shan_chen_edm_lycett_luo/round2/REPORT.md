@@ -142,7 +142,7 @@ velocity_shift 与 EDM 的线完全重合、τ=0.8 时分开；中=σ(τ)（EDM 
 
 ```bash
 # 紧凑 23 例（单线程，<2 min，本机短测试额度内）
-cd xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2 && python local_sweep.py
+cd development/verification/shan_chen_edm_lycett_luo/round2 && python local_sweep.py
 # 全量 45 例（compute 门）
 python run_xval.py --shard 1 --nshards 9   # × 9 分片，随后 python run_xval.py --merge
 # 不变式

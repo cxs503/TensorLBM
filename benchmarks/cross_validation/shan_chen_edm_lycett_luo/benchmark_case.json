@@ -1,0 +1,82 @@
+{
+  "scope": "Two distinct historical rounds of Shan-Chen/EDM/TCLB-recipe cross-validation: R1 planar coexistence and R2 droplet Laplace/forcing-convention study. R2 compact campaign is incomplete relative to the full 45-case plan; external TCLB execution is not established. No numerical verdict is issued by this archive migration.",
+  "criteria": {
+    "round1": "Historical criteria and matrix declared in round1/REPORT.md; retain original metrics and verdicts as archived claims.",
+    "round2": "Historical plan, tests and gates in round2/REPORT.md and run_xval.py; retain compact and shard results, not a fresh full run."
+  },
+  "source": [
+    "development/verification/shan_chen_edm_lycett_luo/round1/maxwell_sc.py",
+    "development/verification/shan_chen_edm_lycett_luo/round1/run_coexistence.py",
+    "development/verification/shan_chen_edm_lycett_luo/round1/analyze.py",
+    "development/verification/shan_chen_edm_lycett_luo/round2/run_xval.py",
+    "development/verification/shan_chen_edm_lycett_luo/round2/local_sweep.py",
+    "src/tensorlbm/multiphase.py",
+    "development/verification/shan_chen_edm_lycett_luo/replay_audit_figure.py",
+    "development/audit/m21400/make_figure_m21378.py"
+  ],
+  "config": [
+    "development/verification/shan_chen_edm_lycett_luo/round1/REPORT.md",
+    "development/verification/shan_chen_edm_lycett_luo/round2/run_xval.py"
+  ],
+  "documentation": [
+    "development/verification/shan_chen_edm_lycett_luo/README.md",
+    "development/verification/shan_chen_edm_lycett_luo/round1/REPORT.md",
+    "development/verification/shan_chen_edm_lycett_luo/round2/REPORT.md",
+    "development/verification/shan_chen_edm_lycett_luo/round2/REVIEW_R1.md",
+    "development/audit/m21400/AUDIT_M21378.md",
+    "development/audit/m21400/REPORT_m21378_AUDIT.md"
+  ],
+  "reference_files": [
+    "development/verification/shan_chen_edm_lycett_luo/round1/maxwell_sc.py",
+    "development/verification/shan_chen_edm_lycett_luo/round2/REVIEW_R1.md",
+    "development/audit/m21400/probe_m21378_results.json"
+  ],
+  "results": [
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/results.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/TABLE.md",
+    "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/compact.json",
+    "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/part0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/part1.json",
+    "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/shard_00.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/shan-chen-edm-rounds-xval-2026-11-27.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau0.6.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0_icS.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.5.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau0.6.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0_icS.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.5.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau0.6.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0_icS.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.5.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G4.5_edm_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G5.5_edm_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau0.6.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0_icS.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.5.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau2.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau0.6.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0_icS.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.5.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau2.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau0.6.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0_icS.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.5.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau2.0.json",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig1_coexistence.png",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig2_tau_dependence.png",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig3_profiles.png",
+    "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig4_error_bars.png",
+    "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/fig1_laplace_tau_coexistence.png",
+    "development/audit/m21400/fig1_m21378_audit.png",
+    "development/audit/m21400/probe_m21378_results.json",
+    "development/audit/m21400/verdict_evidence_m21378.json"
+  ]
+}
