@@ -15,8 +15,8 @@ division (documented deviation Q7) and therefore keeps running -- so the
 comparison is truncated at the first non-finite upstream field.
 
 Usage
-    python xval/oracle_minimal_d2q9_fs/port_fidelity.py --case block_g1e-3 --steps 10
-    python xval/oracle_minimal_d2q9_fs/port_fidelity.py --case dam_break_a16 --steps 400
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/port_fidelity.py --case block_g1e-3 --steps 10
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/port_fidelity.py --case dam_break_a16 --steps 400
 """
 
 from __future__ import annotations
@@ -63,13 +63,26 @@ def compare(case: str, steps: int, trace_every: int = 1):
     first_nan = None
     for step in range(1, steps + 1):
         with contextlib.redirect_stdout(io.StringIO()):
-            vel, _ = oss["evolve"](1, fin, fout, equi, fdist, inlet, u, rho, mass, ct,
-                                   np.array([1.0]), oss["util"].v, oss["util"].v_inv,
-                                   oss["util"].t, np.array([0.0, -g]))
+            vel, _ = oss["evolve"](
+                1,
+                fin,
+                fout,
+                equi,
+                fdist,
+                inlet,
+                u,
+                rho,
+                mass,
+                ct,
+                np.array([1.0]),
+                oss["util"].v,
+                oss["util"].v_inv,
+                oss["util"].t,
+                np.array([0.0, -g]),
+            )
         u = vel[-1]
         P.step(st, omega=1.0, gravity=(0.0, -g))
-        finite = bool(np.isfinite(rho).all() and np.isfinite(mass).all()
-                      and np.isfinite(fin).all())
+        finite = bool(np.isfinite(rho).all() and np.isfinite(mass).all() and np.isfinite(fin).all())
         if not finite and first_nan is None:
             first_nan = step
             break
@@ -83,22 +96,26 @@ def compare(case: str, steps: int, trace_every: int = 1):
                 "u_maxdiff": float(np.abs(u - P.I(st.u)).max()),
                 "inventory_upstream": uinv(rho, mass, ct),
                 "inventory_port": st.liquid_inventory(),
-                "front_upstream": int(np.flatnonzero(
-                    ((ct & (CT.FLUID | CT.INTERFACE)) != 0).any(axis=1))[-1]),
+                "front_upstream": int(
+                    np.flatnonzero(((ct & (CT.FLUID | CT.INTERFACE)) != 0).any(axis=1))[-1]
+                ),
                 "front_port": st.front_cells(),
             }
             rows.append(d)
             print(json.dumps(d), flush=True)
     summary = {
-        "case": case, "cfg": cfg, "steps_requested": steps,
+        "case": case,
+        "cfg": cfg,
+        "steps_requested": steps,
         "steps_compared": rows[-1]["step"] if rows else 0,
         "upstream_first_nonfinite_step": first_nan,
         "max_ct_mismatch_steps": sum(0 if r["ct_equal"] else 1 for r in rows),
         "max_fin_abs_diff": max((r["fin_maxdiff"] for r in rows), default=None),
         "max_mass_abs_diff": max((r["mass_maxdiff"] for r in rows), default=None),
         "max_u_abs_diff": max((r["u_maxdiff"] for r in rows), default=None),
-        "front_mismatch_steps": sum(0 if r["front_upstream"] == r["front_port"] else 1
-                                    for r in rows),
+        "front_mismatch_steps": sum(
+            0 if r["front_upstream"] == r["front_port"] else 1 for r in rows
+        ),
         "wall_seconds": round(time.time() - t0, 2),
     }
     print("SUMMARY " + json.dumps(summary), flush=True)
@@ -116,8 +133,7 @@ def main() -> int:
     out = {}
     if args.all_cases:
         for case, cfg in CASES.items():
-            steps = 40 if case == "block_static" else (10 if "g1e-3" in case
-                                                      else args.steps)
+            steps = 40 if case == "block_static" else (10 if "g1e-3" in case else args.steps)
             out[case] = compare(case, steps, args.trace_every)
     else:
         out[args.case] = compare(args.case, args.steps, args.trace_every)

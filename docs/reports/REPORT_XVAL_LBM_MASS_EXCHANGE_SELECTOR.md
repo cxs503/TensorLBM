@@ -1,6 +1,8 @@
 # XVAL-LBM-MASS-EXCHANGE-SELECTOR — TensorLBM D2Q9 free surface vs the OSS
 `Maarten-vd-Sande/lbm` mass-exchange selector
 
+> Repository migration note: the historical [selector campaign](../../development/verification/mass_exchange_selector/) and its [oracle dependency](../../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/) are now linked at their current locations. Recorded mission paths are retained as provenance.
+
 *Mission 18795 · branch `agent/m18795` · anchor `XVAL-LBM-MASS-EXCHANGE-SELECTOR`*
 
 ## ① What was compared, and where the reference comes from

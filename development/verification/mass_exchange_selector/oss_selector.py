@@ -4,7 +4,7 @@
 Why a separate module
 ---------------------
 The full OSS free-surface step is already ported and fidelity-checked in
-``xval/oracle_minimal_d2q9_fs/oss_oracle_port.py`` (that port reproduces the
+``benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_oracle_port.py`` (that port reproduces the
 unmodified upstream code to float32 round-off).  This XVAL is about *one*
 sub-model — the **mass-exchange selector**: which INTERFACE cell is allowed to
 become FLUID / forced to GAS, and where its surplus/defect mass is placed.
@@ -50,7 +50,7 @@ from pathlib import Path
 
 import numpy as np
 
-_PORT_DIR = Path(__file__).resolve().parent.parent / "oracle_minimal_d2q9_fs"
+_PORT_DIR = Path(__file__).resolve().parents[3] / "benchmarks" / "xval_oracle_minimal_d2q9_fs" / "reference_study"
 if str(_PORT_DIR) not in sys.path:
     sys.path.insert(0, str(_PORT_DIR))
 

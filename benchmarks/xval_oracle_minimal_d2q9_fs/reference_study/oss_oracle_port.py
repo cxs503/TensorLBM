@@ -76,10 +76,23 @@ from __future__ import annotations
 import numpy as np
 
 # --- lbm/util.py -----------------------------------------------------------
-V = np.array([[0, 0], [0, -1], [0, 1], [-1, 0], [-1, -1], [-1, 1], [1, 0],
-              [1, -1], [1, 1]], dtype=np.int64)
-T = np.array([4.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 36.0,
-              1.0 / 36.0, 1.0 / 9.0, 1.0 / 36.0, 1.0 / 36.0], dtype=np.float64)
+V = np.array(
+    [[0, 0], [0, -1], [0, 1], [-1, 0], [-1, -1], [-1, 1], [1, 0], [1, -1], [1, 1]], dtype=np.int64
+)
+T = np.array(
+    [
+        4.0 / 9.0,
+        1.0 / 9.0,
+        1.0 / 9.0,
+        1.0 / 9.0,
+        1.0 / 36.0,
+        1.0 / 36.0,
+        1.0 / 9.0,
+        1.0 / 36.0,
+        1.0 / 36.0,
+    ],
+    dtype=np.float64,
+)
 V_INV = [int(np.flatnonzero((V == -V[i]).all(axis=1))[0]) for i in range(9)]
 
 FLUID = 1
@@ -94,15 +107,15 @@ NO_IFACE_NEIGH = 256
 TO_FLUID = 512
 TO_GAS = 1024
 
-FILL_OFFSET = 0.003          # update_types: fill_offset
-LONELY_TRESH = 0.1           # update_types: lonely_tresh
-U_MAX = (2.0 / 3.0) ** 0.5   # update_rho_u: maxvel
+FILL_OFFSET = 0.003  # update_types: fill_offset
+LONELY_TRESH = 0.1  # update_types: lonely_tresh
+U_MAX = (2.0 / 3.0) ** 0.5  # update_rho_u: maxvel
 
 _MOVING = tuple(range(1, 9))
 _SL = (slice(1, -1), slice(1, -1))
 
 
-def I(a):
+def I(a):  # noqa: E743 - preserve the upstream oracle notation and callers
     """Interior view (padded arrays carry a one-cell OBSTACLE border)."""
     return a[..., 1:-1, 1:-1]
 
@@ -170,8 +183,8 @@ def pull(field, k):
     vx, vy = int(V[k, 0]), int(V[k, 1])
     nx, ny = field.shape[-2] - 2, field.shape[-1] - 2
     if field.ndim == 2:
-        return field[1 - vx:1 - vx + nx, 1 - vy:1 - vy + ny]
-    return field[:, 1 - vx:1 - vx + nx, 1 - vy:1 - vy + ny]
+        return field[1 - vx : 1 - vx + nx, 1 - vy : 1 - vy + ny]
+    return field[:, 1 - vx : 1 - vx + nx, 1 - vy : 1 - vy + ny]
 
 
 def push(field, k):
@@ -319,7 +332,7 @@ def streaming(st, rho_prev, mass_prev):
             dmass += np.where(ok_f, pulled - f_self, 0.0)
             continue
         fin[k] = np.where(ok_f, pulled, fin[k])
-        fin[k] = np.where(fluid & ~nb_ok, f_self, fin[k])          # bounce-back
+        fin[k] = np.where(fluid & ~nb_ok, f_self, fin[k])  # bounce-back
         dmass += np.where(ok_f, pulled - f_self, 0.0)
 
         # ---- interface branch --------------------------------------------
@@ -395,11 +408,19 @@ def update_types(st, rho_prev, mass_prev, u_prev, ct_prev):
     no_empty = (ctI & NO_EMPTY_NEIGH) != 0
     no_fluid = (ctI & NO_FLUID_NEIGH) != 0
     no_iface = (ctI & NO_IFACE_NEIGH) != 0
-    to_fluid = iface & ((mass > (1.0 + FILL_OFFSET) * rho)
-                        | ((mass >= (1.0 - LONELY_TRESH) * rho) & no_empty))
-    to_gas = iface & (~to_fluid) & ((mass < -FILL_OFFSET * rho)
-                                    | ((mass <= LONELY_TRESH * rho) & no_fluid)
-                                    | no_iface | no_fluid)
+    to_fluid = iface & (
+        (mass > (1.0 + FILL_OFFSET) * rho) | ((mass >= (1.0 - LONELY_TRESH) * rho) & no_empty)
+    )
+    to_gas = (
+        iface
+        & (~to_fluid)
+        & (
+            (mass < -FILL_OFFSET * rho)
+            | ((mass <= LONELY_TRESH * rho) & no_fluid)
+            | no_iface
+            | no_fluid
+        )
+    )
     ctI = np.where(to_fluid, TO_FLUID, ctI)
     ctI = np.where(to_gas, TO_GAS, ctI)
     ctI = ctI & ~(NO_FLUID_NEIGH + NO_EMPTY_NEIGH + NO_IFACE_NEIGH)
@@ -470,7 +491,7 @@ def update_types(st, rho_prev, mass_prev, u_prev, ct_prev):
     ct_now = np.where(not_obs & has_i, ct_now & ~NO_IFACE_NEIGH, ct_now)
 
     I(ct)[:] = ct_now.astype(np.int32)
-    st.ct[:] = ct                      # commit flags (copy -> state)
+    st.ct[:] = ct  # commit flags (copy -> state)
     I(st.mass)[:] = mass.astype(st.dtype)
     return st
 
@@ -479,7 +500,7 @@ def step(st, omega: float = 1.0, gravity=(0.0, -0.1), rho_prev_alias: bool = Tru
     """One ``evolve`` iteration: collision -> stream -> update_types."""
     collision(st, omega, gravity)
     mass_prev = st.mass.copy()
-    rho_prev = (st.mass.copy() if rho_prev_alias else st.rho.copy())  # Q1
+    rho_prev = st.mass.copy() if rho_prev_alias else st.rho.copy()  # Q1
     streaming(st, rho_prev, mass_prev)
     rho_prev2 = st.rho.copy()
     mass_prev2 = st.mass.copy()
@@ -492,8 +513,9 @@ def step(st, omega: float = 1.0, gravity=(0.0, -0.1), rho_prev_alias: bool = Tru
 # ---------------------------------------------------------------------------
 # cases
 # ---------------------------------------------------------------------------
-def make_dambreak(nx: int, ny: int, a: int, h0: int,
-                  interface_rho: str = "oss", dtype=np.float32) -> State:
+def make_dambreak(
+    nx: int, ny: int, a: int, h0: int, interface_rho: str = "oss", dtype=np.float32
+) -> State:
     """OSS dam-break initialisation on a walled box.
 
     Block occupies interior columns ``1..a`` and rows ``1..h0`` (the wall is
@@ -509,7 +531,7 @@ def make_dambreak(nx: int, ny: int, a: int, h0: int,
     ct[-1, :] = OBSTACLE
     ct[:, 0] = OBSTACLE
     ct[:, -1] = OBSTACLE
-    ct[1:a + 1, 1:h0 + 1] = INTERFACE
+    ct[1 : a + 1, 1 : h0 + 1] = INTERFACE
     ct[2:a, 2:h0] = FLUID
     ring_rho = 0.5 if interface_rho == "oss" else 1.0
     I(st.mass)[:] = np.where(ct == FLUID, 1.0, np.where(ct == INTERFACE, 0.5, 0.0))

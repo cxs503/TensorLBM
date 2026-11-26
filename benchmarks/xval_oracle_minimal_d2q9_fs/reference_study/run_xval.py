@@ -11,7 +11,7 @@ decision      Is TensorLBM's D2Q9 Körner free surface interchangeable with
 alternatives  A ``tensorlbm_koerner``: repo ``free_surface_step_2d``
                  (Körner 2005 / Thürey 2007, independent mass ledger, ABB,
                   half-way walls), BGK τ = 1.0.
-              B ``oss_port``: ``xval/oracle_minimal_d2q9_fs/oss_oracle_port``
+              B ``oss_port``: ``benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_oracle_port``
                  — a port of Maarten-vd-Sande/lbm verified against the
                  unmodified upstream code (``oss_original``) to float32
                  round-off; BGK ω = 1.0.
@@ -39,8 +39,8 @@ environment  CPU-only, torch CPU single thread per worker, one process per
               arm via multiprocessing; floating point; lattice units.
 
 Usage
-    python xval/oracle_minimal_d2q9_fs/run_xval.py --matrix     # full sweep
-    python xval/oracle_minimal_d2q9_fs/run_xval.py --arm oss_port --a 32
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/run_xval.py --matrix     # full sweep
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/run_xval.py --arm oss_port --a 32
 """
 
 from __future__ import annotations
@@ -48,7 +48,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import os
 import sys
 import time
 from multiprocessing import Pool
@@ -57,14 +56,16 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 
 ART = HERE / "artifacts"
 ART.mkdir(parents=True, exist_ok=True)
 
-MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads(
+    (REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text()
+)
 MM_T = [d["t_star"] for d in MM["data"]]
 MM_Z = [d["X_star"] for d in MM["data"]]
 
@@ -73,12 +74,22 @@ DESIGN = {
     "oss_reference": {
         "repo": "Maarten-vd-Sande/lbm",
         "snapshot": "/root/oss-cache/Maarten-vd-Sande_lbm",
-        "files": ["lbm/util.py", "lbm/init.py", "lbm/streamcollide.py",
-                  "lbm/update_types.py", "lbm/time_evolve.py",
-                  "examples/dambreak.py"],
-        "shipped_case": {"nx": 170, "ny": 170, "omega": 1.0,
-                         "gravity": [0.0, -0.1], "steps": 750,
-                         "block": "x in [0,70), y in [40,170)"},
+        "files": [
+            "lbm/util.py",
+            "lbm/init.py",
+            "lbm/streamcollide.py",
+            "lbm/update_types.py",
+            "lbm/time_evolve.py",
+            "examples/dambreak.py",
+        ],
+        "shipped_case": {
+            "nx": 170,
+            "ny": 170,
+            "omega": 1.0,
+            "gravity": [0.0, -0.1],
+            "steps": 750,
+            "block": "x in [0,70), y in [40,170)",
+        },
     },
     "experiment_reference": {
         "source": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312-324, Fig. 4",
@@ -87,22 +98,28 @@ DESIGN = {
         "sha256": MM.get("sha256"),
     },
     "nondim": {"Z": "x_front / a", "T": "t * sqrt(g / h0)"},
-    "thresholds_pct": {"z_max_rel_err": 15.0, "arm_arm_max_rel_diff": 15.0,
-                       "inventory_drift": 1.0},
+    "thresholds_pct": {"z_max_rel_err": 15.0, "arm_arm_max_rel_diff": 15.0, "inventory_drift": 1.0},
     "window_T": [0.5, 4.0],
     "sample_dT": 0.25,
-    "case": {"aspect_h0_over_a": 2.0, "width_in_a": 5.0, "headroom_in_a": 1.0,
-             "walls": "solid on all four sides", "g_default": 5e-5,
-             "ma_target": 0.1},
+    "case": {
+        "aspect_h0_over_a": 2.0,
+        "width_in_a": 5.0,
+        "headroom_in_a": 1.0,
+        "walls": "solid on all four sides",
+        "g_default": 5e-5,
+        "ma_target": 0.1,
+    },
     "arms": {
         "tensorlbm_koerner": {
             "module": "tensorlbm.free_surface_lbm_2d",
             "entry": "free_surface_step_2d",
-            "relaxation": "tau", "default_tau": 1.0,
+            "relaxation": "tau",
+            "default_tau": 1.0,
         },
         "oss_port": {
-            "module": "xval/oracle_minimal_d2q9_fs/oss_oracle_port.py",
-            "entry": "step", "relaxation": "omega (omega = 1/tau)",
+            "module": "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_oracle_port.py",
+            "entry": "step",
+            "relaxation": "omega (omega = 1/tau)",
             "default_tau": 1.0,
         },
     },
@@ -132,15 +149,20 @@ def front_index_port(st) -> int:
 # ---------------------------------------------------------------------------
 def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float):
     import torch
+
     torch.set_num_threads(1)
     from tensorlbm.d2q9 import equilibrium
     from tensorlbm.free_surface_lbm_2d import (
-        INTERFACE, LIQUID, free_surface_step_2d, init_fill_rectangular_2d,
-        init_flags_from_fill_2d, total_liquid_inventory_2d,
+        INTERFACE,
+        LIQUID,
+        free_surface_step_2d,
+        init_fill_rectangular_2d,
+        init_flags_from_fill_2d,
+        total_liquid_inventory_2d,
     )
 
     h0, nx = int(round(2.0 * a)), int(round(5.0 * a))
-    ny = h0 + a                                   # headroom = a
+    ny = h0 + a  # headroom = a
     fill, solid = init_fill_rectangular_2d(ny, nx, float(a + 1), float(h0 + 1), "cpu")
     flags = init_flags_from_fill_2d(fill, solid)
     rho0 = torch.where(flags == LIQUID, torch.ones_like(fill), torch.ones_like(fill))
@@ -168,57 +190,100 @@ def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float):
             # corrected one (Z_fill(t=0) = 1 exactly).
             cols_fill = torch.nonzero((fill > 1e-6).any(dim=0)).flatten()
             front_fill = int(cols_fill.max().item()) if cols_fill.numel() else 0
-            series.append({"step": step, "T": step * dtT, "Z": front / a,
-                           "Z_fill": front_fill / a})
-            inv_tr.append({"step": step,
-                           "drift_pct": 100.0 * (total_liquid_inventory_2d(f, mass, flags)
-                                                 - inv0) / inv0})
+            series.append({"step": step, "T": step * dtT, "Z": front / a, "Z_fill": front_fill / a})
+            inv_tr.append(
+                {
+                    "step": step,
+                    "drift_pct": 100.0 * (total_liquid_inventory_2d(f, mass, flags) - inv0) / inv0,
+                }
+            )
         if step == n_steps:
             break
         # epsilon needed by the step (mass ledger / rho_liquid)
-        fill = torch.where(flags == LIQUID, torch.ones_like(fill),
-                           torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0),
-                                       torch.zeros_like(fill)))
+        fill = torch.where(
+            flags == LIQUID,
+            torch.ones_like(fill),
+            torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0), torch.zeros_like(fill)),
+        )
         f, mass, flags = free_surface_step_2d(
-            f, fill, flags, solid, tau=tau, gy=-g, rho_liquid=1.0, rho_gas=1.0,
-            mass=mass, return_mass=True)
+            f,
+            fill,
+            flags,
+            solid,
+            tau=tau,
+            gy=-g,
+            rho_liquid=1.0,
+            rho_gas=1.0,
+            mass=mass,
+            return_mass=True,
+        )
         rho = f.sum(0).clamp(min=1e-9)
         ux = f[[1, 5, 8]].sum(0) / rho
         uy = f[[2, 6, 7]].sum(0) / rho
         fluid = (flags == LIQUID) | (flags == INTERFACE)
-        u_max = max(u_max, float(((ux ** 2 + uy ** 2).sqrt() * fluid).max()))
+        u_max = max(u_max, float(((ux**2 + uy**2).sqrt() * fluid).max()))
         if not torch.isfinite(f).all():
-            return {"arm": "tensorlbm_koerner", "a": a, "tau": tau, "g": g,
-                    "status": "nan", "nan_at_step": step, "series": series,
-                    "inventory": inv_tr, "wall_seconds": round(time.time() - t0, 2)}
-    return {"arm": "tensorlbm_koerner", "a": a, "tau": tau, "g": g, "status": "ok",
-            "h0": h0, "nx": nx, "ny": ny, "steps": n_steps,
-            "nu": (tau - 0.5) / 3.0, "u_max": u_max,
-            "series": series, "inventory": inv_tr,
-            "final_fields": _tensorlbm_snapshot(f, mass, flags, a, g),
-            "wall_seconds": round(time.time() - t0, 2)}
+            return {
+                "arm": "tensorlbm_koerner",
+                "a": a,
+                "tau": tau,
+                "g": g,
+                "status": "nan",
+                "nan_at_step": step,
+                "series": series,
+                "inventory": inv_tr,
+                "wall_seconds": round(time.time() - t0, 2),
+            }
+    return {
+        "arm": "tensorlbm_koerner",
+        "a": a,
+        "tau": tau,
+        "g": g,
+        "status": "ok",
+        "h0": h0,
+        "nx": nx,
+        "ny": ny,
+        "steps": n_steps,
+        "nu": (tau - 0.5) / 3.0,
+        "u_max": u_max,
+        "series": series,
+        "inventory": inv_tr,
+        "final_fields": _tensorlbm_snapshot(f, mass, flags, a, g),
+        "wall_seconds": round(time.time() - t0, 2),
+    }
 
 
 def _tensorlbm_snapshot(f, mass, flags, a, g):
     """Velocity + fill snapshot for the field figure (downsampled to .npy-free json)."""
     import torch
+
     from tensorlbm.free_surface_lbm_2d import INTERFACE, LIQUID
+
     rho = f.sum(0).clamp(min=1e-9)
-    ux = (f[[1, 5, 8]].sum(0) / rho)
-    uy = (f[[2, 6, 7]].sum(0) / rho)
+    ux = f[[1, 5, 8]].sum(0) / rho
+    uy = f[[2, 6, 7]].sum(0) / rho
     fluid = (flags == LIQUID) | (flags == INTERFACE)
-    umag = ((ux ** 2 + uy ** 2).sqrt() * fluid).cpu().numpy()
-    fill = torch.where(flags == LIQUID, torch.ones_like(mass),
-                       torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0),
-                                   torch.zeros_like(mass)))
+    umag = ((ux**2 + uy**2).sqrt() * fluid).cpu().numpy()
+    fill = torch.where(
+        flags == LIQUID,
+        torch.ones_like(mass),
+        torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0), torch.zeros_like(mass)),
+    )
     return {"umag": np.round(umag, 5).tolist(), "fill": np.round(fill.cpu().numpy(), 4).tolist()}
 
 
 # ---------------------------------------------------------------------------
 # arm B: OSS oracle port
 # ---------------------------------------------------------------------------
-def run_oss_port(a: int, tau: float, g: float, t_max: float, sample_dt: float,
-                 rho_prev_alias: bool = True, interface_rho: str = "oss"):
+def run_oss_port(
+    a: int,
+    tau: float,
+    g: float,
+    t_max: float,
+    sample_dt: float,
+    rho_prev_alias: bool = True,
+    interface_rho: str = "oss",
+):
     import oss_oracle_port as P
 
     h0, nx = int(round(2.0 * a)), int(round(5.0 * a))
@@ -235,10 +300,10 @@ def run_oss_port(a: int, tau: float, g: float, t_max: float, sample_dt: float,
     snapshot = None
     for step in range(n_steps + 1):
         if step % sample_every == 0:
-            series.append({"step": step, "T": step * dtT,
-                           "Z": st.front_cells() / a})
-            inv_tr.append({"step": step,
-                           "drift_pct": 100.0 * (st.liquid_inventory() - inv0) / inv0})
+            series.append({"step": step, "T": step * dtT, "Z": st.front_cells() / a})
+            inv_tr.append(
+                {"step": step, "drift_pct": 100.0 * (st.liquid_inventory() - inv0) / inv0}
+            )
         if step == n_steps:
             break
         P.step(st, omega=omega, gravity=(0.0, -g), rho_prev_alias=rho_prev_alias)
@@ -246,19 +311,46 @@ def run_oss_port(a: int, tau: float, g: float, t_max: float, sample_dt: float,
         if um.size:
             u_max = max(u_max, float(um.max()))
         if not np.isfinite(P.I(st.fin)).all():
-            return {"arm": "oss_port", "a": a, "tau": tau, "g": g, "status": "nan",
-                    "nan_at_step": step, "series": series, "inventory": inv_tr,
-                    "wall_seconds": round(time.time() - t0, 2)}
-    snapshot = {"umag": np.round(st.velocity_magnitude(), 5).tolist(),
-                "fill": np.round(np.where(st.flags() == P.FLUID, 1.0,
-                                          np.where(st.flags() == P.INTERFACE,
-                                                   P.I(st.mass), 0.0)), 4).tolist()}
-    return {"arm": "oss_port", "a": a, "tau": tau, "g": g, "status": "ok",
-            "h0": h0, "nx": nx, "ny": ny, "steps": n_steps, "omega": omega,
-            "nu": (tau - 0.5) / 3.0, "u_max": u_max,
-            "rho_prev_alias": rho_prev_alias, "interface_rho": interface_rho,
-            "series": series, "inventory": inv_tr, "final_fields": snapshot,
-            "wall_seconds": round(time.time() - t0, 2)}
+            return {
+                "arm": "oss_port",
+                "a": a,
+                "tau": tau,
+                "g": g,
+                "status": "nan",
+                "nan_at_step": step,
+                "series": series,
+                "inventory": inv_tr,
+                "wall_seconds": round(time.time() - t0, 2),
+            }
+    snapshot = {
+        "umag": np.round(st.velocity_magnitude(), 5).tolist(),
+        "fill": np.round(
+            np.where(
+                st.flags() == P.FLUID, 1.0, np.where(st.flags() == P.INTERFACE, P.I(st.mass), 0.0)
+            ),
+            4,
+        ).tolist(),
+    }
+    return {
+        "arm": "oss_port",
+        "a": a,
+        "tau": tau,
+        "g": g,
+        "status": "ok",
+        "h0": h0,
+        "nx": nx,
+        "ny": ny,
+        "steps": n_steps,
+        "omega": omega,
+        "nu": (tau - 0.5) / 3.0,
+        "u_max": u_max,
+        "rho_prev_alias": rho_prev_alias,
+        "interface_rho": interface_rho,
+        "series": series,
+        "inventory": inv_tr,
+        "final_fields": snapshot,
+        "wall_seconds": round(time.time() - t0, 2),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -295,16 +387,23 @@ def evaluate(res: dict) -> dict:
         ref = mm_interp(s["T"])
         if ref is None:
             continue
-        pts.append({"T": round(s["T"], 4), "Z": round(s["Z"], 4),
-                    "Z_ref": round(ref, 4),
-                    "rel_err_pct": round(100.0 * (s["Z"] - ref) / ref, 3)})
+        pts.append(
+            {
+                "T": round(s["T"], 4),
+                "Z": round(s["Z"], 4),
+                "Z_ref": round(ref, 4),
+                "rel_err_pct": round(100.0 * (s["Z"] - ref) / ref, 3),
+            }
+        )
     if pts:
         errs = np.array([abs(p["rel_err_pct"]) for p in pts])
-        res["vs_mm"] = {"points": pts,
-                        "max_abs_rel_err_pct": round(float(errs.max()), 3),
-                        "mean_abs_rel_err_pct": round(float(errs.mean()), 3),
-                        "rmse_rel_pct": round(float(np.sqrt((errs ** 2).mean())), 3),
-                        "pass_15pct": bool(errs.max() <= DESIGN["thresholds_pct"]["z_max_rel_err"])}
+        res["vs_mm"] = {
+            "points": pts,
+            "max_abs_rel_err_pct": round(float(errs.max()), 3),
+            "mean_abs_rel_err_pct": round(float(errs.mean()), 3),
+            "rmse_rel_pct": round(float(np.sqrt((errs**2).mean())), 3),
+            "pass_15pct": bool(errs.max() <= DESIGN["thresholds_pct"]["z_max_rel_err"]),
+        }
     inv = res.get("inventory") or []
     if inv:
         drift = max(abs(p["drift_pct"]) for p in inv)
@@ -324,28 +423,42 @@ def compare_arms(res_a: dict, res_b: dict) -> dict:
             continue
         za, zb = da[T], db[T]
         denom = max(abs(za), abs(zb), 1e-12)
-        pts.append({"T": T, "Z_tensorlbm": za, "Z_oss": zb,
-                    "rel_diff_pct": round(100.0 * (za - zb) / denom, 3)})
+        pts.append(
+            {
+                "T": T,
+                "Z_tensorlbm": za,
+                "Z_oss": zb,
+                "rel_diff_pct": round(100.0 * (za - zb) / denom, 3),
+            }
+        )
     if not pts:
         return {"points": [], "max_abs_rel_diff_pct": None, "pass_15pct": None}
     diffs = np.array([abs(p["rel_diff_pct"]) for p in pts])
-    return {"points": pts,
-            "max_abs_rel_diff_pct": round(float(diffs.max()), 3),
-            "mean_abs_rel_diff_pct": round(float(diffs.mean()), 3),
-            "pass_15pct": bool(diffs.max() <= DESIGN["thresholds_pct"]["arm_arm_max_rel_diff"])}
+    return {
+        "points": pts,
+        "max_abs_rel_diff_pct": round(float(diffs.max()), 3),
+        "mean_abs_rel_diff_pct": round(float(diffs.mean()), 3),
+        "pass_15pct": bool(diffs.max() <= DESIGN["thresholds_pct"]["arm_arm_max_rel_diff"]),
+    }
 
 
-def hydrostatic_control(arm: str, a: int = 32, tau: float = 1.0,
-                        g: float = 5e-5, steps: int = 400) -> dict:
+def hydrostatic_control(
+    arm: str, a: int = 32, tau: float = 1.0, g: float = 5e-5, steps: int = 400
+) -> dict:
     """Control: column at rest under gravity -> spurious velocity scale."""
     if arm == "tensorlbm_koerner":
         import torch
+
         torch.set_num_threads(1)
         from tensorlbm.d2q9 import equilibrium
         from tensorlbm.free_surface_lbm_2d import (
-            INTERFACE, LIQUID, free_surface_step_2d, init_fill_rectangular_2d,
+            INTERFACE,
+            LIQUID,
+            free_surface_step_2d,
+            init_fill_rectangular_2d,
             init_flags_from_fill_2d,
         )
+
         h0, nx = int(round(2.0 * a)), int(round(5.0 * a))
         ny = h0 + a
         fill, solid = init_fill_rectangular_2d(ny, nx, float(a + 1), float(h0 + 1), "cpu")
@@ -354,19 +467,22 @@ def hydrostatic_control(arm: str, a: int = 32, tau: float = 1.0,
         mass = fill.clone()
         u_max = 0.0
         for _ in range(steps):
-            fill = torch.where(flags == LIQUID, torch.ones_like(fill),
-                               torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0),
-                                           torch.zeros_like(fill)))
-            f, mass, flags = free_surface_step_2d(f, fill, flags, solid, tau=tau, gy=-g,
-                                                  mass=mass, return_mass=True)
+            fill = torch.where(
+                flags == LIQUID,
+                torch.ones_like(fill),
+                torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0), torch.zeros_like(fill)),
+            )
+            f, mass, flags = free_surface_step_2d(
+                f, fill, flags, solid, tau=tau, gy=-g, mass=mass, return_mass=True
+            )
             rho = f.sum(0).clamp(min=1e-9)
             ux = f[[1, 5, 8]].sum(0) / rho
             uy = f[[2, 6, 7]].sum(0) / rho
             fluid = (flags == LIQUID) | (flags == INTERFACE)
-            u_max = max(u_max, float(((ux ** 2 + uy ** 2).sqrt() * fluid).max()))
-        return {"control": "hydrostatic", "arm": arm, "steps": steps,
-                "u_max_lattice": u_max}
+            u_max = max(u_max, float(((ux**2 + uy**2).sqrt() * fluid).max()))
+        return {"control": "hydrostatic", "arm": arm, "steps": steps, "u_max_lattice": u_max}
     import oss_oracle_port as P
+
     h0, nx = int(round(2.0 * a)), int(round(5.0 * a))
     ny = h0 + a
     st = P.make_dambreak(nx=nx, ny=ny, a=a, h0=h0)
@@ -375,8 +491,7 @@ def hydrostatic_control(arm: str, a: int = 32, tau: float = 1.0,
         P.step(st, omega=1.0 / tau, gravity=(0.0, -g))
         um = st.velocity_magnitude()
         u_max = max(u_max, float(um.max()))
-    return {"control": "hydrostatic", "arm": arm, "steps": steps,
-            "u_max_lattice": u_max}
+    return {"control": "hydrostatic", "arm": arm, "steps": steps, "u_max_lattice": u_max}
 
 
 def main() -> int:
@@ -391,8 +506,7 @@ def main() -> int:
     ap.add_argument("--tag", default="xval_results.json")
     args = ap.parse_args()
 
-    common = {"g": args.g, "t_max": args.tmax,
-              "sample_dt": DESIGN["sample_dT"]}
+    common = {"g": args.g, "t_max": args.tmax, "sample_dt": DESIGN["sample_dT"]}
     if not args.matrix:
         tasks = [{"arm": args.arm, "a": args.a, "tau": args.tau, **common}]
     else:
@@ -404,10 +518,8 @@ def main() -> int:
             for arm in DESIGN["arms"]:
                 tasks.append({"arm": arm, "a": 32, "tau": tau, **common})
         # OSS quirk ablations at the reference resolution
-        tasks.append({"arm": "oss_port", "a": 32, "tau": 1.0,
-                      "rho_prev_alias": False, **common})
-        tasks.append({"arm": "oss_port", "a": 32, "tau": 1.0,
-                      "interface_rho": "liquid", **common})
+        tasks.append({"arm": "oss_port", "a": 32, "tau": 1.0, "rho_prev_alias": False, **common})
+        tasks.append({"arm": "oss_port", "a": 32, "tau": 1.0, "interface_rho": "liquid", **common})
         # Mach (compressibility) probe at the OSS shipped gravity
         tasks.append({"arm": "oss_port", "a": 16, "tau": 1.0, "g": 0.1, **common})
         tasks.append({"arm": "tensorlbm_koerner", "a": 16, "tau": 1.0, "g": 0.1, **common})
@@ -422,9 +534,12 @@ def main() -> int:
             print(f"  {r.get('label', r['arm'])}: {r['status']} {r.get('error', '')}", flush=True)
             continue
         m = r.get("vs_mm", {})
-        print(f"  {r['label']:<44} Z_err max {m.get('max_abs_rel_err_pct'):>6.2f}%  "
-              f"drift {r.get('inventory_drift_max_pct'):>7.3f}%  "
-              f"u_max {r['u_max']:.4f}  {r['wall_seconds']}s", flush=True)
+        print(
+            f"  {r['label']:<44} Z_err max {m.get('max_abs_rel_err_pct'):>6.2f}%  "
+            f"drift {r.get('inventory_drift_max_pct'):>7.3f}%  "
+            f"u_max {r['u_max']:.4f}  {r['wall_seconds']}s",
+            flush=True,
+        )
 
     # controls
     with Pool(processes=2) as pool:
@@ -434,8 +549,11 @@ def main() -> int:
 
     # arm-to-arm comparisons at matched (a, tau)
     gaps = []
-    index = {(r["arm"], r.get("a"), r.get("tau"), r.get("g"), r.get("label")): r
-             for r in results if r.get("status") == "ok"}
+    index = {
+        (r["arm"], r.get("a"), r.get("tau"), r.get("g"), r.get("label")): r
+        for r in results
+        if r.get("status") == "ok"
+    }
     base = {}
     for r in results:
         if r.get("status") != "ok":
@@ -450,15 +568,20 @@ def main() -> int:
             gap.update({"a": key[0], "tau": key[1], "g": key[2]})
             gaps.append(gap)
     for g in gaps:
-        print(f"  arm-vs-arm a={g['a']} tau={g['tau']:g}: "
-              f"max {g['max_abs_rel_diff_pct']:.2f}% mean {g['mean_abs_rel_diff_pct']:.2f}%",
-              flush=True)
+        print(
+            f"  arm-vs-arm a={g['a']} tau={g['tau']:g}: "
+            f"max {g['max_abs_rel_diff_pct']:.2f}% mean {g['mean_abs_rel_diff_pct']:.2f}%",
+            flush=True,
+        )
 
-    payload = {"design": DESIGN, "env": {"python": sys.version.split()[0],
-                                         "numpy": np.__version__,
-                                         "workers": args.workers},
-               "runs": results, "controls": controls, "arm_vs_arm": gaps,
-               "wall_seconds": round(time.time() - t0, 1)}
+    payload = {
+        "design": DESIGN,
+        "env": {"python": sys.version.split()[0], "numpy": np.__version__, "workers": args.workers},
+        "runs": results,
+        "controls": controls,
+        "arm_vs_arm": gaps,
+        "wall_seconds": round(time.time() - t0, 1),
+    }
     (ART / args.tag).write_text(json.dumps(payload, indent=1))
     print(f"[xval] wrote {ART / args.tag} in {payload['wall_seconds']}s", flush=True)
     return 0

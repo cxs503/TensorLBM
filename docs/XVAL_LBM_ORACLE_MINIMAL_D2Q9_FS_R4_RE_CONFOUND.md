@@ -1,5 +1,7 @@
 # XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS · R4：把「分辨率阶梯」还原成「雷诺数扫描」
 
+> Repository migration note: the live harness and committed evidence now reside in [benchmarks/xval_oracle_minimal_d2q9_fs/reference_study](../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/). Historical source paths refer to the original checkout. The linked generated figure was already absent from the tracked migration base; see the migration ledger for reproduction prerequisites.
+
 **锚点** `XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS`（Maarten-vd-Sande/lbm 的 oracle-minimal-d2q9-fs 做法）· 仓 `TensorLBM` · 轮次 R4
 **承接** R1（m18073，8 runs）→ R2（m20893，阶梯/τ 扫描声明但仅标量存活）→ R3（m21017，交付形态+指标口径+红测试+基准登记）
 **本轮性质**：验证欠账（把已合并的自由面 D2Q9 求解器对文献基点复核）+ 前序结论的**否证性复核**。不新增求解器功能。
@@ -55,7 +57,7 @@
 Re=21.7 → 14.7 %、Re=15.5（τ=1.2）→ 16.3 %、Re=12.1（τ=1.4）→ 17.1 %，即在 Re≈20 附近取到 |err| 极小，
 向两侧单调恶化——**阶梯与 τ 扫描落在同一条 E(Re) 曲线上**，这正是 Re 失配（而非网格分辨率）的签名。
 
-![r4](../xval/oracle_minimal_d2q9_fs/figures/fig_r4_re_confound.png)
+![r4](../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/figures/fig_r4_re_confound.png)
 *左：五个阶梯的前锋 `Z(T)`（亚格子趾 f=0.05）与 M&M 数字化点，标注每级自带的 Re；右：带符号晚窗误差 vs Re，红虚线 owner ±15 % 门，绿点线为零交点 Re\*≈18.9。*
 
 ## ④ 误差判定（逐项，显式回答）

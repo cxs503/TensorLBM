@@ -1,5 +1,7 @@
 # XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS · R2：Körner 自由面溃坝分辨率扫描（m20893）
 
+> Repository migration note: the live harness and committed evidence now reside in [benchmarks/xval_oracle_minimal_d2q9_fs/reference_study](../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/). Historical source paths refer to the original checkout. The linked generated figure was already absent from the tracked migration base; see the migration ledger for reproduction prerequisites.
+
 **锚点** `XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS` · 仓 `TensorLBM` · 轮次 R2 · 证据作业 `cj3032`（重算 `cj3062` 同量级复核）
 **上游** `xval/oracle_minimal_d2q9_fs/`（R1，m18073：OSS port 逐位等价 + 8 臂对照）。本轮**未改** R1 的冻结设计。
 
@@ -57,7 +59,7 @@ Körner/Thürey 自由面（独立质量账 + ABB + 半格壁）、无表面张�
 tensorlbm_koerner |u|_max=0.2395；oss_port |u|_max=0.8165（读自 cj3062 stdout 尾部）。两者均未过 1e-6 门，原因是本轮 control 初始化仍是「半域宽水柱」(init_fill_rectangular_2d(nx//2, h0+1))——它是溃坝而非静水层，该门对被控对象本身不适用。控制组需改为满域静水层：本单暴露的设计缺陷，未修复，如实记 FAIL。
 
 ## ④ 结果图
-![err vs a](../xval/oracle_minimal_d2q9_fs/figures/fig_r2_error_vs_a_measured.png)
+![err vs a](../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/figures/fig_r2_error_vs_a_measured.png)
 
 *左：最大误差 vs 网格 a（τ=1）；右：a=32 的 τ 扫描。红虚线 15 % 验收，绿点线 3 % 目标。*
 

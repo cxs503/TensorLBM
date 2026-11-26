@@ -1,0 +1,90 @@
+{
+ "anchor": "XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS",
+ "case": "K\u00f6rner/Th\u00fcrey D2Q9 free-surface dam break vs Martin & Moyce 1952",
+ "reference": {
+  "source": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312-324, Fig. 4",
+  "doi": "10.1098/rsta.1952.0006",
+  "artifact": "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
+  "sha256": "e6300b9a1852d7de2d47222027993bb65095781347298b40529068722da1fe79"
+ },
+ "gate": {
+  "metric": "Z_sub0.05",
+  "tol_pct": 15.0
+ },
+ "tier": "ci",
+ "levels": [
+  {
+   "grid": "a=16",
+   "t_max": 1.0,
+   "steps": 800,
+   "u_max": 0.23753,
+   "inventory_drift_max_pct": 0.0232,
+   "metrics": {
+    "Z_cell": 22.297,
+    "Z_cell_flag": 22.297,
+    "Z_sub0.02": 19.503,
+    "Z_sub0.05": 20.378,
+    "Z_sub0.1": 21.837
+   },
+   "z_sub05_pass_15pct": false,
+   "series": [
+    [
+     0.0,
+     1.0,
+     1.0625,
+     1.0613,
+     1.0594,
+     1.0562
+    ],
+    [
+     0.25,
+     1.0625,
+     1.0625,
+     1.1211,
+     1.1152,
+     1.1054
+    ],
+    [
+     0.5,
+     1.1875,
+     1.1875,
+     1.2238,
+     1.187,
+     1.1767
+    ],
+    [
+     0.75,
+     1.3125,
+     1.3125,
+     1.3529,
+     1.3197,
+     1.2997
+    ],
+    [
+     1.0,
+     1.4375,
+     1.4375,
+     1.4892,
+     1.473,
+     1.446
+    ]
+   ]
+  }
+ ],
+ "worst_z_sub05_err_pct": 20.378,
+ "ref_vs_got": {
+  "ref": "Martin & Moyce 1952 Fig. 4 (digitised)",
+  "got": "K\u00f6rner free-surface D2Q9, sub-cell toe f=0.05",
+  "max_abs_rel_err_pct": 20.378
+ },
+ "pass": false,
+ "repro_cmd": "python benchmarks/xval_oracle_minimal_d2q9_fs/run.py --full",
+ "series_layout": [
+  "T",
+  "Z_cell",
+  "Z_cell_flag",
+  "Z_sub0.02",
+  "Z_sub0.05",
+  "Z_sub0.1"
+ ]
+}

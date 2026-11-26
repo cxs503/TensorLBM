@@ -5,7 +5,7 @@ All numbers are injected from ``artifacts/resolution_analysis.json`` (programmat
 dump, written by ``resolution_study.py --analyze``); nothing is hand-copied.
 Figures come from ``make_figures_r2.py`` and are base64-embedded.
 
-Usage:  python xval/oracle_minimal_d2q9_fs/publish_r2_report.py [--dry-run]
+Usage:  python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/publish_r2_report.py [--dry-run]
 """
 
 from __future__ import annotations
@@ -50,29 +50,37 @@ def build() -> dict:
     rich_rit = A["richardson"]["ritter"]
 
     # ---- ladder table -----------------------------------------------------
-    t = ["| a | steps | u_max | inv drift % | Z_cell M&M | Z_sub.05 M&M "
-         "| Z_sub.05 Ritter | Z_cell Ritter | wall s |",
-         "|---|---|---|---|---|---|---|---|---|"]
+    t = [
+        "| a | steps | u_max | inv drift % | Z_cell M&M | Z_sub.05 M&M "
+        "| Z_sub.05 Ritter | Z_cell Ritter | wall s |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
     for a in alist:
         r = ladder[a]
-        t.append(f"| {a} | {r['steps']} | {fmt(r['u_max'], 3)} | "
-                 f"{fmt(r['inventory_drift_max_pct'], 4)} | "
-                 f"{fmt(r['errors_mm']['Z_cell'])} | {fmt(r['errors_mm']['Z_sub0.05'])} | "
-                 f"{fmt(r['errors_ritter']['Z_sub0.05'])} | "
-                 f"{fmt(r['errors_ritter']['Z_cell'])} | {fmt(r['wall_seconds'], 1)} |")
+        t.append(
+            f"| {a} | {r['steps']} | {fmt(r['u_max'], 3)} | "
+            f"{fmt(r['inventory_drift_max_pct'], 4)} | "
+            f"{fmt(r['errors_mm']['Z_cell'])} | {fmt(r['errors_mm']['Z_sub0.05'])} | "
+            f"{fmt(r['errors_ritter']['Z_sub0.05'])} | "
+            f"{fmt(r['errors_ritter']['Z_cell'])} | {fmt(r['wall_seconds'], 1)} |"
+        )
     ladder_md = "\n".join(t)
 
     # ---- fit table --------------------------------------------------------
-    t = ["| metric | p | E_inf % | C | rms % | monotone | H1 (E_inf < 3 %) |",
-         "|---|---|---|---|---|---|---|"]
+    t = [
+        "| metric | p | E_inf % | C | rms % | monotone | H1 (E_inf < 3 %) |",
+        "|---|---|---|---|---|---|---|",
+    ]
     for k in keys:
         f = fit_mm.get(k, {})
         if not f.get("ok"):
             t.append(f"| {k} | — | — | — | — | — | fit failed |")
             continue
-        t.append(f"| {k} | {fmt(f['p'])} | {fmt(f['E_inf_pct'])} | {fmt(f['C'], 3)} | "
-                 f"{fmt(f['rms_pct'])} | {f['monotone_falling']} | "
-                 f"{f['hypothesis_H1_supported']} |")
+        t.append(
+            f"| {k} | {fmt(f['p'])} | {fmt(f['E_inf_pct'])} | {fmt(f['C'], 3)} | "
+            f"{fmt(f['rms_pct'])} | {f['monotone_falling']} | "
+            f"{f['hypothesis_H1_supported']} |"
+        )
     fit_md = "\n".join(t)
 
     t = ["| metric | p | E_inf % | C | rms % | H1 (E_inf < 3 %) |", "|---|---|---|---|---|---|"]
@@ -81,42 +89,55 @@ def build() -> dict:
         if not f.get("ok"):
             t.append(f"| {k} | — | — | — | — | fit failed |")
             continue
-        t.append(f"| {k} | {fmt(f['p'])} | {fmt(f['E_inf_pct'])} | {fmt(f['C'], 3)} | "
-                 f"{fmt(f['rms_pct'])} | {f['hypothesis_H1_supported']} |")
+        t.append(
+            f"| {k} | {fmt(f['p'])} | {fmt(f['E_inf_pct'])} | {fmt(f['C'], 3)} | "
+            f"{fmt(f['rms_pct'])} | {f['hypothesis_H1_supported']} |"
+        )
     fit_rit_md = "\n".join(t)
 
-    t = ["| metric | grids | p_obs (median) | Z_inf max err % | mean err % | pass < 3 % |",
-         "|---|---|---|---|---|---|"]
+    t = [
+        "| metric | grids | p_obs (median) | Z_inf max err % | mean err % | pass < 3 % |",
+        "|---|---|---|---|---|---|",
+    ]
     for k in keys:
         r = rich_mm.get(k, {})
         if not r.get("ok"):
             t.append(f"| {k} | — | — | — | — | n/a |")
             continue
-        t.append(f"| {k} | {r['grids']} | {fmt(r['p_obs_median'])} | "
-                 f"{fmt(r['Z_inf_max_abs_rel_err_pct'])} | "
-                 f"{fmt(r['Z_inf_mean_abs_rel_err_pct'])} | {r['pass_3pct']} |")
+        t.append(
+            f"| {k} | {r['grids']} | {fmt(r['p_obs_median'])} | "
+            f"{fmt(r['Z_inf_max_abs_rel_err_pct'])} | "
+            f"{fmt(r['Z_inf_mean_abs_rel_err_pct'])} | {r['pass_3pct']} |"
+        )
     rich_md = "\n".join(t)
 
-    t = ["| tau | nu | Z_sub.05 vs M&M % | Z_sub.05 vs Ritter % | inv drift % | u_max |",
-         "|---|---|---|---|---|---|"]
+    t = [
+        "| tau | nu | Z_sub.05 vs M&M % | Z_sub.05 vs Ritter % | inv drift % | u_max |",
+        "|---|---|---|---|---|---|",
+    ]
     for tau in sorted(A.get("tau_sweep", {}), key=lambda x: float(x)):
         r = A["tau_sweep"][tau]
-        t.append(f"| {tau} | {fmt((float(tau) - 0.5) / 3.0, 4)} | "
-                 f"{fmt(r['Z_sub0.05_max_err_pct'])} | {fmt(r.get('Z_sub0.05_ritter_pct'))} | "
-                 f"{fmt(r['inventory_drift_max_pct'], 3)} | {fmt(r['u_max'], 3)} |")
+        t.append(
+            f"| {tau} | {fmt((float(tau) - 0.5) / 3.0, 4)} | "
+            f"{fmt(r['Z_sub0.05_max_err_pct'])} | {fmt(r.get('Z_sub0.05_ritter_pct'))} | "
+            f"{fmt(r['inventory_drift_max_pct'], 3)} | {fmt(r['u_max'], 3)} |"
+        )
     tau_md = "\n".join(t)
 
     t = ["| arm | steps | \\|u\\|_max | gate | verdict |", "|---|---|---|---|---|"]
     for c in A.get("controls", []):
-        t.append(f"| {c.get('arm')} | {c.get('steps')} | {c.get('u_max_lattice')} | "
-                 f"{D['control']['u_max_gate']} | {fmt(c.get('pass'))} |")
+        t.append(
+            f"| {c.get('arm')} | {c.get('steps')} | {c.get('u_max_lattice')} | "
+            f"{D['control']['u_max_gate']} | {fmt(c.get('pass'))} |"
+        )
     ctrl_md = "\n".join(t)
 
     oss_md = "\n".join(
         f"* a = {a}: steps {r['steps']}, Z_cell vs M&M {fmt(r['Z_cell_max_err_pct'])} %, "
         f"Z_sub.05 vs M&M {fmt(r['Z_sub0.05_max_err_pct'])} %, "
         f"inventory drift {fmt(r['inventory_drift_max_pct'])} %, u_max {fmt(r['u_max'], 3)}"
-        for a, r in sorted(A.get("oss_port_rungs", {}).items(), key=lambda kv: int(kv[0])))
+        for a, r in sorted(A.get("oss_port_rungs", {}).items(), key=lambda kv: int(kv[0]))
+    )
 
     # ---- headline error statement ----------------------------------------
     coarse, mid, fine = alist[0], alist[min(1, len(alist) - 1)], alist[-1]
@@ -124,32 +145,46 @@ def build() -> dict:
     e_inf = fit_mm.get("Z_sub0.05", {}).get("E_inf_pct")
     e_inf_rit = fit_rit.get("Z_sub0.05", {}).get("E_inf_pct")
     rich_val = rich_mm.get("Z_sub0.05", {}).get("Z_inf_max_abs_rel_err_pct")
-    pass15 = [a for a in alist
-              if ladder[a]["errors_mm"]["Z_sub0.05"] is not None
-              and ladder[a]["errors_mm"]["Z_sub0.05"] <= 15.0]
+    pass15 = [
+        a
+        for a in alist
+        if ladder[a]["errors_mm"]["Z_sub0.05"] is not None
+        and ladder[a]["errors_mm"]["Z_sub0.05"] <= 15.0
+    ]
 
     figs = []
     for name, cap in (
-        ("fig_r2_front_curves.png",
-         "左：各网格 Z(T) 溃坝前锋 vs Martin & Moyce 实验点与 Ritter 精确浅水解；"
-         "右：同一批数据相对 M&M 的误差曲线（灰带=owner ±15 %）。"),
-        ("fig_r2_error_vs_a.png",
-         "最大相对误差 vs 网格 a（双对数），含 E(a)=E_inf+C·a^-p 拟合；"
-         "左=M&M 实验基准，右=Ritter 精确解基准；红虚线 15 % 验收，绿点线 3 % 渐近目标。"),
-        ("fig_r2_tau_sweep.png",
-         "a=32 松弛参数扫描（τ=0.6…1.4）的 Z_sub(0.05) 最大误差，双基准并列。"),
-        ("fig_r2_field_a64.png",
-         "最细网格 a=64 的末端场：填充率（左）与速度幅值（右）。"),
+        (
+            "fig_r2_front_curves.png",
+            "左：各网格 Z(T) 溃坝前锋 vs Martin & Moyce 实验点与 Ritter 精确浅水解；"
+            "右：同一批数据相对 M&M 的误差曲线（灰带=owner ±15 %）。",
+        ),
+        (
+            "fig_r2_error_vs_a.png",
+            "最大相对误差 vs 网格 a（双对数），含 E(a)=E_inf+C·a^-p 拟合；"
+            "左=M&M 实验基准，右=Ritter 精确解基准；红虚线 15 % 验收，绿点线 3 % 渐近目标。",
+        ),
+        (
+            "fig_r2_tau_sweep.png",
+            "a=32 松弛参数扫描（τ=0.6…1.4）的 Z_sub(0.05) 最大误差，双基准并列。",
+        ),
+        ("fig_r2_field_a64.png", "最细网格 a=64 的末端场：填充率（左）与速度幅值（右）。"),
     ):
         p = FIG / name
         if p.exists():
-            figs.append({"name": name, "caption": cap,
-                         "png_base64": base64.b64encode(p.read_bytes()).decode()})
+            figs.append(
+                {
+                    "name": name,
+                    "caption": cap,
+                    "png_base64": base64.b64encode(p.read_bytes()).decode(),
+                }
+            )
 
-    md = f"""# XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS · R2：Körner 自由面溃坝的分辨率收敛与渐近误差（m{MISSION}）
+    md = (
+        f"""# XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS · R2：Körner 自由面溃坝的分辨率收敛与渐近误差（m{MISSION}）
 
 **锚点** `XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS`（Maarten-vd-Sande/lbm 的 oracle-minimal-d2q9-fs 做法）· 仓 `TensorLBM` · 轮次 R2
-**上游产物** `xval/oracle_minimal_d2q9_fs/`（R1，m18073：OSS port 逐位等价 + 8 条臂对照，冻结不改）
+**上游产物** `benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/`（R1，m18073：OSS port 逐位等价 + 8 条臂对照，冻结不改）
 **本单增量** 补齐 R1 **预声明但从未执行**的验证矩阵（分辨率阶梯 a=16…64、τ 扫描、静水控制组），
 并把「误差是离散化还是模型偏置」这一开放问题用观测阶拟合 + Richardson 外推定量回答；
 新增**亚格子前锋度量**，把 O(1/a) 量化从误差预算里摘出去。
@@ -245,32 +280,49 @@ def build() -> dict:
 
 | a | max err vs M&M % | <15 % ? | <3 % ? |
 |---|---|---|---|
-""" + "\n".join(
-        f"| {a} | {fmt(sub05[a])} | {'是' if sub05[a] is not None and sub05[a] <= 15 else '否'} "
-        f"| {'是' if sub05[a] is not None and sub05[a] < 3 else '否'} |" for a in alist) + f"""
+"""
+        + "\n".join(
+            f"| {a} | {fmt(sub05[a])} | {'是' if sub05[a] is not None and sub05[a] <= 15 else '否'} "
+            f"| {'是' if sub05[a] is not None and sub05[a] < 3 else '否'} |"
+            for a in alist
+        )
+        + f"""
 
-* 观测阶拟合（M&M, `Z_sub(0.05)`）：`p = {fmt(fit_mm.get('Z_sub0.05', {}).get('p'))}`，
+* 观测阶拟合（M&M, `Z_sub(0.05)`）：`p = {fmt(fit_mm.get("Z_sub0.05", {}).get("p"))}`，
   **`E_inf = {fmt(e_inf)} %`**；Richardson 直接外推 Max err = **{fmt(rich_val)} %**。
-* 观测阶拟合（Ritter, `Z_sub(0.05)`）：`p = {fmt(fit_rit.get('Z_sub0.05', {}).get('p'))}`，
+* 观测阶拟合（Ritter, `Z_sub(0.05)`）：`p = {fmt(fit_rit.get("Z_sub0.05", {}).get("p"))}`，
   **`E_inf = {fmt(e_inf_rit)} %`**。
-* **是否 <3 %**：{'是' if (e_inf is not None and e_inf < 3) else '**否**'}（渐近外推值 {fmt(e_inf)} % vs 3 % 目标；
-  Richardson 逐点外推给 {fmt(rich_val)} %）。**是否 <15 %**：在 a ≥ {pass15[0] if pass15 else '（无）'} 的网格上成立，
+* **是否 <3 %**：{"是" if (e_inf is not None and e_inf < 3) else "**否**"}（渐近外推值 {fmt(e_inf)} % vs 3 % 目标；
+  Richardson 逐点外推给 {fmt(rich_val)} %）。**是否 <15 %**：在 a ≥ {pass15[0] if pass15 else "（无）"} 的网格上成立，
   粗网格 a={coarse} 为 {fmt(sub05.get(coarse))} %（不达标）。
-* 结论口径：15 % 验收只在 **a ≥ {pass15[0] if pass15 else '—'}** 的离散化水平上成立；把分辨率继续提高后，
+* 结论口径：15 % 验收只在 **a ≥ {pass15[0] if pass15 else "—"}** 的离散化水平上成立；把分辨率继续提高后，
   对 M&M 的误差收敛到 `E_inf ≈ {fmt(e_inf)} %`，说明**剩余偏差主要是干床前锋的模型/度量偏置与实验散度，
   而非尚未跑够网格**。因此后续任何以本算例为基准的精度声明，必须同时给出 `a` 与度量阈值。
 * honest-FAIL 部分：渐近误差若 ≥3 %，本单不宣称「<3 % 验证通过」；粗网格 a=16/24 明确 FAIL 15 %。
 """
+    )
 
-    tags = ["XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS", "free-surface", "dam-break",
-            "martin-moyce", "ritter", "grid-convergence", "richardson",
-            "TensorLBM", f"m{MISSION}"]
+    tags = [
+        "XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS",
+        "free-surface",
+        "dam-break",
+        "martin-moyce",
+        "ritter",
+        "grid-convergence",
+        "richardson",
+        "TensorLBM",
+        f"m{MISSION}",
+    ]
     rep = {
-        "title": (f"XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS R2：Körner 自由面溃坝分辨率收敛"
-                  f"（a=16…64，E_inf≈{fmt(e_inf)} %）"),
-        "summary": (f"补齐 R1 预声明但未执行的验证矩阵：a=16/24/32/48/64 × 全窗 T∈[0.5,4] 对 M&M 与 "
-                    f"Ritter 双基准，观测阶 p={fmt(fit_mm.get('Z_sub0.05', {}).get('p'))}、"
-                    f"E_inf={fmt(e_inf)} %，Richardson 外推 {fmt(rich_val)} %；τ 扫描与静水控制组同时补齐。"),
+        "title": (
+            f"XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS R2：Körner 自由面溃坝分辨率收敛"
+            f"（a=16…64，E_inf≈{fmt(e_inf)} %）"
+        ),
+        "summary": (
+            f"补齐 R1 预声明但未执行的验证矩阵：a=16/24/32/48/64 × 全窗 T∈[0.5,4] 对 M&M 与 "
+            f"Ritter 双基准，观测阶 p={fmt(fit_mm.get('Z_sub0.05', {}).get('p'))}、"
+            f"E_inf={fmt(e_inf)} %，Richardson 外推 {fmt(rich_val)} %；τ 扫描与静水控制组同时补齐。"
+        ),
         "scenario_key": "lbm_free_surface_dambreak_grid_convergence",
         "mission_id": MISSION,
         "tags": tags,
@@ -280,26 +332,32 @@ def build() -> dict:
     return rep
 
 
-DOC = HERE.parent.parent / "docs" / "XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2_RESOLUTION.md"
+DOC = HERE.parents[2] / "docs" / "XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2_RESOLUTION.md"
 
 
 def write_doc(rep: dict) -> Path:
     """Same body as the platform report, plus on-disk figure links (docs/)."""
     figs = "\n".join(
-        f"![{f['name']}](../xval/oracle_minimal_d2q9_fs/figures/{f['name']})\n\n"
-        f"*{f['caption']}*\n" for f in rep["figures"])
+        f"![{f['name']}](../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/figures/{f['name']})\n\n"
+        f"*{f['caption']}*\n"
+        for f in rep["figures"]
+    )
     body = rep["markdown"]
-    body = body.replace("## ④ 结果图\n\n" +
-                        "共 %d 张（前锋曲线+误差带、误差-网格收敛拟合、τ 扫描、最细网格场量）。"
-                        % len(rep["figures"]),
-                        "## ④ 结果图\n\n" + figs)
+    body = body.replace(
+        "## ④ 结果图\n\n"
+        + "共 %d 张（前锋曲线+误差带、误差-网格收敛拟合、τ 扫描、最细网格场量）。"
+        % len(rep["figures"]),
+        "## ④ 结果图\n\n" + figs,
+    )
     DOC.parent.mkdir(parents=True, exist_ok=True)
-    DOC.write_text(body + "\n\n## ⑦ 复现\n\n```bash\n"
-                   "OMP_NUM_THREADS=1 python xval/oracle_minimal_d2q9_fs/resolution_study.py --run --workers 12\n"
-                   "python xval/oracle_minimal_d2q9_fs/resolution_study.py --analyze\n"
-                   "python xval/oracle_minimal_d2q9_fs/make_figures_r2.py\n"
-                   "python xval/oracle_minimal_d2q9_fs/publish_r2_report.py --dry-run   # 生成 docs 正文\n"
-                   "```\n")
+    DOC.write_text(
+        body + "\n\n## ⑦ 复现\n\n```bash\n"
+        "OMP_NUM_THREADS=1 python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py --run --workers 12\n"
+        "python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py --analyze\n"
+        "python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/make_figures_r2.py\n"
+        "python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/publish_r2_report.py --dry-run   # 生成 docs 正文\n"
+        "```\n"
+    )
     print(f"[doc] {DOC}")
     return DOC
 
@@ -316,15 +374,19 @@ def main() -> int:
         print(rep["markdown"][:1500])
         return 0
     base = os.environ["TENSOR_API_BASE"]
-    body = json.dumps({"username": os.environ["TENSOR_AGENT_USER"],
-                       "password": os.environ["TENSOR_AGENT_PASS"]}).encode()
-    req = urllib.request.Request(base + "/auth/login", data=body,
-                                 headers={"Content-Type": "application/json"})
+    body = json.dumps(
+        {"username": os.environ["TENSOR_AGENT_USER"], "password": os.environ["TENSOR_AGENT_PASS"]}
+    ).encode()
+    req = urllib.request.Request(
+        base + "/auth/login", data=body, headers={"Content-Type": "application/json"}
+    )
     tok = json.load(urllib.request.urlopen(req))
     token = tok.get("access_token") or tok.get("token")
-    req2 = urllib.request.Request(base + "/tensor/reports", data=OUT.read_bytes(),
-                                  headers={"Content-Type": "application/json",
-                                           "Authorization": f"Bearer {token}"})
+    req2 = urllib.request.Request(
+        base + "/tensor/reports",
+        data=OUT.read_bytes(),
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+    )
     print("report:", urllib.request.urlopen(req2).read().decode()[:400])
     return 0
 

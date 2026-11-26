@@ -16,7 +16,7 @@ from multiprocessing import Pool
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "xval" / "oracle_minimal_d2q9_fs"))
+sys.path.insert(0, str(ROOT / "benchmarks" / "xval_oracle_minimal_d2q9_fs" / "reference_study"))
 
 import run_xval as X  # noqa: E402
 

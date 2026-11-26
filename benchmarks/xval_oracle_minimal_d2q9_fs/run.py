@@ -2,7 +2,7 @@
 """Repo-side entry point for anchor XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS.
 
 This is a *caller*: it drives the research harness
-``xval.oracle_minimal_d2q9_fs.resolution_study`` (which itself drives the
+``reference_study/resolution_study.py`` (which itself drives the
 production solver ``tensorlbm.free_surface_lbm_2d.free_surface_step_2d``) and
 writes a machine-readable verdict artifact, so the anchor is reachable from a
 normal repo command instead of only from a mission worktree.
@@ -22,7 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-XV = REPO / "xval" / "oracle_minimal_d2q9_fs"
+XV = HERE / "reference_study"
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(XV))
 

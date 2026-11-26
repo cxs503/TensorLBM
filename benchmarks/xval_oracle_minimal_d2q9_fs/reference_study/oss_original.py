@@ -61,9 +61,9 @@ def import_oss(oss_root: Path = OSS_ROOT):
     pkg.__path__ = [str(Path(root) / "lbm")]
     pkg.__file__ = str(Path(root) / "lbm" / "__init__.py")
     sys.modules["lbm"] = pkg
-    import lbm.util as U  # noqa: WPS433
     import lbm.init as INIT  # noqa: WPS433
     import lbm.streamcollide as SC  # noqa: WPS433
+    import lbm.util as U  # noqa: WPS433
     from lbm.time_evolve import evolve  # noqa: WPS433
 
     return {"util": U, "init": INIT, "streamcollide": SC, "evolve": evolve}
@@ -105,9 +105,18 @@ def make_state(nx: int, ny: int, a: int, h0: int, oss):
     return fin, fout, equi, fdist, inlet, u, rho, mass, cell_type
 
 
-def run_oss(nx: int = 40, ny: int = 24, a: int = 8, h0: int = 16,
-            steps: int = 5, omega: float = 1.0, gravity=(0.0, 0.0),
-            oss=None, trace_every: int = 1, quiet: bool = True):
+def run_oss(
+    nx: int = 40,
+    ny: int = 24,
+    a: int = 8,
+    h0: int = 16,
+    steps: int = 5,
+    omega: float = 1.0,
+    gravity=(0.0, 0.0),
+    oss=None,
+    trace_every: int = 1,
+    quiet: bool = True,
+):
     """Run upstream ``evolve`` and return the inventory trace + final fields."""
     oss = oss or import_oss()
     CT = oss["util"].CT
@@ -117,9 +126,15 @@ def run_oss(nx: int = 40, ny: int = 24, a: int = 8, h0: int = 16,
         # cell_type is a bitmask (NO_*/TO_* bits), so compare bitwise
         return float(rho[(ct & CT.FLUID) != 0].sum() + mass[(ct & CT.INTERFACE) != 0].sum())
 
-    trace = [{"step": 0, "inventory": inventory(rho, mass, ct),
-              "front_cells": int(np.flatnonzero(((ct & (CT.FLUID | CT.INTERFACE)) != 0)
-                                                .any(axis=1))[-1])}]
+    trace = [
+        {
+            "step": 0,
+            "inventory": inventory(rho, mass, ct),
+            "front_cells": int(
+                np.flatnonzero(((ct & (CT.FLUID | CT.INTERFACE)) != 0).any(axis=1))[-1]
+            ),
+        }
+    ]
     orig_stdout = sys.stdout
     if quiet:
         sys.stdout = open("/dev/null", "w")
@@ -129,26 +144,49 @@ def run_oss(nx: int = 40, ny: int = 24, a: int = 8, h0: int = 16,
             # under the name ``u`` -- the example's ``u, cell_types = evolve()``
             # therefore hands back a 4-D array.  Take the last frame so the
             # state can be advanced in single steps for tracing.
-            u_stack, cell_types = oss["evolve"](1, fin, fout, equi, fdist, inlet, u, rho,
-                                                mass, ct, np.array([omega]),
-                                                oss["util"].v, oss["util"].v_inv,
-                                                oss["util"].t, np.array(gravity))
+            u_stack, cell_types = oss["evolve"](
+                1,
+                fin,
+                fout,
+                equi,
+                fdist,
+                inlet,
+                u,
+                rho,
+                mass,
+                ct,
+                np.array([omega]),
+                oss["util"].v,
+                oss["util"].v_inv,
+                oss["util"].t,
+                np.array(gravity),
+            )
             u = u_stack[-1]
             if k % trace_every == 0 or k == steps:
-                trace.append({
-                    "step": k,
-                    "inventory": inventory(rho, mass, ct),
-                    "front_cells": int(np.flatnonzero(((ct & (CT.FLUID | CT.INTERFACE)) != 0)
-                                                      .any(axis=1))[-1]),
-                    "u_max": float(np.abs(u).max()),
-                })
+                trace.append(
+                    {
+                        "step": k,
+                        "inventory": inventory(rho, mass, ct),
+                        "front_cells": int(
+                            np.flatnonzero(((ct & (CT.FLUID | CT.INTERFACE)) != 0).any(axis=1))[-1]
+                        ),
+                        "u_max": float(np.abs(u).max()),
+                    }
+                )
     finally:
         if quiet:
             sys.stdout.close()
             sys.stdout = orig_stdout
-    return {"trace": trace,
-            "fields": {"fin": fin.copy(), "mass": mass.copy(), "rho": rho.copy(),
-                       "u": u.copy(), "cell_type": ct.copy()}}
+    return {
+        "trace": trace,
+        "fields": {
+            "fin": fin.copy(),
+            "mass": mass.copy(),
+            "rho": rho.copy(),
+            "u": u.copy(),
+            "cell_type": ct.copy(),
+        },
+    }
 
 
 if __name__ == "__main__":
@@ -164,6 +202,13 @@ if __name__ == "__main__":
     ap.add_argument("--gravity", type=float, default=0.0)
     ap.add_argument("--oss-root", default=str(OSS_ROOT))
     args = ap.parse_args()
-    out = run_oss(args.nx, args.ny, args.a, args.h0, args.steps,
-                  gravity=(0.0, -args.gravity), oss=import_oss(Path(args.oss_root)))
+    out = run_oss(
+        args.nx,
+        args.ny,
+        args.a,
+        args.h0,
+        args.steps,
+        gravity=(0.0, -args.gravity),
+        oss=import_oss(Path(args.oss_root)),
+    )
     print(json.dumps(out["trace"], indent=1))
