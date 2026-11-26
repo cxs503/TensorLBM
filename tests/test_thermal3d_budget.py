@@ -538,6 +538,14 @@ def test_fixed_wall_pulse_interior_peak_flux(record_property):
     assert (rates.square()*flux_terms(reference_time)).sum() < 0
     record_property("peak_reference_s", reference_time)
     record_property("peak_reference_W_m2", reference_flux)
+    threshold = .055  # Fixed physical flux in W/m², on both flanks of the peak.
+    def excess(t):
+        return flux_terms(t).sum().item()-threshold
+    entry_ref = brentq(excess, start, reference_time, xtol=1e-14)
+    exit_ref = brentq(excess, reference_time, end, xtol=1e-14)
+    reference = (entry_ref, exit_ref, exit_ref-entry_ref)
+    for label, value in zip(("entry", "exit", "duration"), reference):
+        record_property(f"{label}_reference_s", value)
     previous = None
     for n in (16, 48, 80):
         dx, dt = 1/n, 1/n**2
@@ -565,6 +573,17 @@ def test_fixed_wall_pulse_interior_peak_flux(record_property):
         record_property(f"n{n}_peak_W_m2", peak_flux)
         record_property(f"n{n}_time_error_s", errors[0])
         record_property(f"n{n}_flux_error_W_m2", errors[1])
+        signal = torch.tensor(samples, dtype=wave.dtype)
+        above = signal > threshold
+        crossings = torch.where(above[1:] != above[:-1])[0]
+        assert not above[0] and not above[-1] and len(crossings) == 2
+        fraction = (threshold-signal[crossings])/(signal[crossings+1]-signal[crossings])
+        entry, exit_time = ((first+crossings.to(wave.dtype)-.5+fraction)*dt).tolist()
+        for label, value, target in zip(("entry", "exit", "duration"),
+                                        (entry, exit_time, exit_time-entry), reference):
+            record_property(f"n{n}_{label}_s", value)
+            record_property(f"n{n}_{label}_error_s", abs(value-target))
+            errors += (abs(value-target),)
         if previous is not None:
             assert all(fine < coarse for fine, coarse in zip(errors, previous))
         previous = errors
