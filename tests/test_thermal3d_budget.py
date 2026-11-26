@@ -124,6 +124,8 @@ def test_3d_uniform_field_is_fixed_point():
 
 
 def test_transient_slab_with_isothermal_and_insulated_walls(record_property):
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
     # Isothermal x surfaces pass through nodes; transverse insulating walls
     # lie half a lattice link beyond the first and last nodes.
     tau, time = .8, 1/32
@@ -154,6 +156,30 @@ def test_transient_slab_with_isothermal_and_insulated_walls(record_property):
         errors = dict(field=(field-baseline-decay*perturbation).abs().max().item(),
                       left_flux=(left+alpha*(cold-hot+varying)).abs().max().item(),
                       right_flux=(right+alpha*(cold-hot-varying)).abs().max().item())
+        # The last streaming step transports energy between neighboring nodes.
+        # Compare its face fluxes with Fourier's law at link and time midpoints.
+        dx, dt = 1/n, 1/n**2
+        qx, qy, qz = thermal_link_fluxes_3d(post, spacing=dx, dt=dt)
+        mid_decay = math.exp(-alpha*sum(k*k for k in wave)*(time-dt/2))
+        amplitude = .3*alpha*mid_decay
+        exact_x = alpha*(hot-cold) - amplitude*wave[0]*torch.cos(wave[0]*(x[..., :-1]+dx/2))*transverse[..., :-1]
+        exact_y = (amplitude*wave[1]*torch.sin(wave[0]*x[:, :-1])*torch.sin(wave[1]*(y[:, :-1]+dx/2))
+                   *torch.cos(wave[2]*z[:, :-1]))
+        exact_z = (amplitude*wave[2]*torch.sin(wave[0]*x[:-1])*torch.cos(wave[1]*y[:-1])
+                   *torch.sin(wave[2]*(z[:-1]+dx/2)))
+        errors.update(x_link_flux=(qx-exact_x).abs().max().item(),
+                      y_link_flux=(qy-exact_y).abs().max().item(),
+                      z_link_flux=(qz-exact_z).abs().max().item())
+
+        # The x boundary nodes are reservoirs. All other nodes, including
+        # transverse wall nodes, have no source and zero exterior y/z flux.
+        div_y = torch.diff(torch.nn.functional.pad(qy, (0, 0, 1, 1)), dim=1)
+        div_z = torch.diff(torch.nn.functional.pad(qz, (0, 0, 0, 0, 1, 1)), dim=0)
+        delta = (field-post.sum(dim=0))[..., 1:-1]
+        balance = delta + (dt/dx)*(qx.diff(dim=2)+(div_y+div_z)[..., 1:-1])
+        residual = balance.abs().max().item()
+        record_property(f"n{n}_local_balance_error", residual)
+        assert residual < 2e-14
         boundary = max((field[..., 0]-hot).abs().max().item(), (field[..., -1]-cold).abs().max().item())
         record_property(f"n{n}_wall_temperature_error", boundary)
         assert boundary < 1e-14
@@ -162,7 +188,7 @@ def test_transient_slab_with_isothermal_and_insulated_walls(record_property):
             if previous is not None:
                 order = math.log2(previous[name]/error)
                 record_property(f"n{n}_{name}_order", order)
-                if name == "field":
+                if name == "field" or name.endswith("_link_flux"):
                     assert order > 1.9
                 else:
                     assert order > (1.65 if n == 64 else 1.3)
