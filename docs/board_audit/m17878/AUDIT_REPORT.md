@@ -1,5 +1,7 @@
 # Board audit m17878 — m17757 `XVAL-LBM-FILL-GRADIENT-NORMAL` (TensorLBM)
 
+> [Current archive](../../../development/verification/fill_gradient_normal/README.md). The report retains its historical paths and findings.
+
 审计对象：mission **m17757**（TensorLBM，branch `agent/m17757`，commit `8f8e48ff`，状态 succeeded）
 锚点：`XVAL-LBM-FILL-GRADIENT-NORMAL` — TensorLBM 自由面 fill-gradient 界面法向 vs 开源 Maarten-vd-Sande/lbm
 本单：**m17878**（交差核验单，非重做）· 判定级别 **L2** · `verdict_by=board-audit`

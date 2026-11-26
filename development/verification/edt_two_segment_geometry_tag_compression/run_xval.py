@@ -20,7 +20,7 @@ L3 **physical consistency** — does the tagged geometry still give the
    SC series computed in code (:func:`tensorlbm.array_drag_reference.
    array_drag_factor_from_phi`) — owner criterion < 15%.
 
-Reproduce: ``python xval/edt_two_segment_geometry_tag_compression/run_xval.py``
+Reproduce: ``python development/verification/edt_two_segment_geometry_tag_compression/run_xval.py``
 Writes ``runs/<arm>.json`` + ``summary.json`` + ``table.csv`` next to this file.
 """
 
@@ -35,7 +35,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 

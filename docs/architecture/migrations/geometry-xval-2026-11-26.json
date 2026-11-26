@@ -1,0 +1,184 @@
+{
+  "source_commit": "b96317ae65b6bc9cb757c829004d94cb4840fdda",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 52,
+      "after": 50
+    }
+  },
+  "retired_paths": [
+    "xval/fill_gradient_normal",
+    "xval/edt_two_segment_geometry_tag_compression"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/fill_gradient_normal/REPORT.md",
+      "new_path": "development/verification/fill_gradient_normal/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "2b95f56562a1ba2f1dc74b01df8d4ebd441704c3",
+      "original_sha256": "4bacdeda2ee87d778caf4d0d5efc386cf39d3b121a1455e6a840004164935ffc",
+      "original_size_bytes": 9022,
+      "current_sha256": "4bacdeda2ee87d778caf4d0d5efc386cf39d3b121a1455e6a840004164935ffc",
+      "current_size_bytes": 9022,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fill_gradient_normal/figures_b64.json",
+      "new_path": "development/verification/fill_gradient_normal/figures_b64.json",
+      "git_mode": "100644",
+      "original_git_blob": "31af7bbe104c39761072804470ecc53e7278e7af",
+      "original_sha256": "3af363165f898b8aec84c4a05333c668bf5123efec7f599f83e431731c1c40f7",
+      "original_size_bytes": 760738,
+      "current_sha256": "3af363165f898b8aec84c4a05333c668bf5123efec7f599f83e431731c1c40f7",
+      "current_size_bytes": 760738,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fill_gradient_normal/make_figures.py",
+      "new_path": "development/verification/fill_gradient_normal/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "30dfb369c34ed2c5d0046f9d3eddf276bd3788f7",
+      "original_sha256": "ae2ca0ddec9a1106fe277b07679a0eb8a41a499cb1abfc0d7e2f73eb778c38cc",
+      "original_size_bytes": 4879,
+      "current_sha256": "ae2ca0ddec9a1106fe277b07679a0eb8a41a499cb1abfc0d7e2f73eb778c38cc",
+      "current_size_bytes": 4879,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fill_gradient_normal/make_report.py",
+      "new_path": "development/verification/fill_gradient_normal/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "b3463856a3e167bcd4e53a5ca587ee3e0591e22e",
+      "original_sha256": "602c2a643a9fa9f3494a458547f11a966792d733e12dd8003fc456d0e52d82ad",
+      "original_size_bytes": 11680,
+      "current_sha256": "602c2a643a9fa9f3494a458547f11a966792d733e12dd8003fc456d0e52d82ad",
+      "current_size_bytes": 11680,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fill_gradient_normal/predeclared.json",
+      "new_path": "development/verification/fill_gradient_normal/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "80aabc563bebb002aaa43ce656b5a57670290ed3",
+      "original_sha256": "384dfa87367642d0e01c8b61138a15fe42a70fa6ef976179c2057333b9af395d",
+      "original_size_bytes": 4893,
+      "current_sha256": "384dfa87367642d0e01c8b61138a15fe42a70fa6ef976179c2057333b9af395d",
+      "current_size_bytes": 4893,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fill_gradient_normal/publish_report.py",
+      "new_path": "development/verification/fill_gradient_normal/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "7374e94370abee70b4c26b29aeb71ccf69dc898d",
+      "original_sha256": "fc5ba1b091ef0a210417bbda9129fc1d0d2a9e11898834aa95aa564c4bab27c6",
+      "original_size_bytes": 2683,
+      "current_sha256": "fc5ba1b091ef0a210417bbda9129fc1d0d2a9e11898834aa95aa564c4bab27c6",
+      "current_size_bytes": 2683,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fill_gradient_normal/results.json",
+      "new_path": "development/verification/fill_gradient_normal/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "ebcdc0c4e037b623f828814a7f966a6389729274",
+      "original_sha256": "dca8149fe1862258795f44d747c20a00d42efccfc2c5accc9c270e38516b4434",
+      "original_size_bytes": 4757,
+      "current_sha256": "dca8149fe1862258795f44d747c20a00d42efccfc2c5accc9c270e38516b4434",
+      "current_size_bytes": 4757,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/fill_gradient_normal/run_xval.py",
+      "new_path": "development/verification/fill_gradient_normal/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "1f69f9c6158f9303a5d6132b4b5ad0afbb2f97bc",
+      "original_sha256": "8e4e8389503ac96c0a14ee869477a73f4ecb85663f7dc65241d1746957d8906f",
+      "original_size_bytes": 10669,
+      "current_sha256": "8e4e8389503ac96c0a14ee869477a73f4ecb85663f7dc65241d1746957d8906f",
+      "current_size_bytes": 10669,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/edt_two_segment_geometry_tag_compression/figures.json",
+      "new_path": "development/verification/edt_two_segment_geometry_tag_compression/figures.json",
+      "git_mode": "100644",
+      "original_git_blob": "3f9dbb9a527e9a729f9502ef328e31eccb433f91",
+      "original_sha256": "467fd3809c122d9495b3e25c75ed281d775060aa42858ddebbf7f51cf22d250b",
+      "original_size_bytes": 1629,
+      "current_sha256": "467fd3809c122d9495b3e25c75ed281d775060aa42858ddebbf7f51cf22d250b",
+      "current_size_bytes": 1629,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/edt_two_segment_geometry_tag_compression/make_report.py",
+      "new_path": "development/verification/edt_two_segment_geometry_tag_compression/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "ec62a5760f150762a25047a9c3035d66f37d37f3",
+      "original_sha256": "51d25214151f6355092bb718368721555f81e94170e439e69f935cdb001d00b5",
+      "original_size_bytes": 19868,
+      "current_sha256": "d9857e46e9a3b7fba5f6632d09bcc4199dc0947e885dd477e5c70d4094122dfc",
+      "current_size_bytes": 19928,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/edt_two_segment_geometry_tag_compression/oss_reference.py",
+      "new_path": "development/verification/edt_two_segment_geometry_tag_compression/oss_reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "630f8efb257ff11dd5eb0ede138fdec6726b1544",
+      "original_sha256": "c23306a1cf78aa956cbae8ccff0485e66d39993e37479a1f0d604a48af9aceef",
+      "original_size_bytes": 4067,
+      "current_sha256": "c23306a1cf78aa956cbae8ccff0485e66d39993e37479a1f0d604a48af9aceef",
+      "current_size_bytes": 4067,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/edt_two_segment_geometry_tag_compression/run_xval.py",
+      "new_path": "development/verification/edt_two_segment_geometry_tag_compression/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "e01071fccb9d4cf01df38c60ac73daf9ca99cc5d",
+      "original_sha256": "8a6023c7d3a1c79eb89738f87bc96642a21be484840a54616e5311e260b4912d",
+      "original_size_bytes": 20937,
+      "current_sha256": "b7cffaaf096d132849bb919b17d02c8725ab88bfab5c1507a4086176220709db",
+      "current_size_bytes": 20957,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/edt_two_segment_geometry_tag_compression/summary.json",
+      "new_path": "development/verification/edt_two_segment_geometry_tag_compression/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "a02f6a16ec128e09345cdbf04c158210f873fa80",
+      "original_sha256": "9c130b65734f11531b2745ea138e96fb32774680ce1ea80b0ac46f5f271bdb6c",
+      "original_size_bytes": 38853,
+      "current_sha256": "9c130b65734f11531b2745ea138e96fb32774680ce1ea80b0ac46f5f271bdb6c",
+      "current_size_bytes": 38853,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/edt_two_segment_geometry_tag_compression/table.csv",
+      "new_path": "development/verification/edt_two_segment_geometry_tag_compression/table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "7d69a7aa805e85c4409d60a25ac832470c7c72c1",
+      "original_sha256": "0f6225349df60610e9f4af8bcabc2e41edb0b579454fb0cd9e2e3c1ed4d6dc6a",
+      "original_size_bytes": 2914,
+      "current_sha256": "0f6225349df60610e9f4af8bcabc2e41edb0b579454fb0cd9e2e3c1ed4d6dc6a",
+      "current_size_bytes": 2914,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "fill_gradient": "Entire original campaign is byte-identical. At the new directory depth the existing source-root lookup resolves this checkout. Run scripts in a disposable tree since they write archived outputs.",
+    "edt_geometry": "Two Python files adjust checkout-root and command paths. The active tests use the relocated unchanged reference implementation. The published reports and board audit URLs retain their original contents and link to the archives.",
+    "evidence": "The original historical per-run EDT outputs described by the audit are absent from the tracked snapshot. The summary, table and original figure metadata are preserved."
+  },
+  "verification": {
+    "fill_gradient_cpu": "Real old and new driver output JSON is byte-identical (10 cases). SHA-256 68cdfbf9716401bb45d6908d8c809436d7ad0fb4454cfe20e9790c0cf1f8fb06.",
+    "edt_regression": "24 passed in tests/test_geom_edt_tag.py.",
+    "edt_renderer": "Regenerated four PNGs and the report in a disposable checkout hierarchy from the original summary and a copy of the exact canonical source. The first attempt using a symlink correctly rejected the resolved external src path.",
+    "ruff_baseline": "The existing GitHub aggregate check rejects main and the candidate with the same 3032 findings and 2198 unformatted files. The independent #3039 draft addresses this regression; this branch leaves the ceilings unchanged.",
+    "governance": "86 tests and 14 archive navigation links passed. The registry lists 226 entries; all 33 PDF manuals are catalogued. Zero hard status-ledger violations."
+  },
+  "scope": "Directory and executable compatibility. No solver algorithms or physical thresholds change. Full original EDT flow campaign and scientific reacceptance remain outstanding."
+}
