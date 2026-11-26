@@ -1,0 +1,27 @@
+{
+  "source_commit": "28406f7efc5623096ba9f0a486822dab1061749f",
+  "command": "PYTHONPATH=src OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest -q tests/test_scalar_harmonic.py tests/test_scalar_slab.py -o junit_family=legacy --junitxml=/tmp/lbm_wall_transfer.xml",
+  "reference": "Linear steady temperature, slope -0.125 K/cell, gives rightward transfer -(tau-0.5)*slope/3. With one wall input balancing a uniform sink, the face rate follows the cumulative volume source. The oscillatory row-dependent case checks storage and a separate real collision-streaming step.",
+  "cases": {
+    "test_prescribed_wall_transfer_recovers_steady_gradient[None]": {
+      "max_temperature_error_K": 1.4210854715202004e-14,
+      "max_link_transfer_error": 4.614364446098307e-16
+    },
+    "test_prescribed_wall_transfer_recovers_steady_gradient[west]": {
+      "max_temperature_error_K": 9.947598300641403e-14,
+      "max_link_transfer_error": 1.6202317265623378e-15
+    },
+    "test_prescribed_wall_transfer_recovers_steady_gradient[east]": {
+      "max_temperature_error_K": 9.281464485866309e-14,
+      "max_link_transfer_error": 1.5508427875232655e-15
+    },
+    "test_rowwise_wall_flux_closes_harmonic_storage_and_time_update": {
+      "max_cell_balance_error": 3.752780664831301e-16,
+      "max_population_step_error": 1.1102230246251565e-16
+    },
+    "test_steady_wall_input_balances_uniform_volume_sink": {
+      "max_link_transfer_error": 3.1363800445660672e-15
+    }
+  },
+  "passed": 29
+}
