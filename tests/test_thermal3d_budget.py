@@ -518,3 +518,53 @@ def test_fixed_wall_pulse_cooldown_against_sine_series(record_property):
                 assert torch.all(relative < previous_probe_errors)
                 assert torch.all(heat[indices] > 0)
             previous_probe_errors = relative
+
+
+def test_fixed_wall_pulse_interior_peak_flux(record_property):
+    from scipy.optimize import brentq
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    tau, capacity = .8, 2.3
+    alpha = (tau-.5)/4
+    probe, shutoff, start, end = 11/32, 1/16, 1/8, 1/4
+    wave = math.pi*torch.arange(1, 81, dtype=torch.float64)
+    rates = alpha*wave.square()
+    # Differentiate the delayed-wall-step sine solution in space to get flux.
+    weights = -2*capacity*alpha*torch.cos(wave*probe)*(-torch.expm1(-rates*shutoff))
+    def flux_terms(t):
+        return weights*torch.exp(-rates*(t-shutoff))
+    reference_time = brentq(lambda t: -(rates*flux_terms(t)).sum().item(), start, end, xtol=1e-14)
+    reference_flux = flux_terms(reference_time).sum().item()
+    assert (rates.square()*flux_terms(reference_time)).sum() < 0
+    record_property("peak_reference_s", reference_time)
+    record_property("peak_reference_W_m2", reference_flux)
+    previous = None
+    for n in (16, 48, 80):
+        dx, dt = 1/n, 1/n**2
+        index = int(probe*n)
+        assert (index+.5)*dx == probe
+        zero = torch.zeros((3, 4, n+1), dtype=torch.float64)
+        g = apply_bc(equilibrium_thermal_3d(zero, zero, zero, zero), 1., 0.)
+        samples = []
+        first = round(start/dt)+1
+        for step in range(1, round(end/dt)+1):
+            post = collide_thermal_bgk_3d(g, macroscopic_thermal_3d(g), zero, zero, zero, tau)
+            if step >= first:
+                qx, _, _ = thermal_link_fluxes_3d(post, spacing=dx, dt=dt, volumetric_heat_capacity=capacity)
+                samples.append(qx[..., index].mean().item())
+            g = apply_bc(stream_thermal_3d(post), float(step*dt < shutoff), 0.)
+        j = max(range(len(samples)), key=samples.__getitem__)
+        assert 0 < j < len(samples)-1
+        # Fit a parabola to the maximum and its two adjacent half-step samples.
+        left, center, right = samples[j-1:j+2]
+        offset = .5*(left-right)/(left-2*center+right)
+        peak_time = (first+j-.5+offset)*dt
+        peak_flux = center+.25*(right-left)*offset
+        errors = abs(peak_time-reference_time), abs(peak_flux-reference_flux)
+        record_property(f"n{n}_peak_s", peak_time)
+        record_property(f"n{n}_peak_W_m2", peak_flux)
+        record_property(f"n{n}_time_error_s", errors[0])
+        record_property(f"n{n}_flux_error_W_m2", errors[1])
+        if previous is not None:
+            assert all(fine < coarse for fine, coarse in zip(errors, previous))
+        previous = errors
