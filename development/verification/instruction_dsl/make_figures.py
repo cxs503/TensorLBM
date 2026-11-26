@@ -9,7 +9,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from tensorlbm.shallow_water import ShallowWaterConfig, init_dam_break, swe_step
 from tensorlbm.shallow_water_lbm import SWE_LBM_Config, run_swe_lbm

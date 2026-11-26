@@ -120,7 +120,7 @@ timeout_func_only = true
 [tool.ruff]
 # Upstream reference bytes (lbmpy .gitlab-ci.yml / noxfile.py) are kept verbatim and
 # content-addressed by the XVAL harness; formatting them would break the sha256 record.
-extend-exclude = ["xval/gitlab_ci_staged_gates/oss_refs"]
+extend-exclude = ["development/verification/gitlab_ci_staged_gates/oss_refs"]
 line-length = 100
 target-version = "py311"
 # Byte-frozen legacy source snapshots (guarded against their pinned git

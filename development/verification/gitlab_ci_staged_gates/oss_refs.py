@@ -55,7 +55,7 @@ def fetch(refresh: bool = False, timeout: int = 60) -> dict[str, Any]:
             data = path.read_bytes()
             manifest[key] = {
                 "url": url,
-                "path": str(path.relative_to(HERE.parents[1])),
+                "path": str(path.relative_to(HERE.parents[2])),
                 "sha256": _sha(data),
                 "source": "cache",
             }
@@ -67,7 +67,7 @@ def fetch(refresh: bool = False, timeout: int = 60) -> dict[str, Any]:
             path.write_bytes(data)
             manifest[key] = {
                 "url": url,
-                "path": str(path.relative_to(HERE.parents[1])),
+                "path": str(path.relative_to(HERE.parents[2])),
                 "sha256": _sha(data),
                 "source": "network",
                 "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -77,7 +77,7 @@ def fetch(refresh: bool = False, timeout: int = 60) -> dict[str, Any]:
                 data = path.read_bytes()
                 manifest[key] = {
                     "url": url,
-                    "path": str(path.relative_to(HERE.parents[1])),
+                    "path": str(path.relative_to(HERE.parents[2])),
                     "sha256": _sha(data),
                     "source": "cache-after-network-failure",
                     "network_error": str(exc)[:160],

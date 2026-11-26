@@ -21,7 +21,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
-REPO = HERE.parents[2]
+REPO = HERE.parents[3]
 DOCS = REPO / "docs"
 MISSION_ID = 20996
 ANCHOR = "XVAL-LBM-INSTRUCTION-DSL-TESTS-SH"
@@ -146,12 +146,12 @@ TCLB 的做法不同：**测试本身是 shell 脚本，驱动可执行入口、
 ## ⑥ 复现
 
 ```sh
-cd xval/{ANCHOR}/{HERE.name}
-PYTHONPATH=../../../src python3 make_cases.py      # 重钉期望（改行为时才需要）
+cd {HERE.relative_to(REPO)}
+PYTHONPATH=../../../../src python3 make_cases.py      # 重钉期望（改行为时才需要）
 ./run_cases.sh                                     # shell 套件本体，退出码即结论
-PYTHONPATH=../../../src python3 make_figures.py    # 图 + figures_data.json
+PYTHONPATH=../../../../src python3 make_figures.py    # 图 + figures_data.json
 python3 make_report.py --post                      # 本文档 + 平台报告
-cd ../../.. && python3 -m pytest tests/test_instruction_dsl_shell_suite.py tests/test_instruction_dsl.py -q
+cd ../../../.. && python3 -m pytest tests/test_instruction_dsl_shell_suite.py tests/test_instruction_dsl.py -q
 ```
 """
 

@@ -29,7 +29,7 @@ import numpy as np
 import torch
 
 # Ensure src is on path
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from tensorlbm.shallow_water import (
     ShallowWaterConfig,

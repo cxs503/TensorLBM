@@ -7,7 +7,7 @@ carries co-tenant load, CPU time does not).
 
 Usage::
 
-    PYTHONPATH=src python xval/gitlab_ci_staged_gates/measure_selections.py \
+    PYTHONPATH=src python development/verification/gitlab_ci_staged_gates/measure_selections.py \
         --exprs "not slow" slow unit "not longrun"
 """
 
@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = HERE.parents[2]
 
 
 def measure(expr: str | None, extra: list[str]) -> dict:

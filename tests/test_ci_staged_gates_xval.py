@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from xval.gitlab_ci_staged_gates import ci_spec, gate_sim, oss_refs
-from xval.gitlab_ci_staged_gates.run_xval import (
+from development.verification.gitlab_ci_staged_gates import ci_spec, gate_sim, oss_refs
+from development.verification.gitlab_ci_staged_gates.run_xval import (
     VOCAB_RENAME,
     load_oss_spec,
     parity,
@@ -26,7 +26,7 @@ from xval.gitlab_ci_staged_gates.run_xval import (
     validate_simulator,
 )
 
-HERE = Path(__file__).resolve().parents[1] / "xval" / "gitlab_ci_staged_gates"
+HERE = Path(__file__).resolve().parents[1] / "development/verification/gitlab_ci_staged_gates"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCOPE = {
     "testsuite-cuda-py3.10": ["tests", "app/tests"],
@@ -138,7 +138,7 @@ def test_h1_functional_parity(ours: dict, oss: dict, corpus: gate_sim.Corpus) ->
 
 
 def test_h2_vocabulary_not_portable(oss: dict, corpus: gate_sim.Corpus) -> None:
-    from xval.gitlab_ci_staged_gates.run_xval import leakage
+    from development.verification.gitlab_ci_staged_gates.run_xval import leakage
 
     verbatim = leakage(corpus, oss, None)
     adapted = leakage(corpus, oss, VOCAB_RENAME)

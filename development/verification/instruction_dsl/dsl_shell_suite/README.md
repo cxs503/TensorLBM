@@ -7,8 +7,8 @@ so no Python test framework is needed and a failure is a shell exit status.
 ```sh
 ./run_cases.sh                                   # run all cases; exit 0 iff all pass
 DSL_CASES_DIR=dir DSL_OUT_DIR=dir ./run_cases.sh # run a subset / elsewhere
-PYTHONPATH=../../../src python3 make_cases.py    # re-pin cases (after a behaviour change)
-PYTHONPATH=../../../src python3 make_figures.py  # figures + artifacts/figures_data.json
+PYTHONPATH=../../../../src python3 make_cases.py    # re-pin cases (after a behaviour change)
+PYTHONPATH=../../../../src python3 make_figures.py  # figures + artifacts/figures_data.json
 python3 make_report.py --post                    # docs/XVAL-LBM-INSTRUCTION-DSL-TESTS-SH-R2.md + platform report
 ```
 
