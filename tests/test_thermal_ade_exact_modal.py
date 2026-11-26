@@ -189,3 +189,47 @@ def test_negative_control_d2q5_equilibrium_has_no_u2_second_moment() -> None:
         assert abs(float((_C5NP[:, 1] ** 2 * geq).sum()) - 1.0 / 3.0) < 1e-7
         assert abs(float((_C5NP[:, 0] * _C5NP[:, 1] * geq).sum())) < 1e-12
         assert abs(float(geq.sum()) - 1.0) < 1e-9
+
+@pytest.mark.parametrize("y_mode", [-1, 1])
+def test_oblique_mode_on_rectangular_periodic_domain(y_mode, record_property):
+    # Diffusive scaling: dx=1/n, dt=dx², physical domain 1 by 3/4.
+    tau, final_time = .8, 1/16
+    velocity = np.array([.6, .3])
+    wave = 2*np.pi*np.array([1., y_mode/.75])
+    exact = np.exp(-final_time*((tau-.5)/3*(wave @ wave) + 1j*(velocity @ wave)))
+    previous = None
+    for n in (16, 32, 64):
+        ny = 3*n//4
+        y, x = torch.meshgrid(torch.arange(ny, dtype=torch.float64),
+                              torch.arange(n, dtype=torch.float64), indexing="ij")
+        phase = (wave[0]*x+wave[1]*y)/n
+        initial = 1.5+torch.cos(phase)
+        ux, uy = (torch.full_like(initial, component/n) for component in velocity)
+        populations = temperature_equilibrium(initial, ux, uy)
+        steps = int(final_time*n**2)
+        for _ in range(steps):
+            populations = temperature_stream(temperature_collision(populations, tau, ux, uy))
+        field = populations.sum(dim=0)
+        coefficient = (2*(field-1.5)*torch.exp(-1j*phase)).mean().item()
+
+        # Propagate the initial equilibrium populations, retaining all kinetic
+        # modes at finite time, with streaming diagonal in Fourier space.
+        equilibrium = _W5NP*(1+3*(_C5NP @ velocity)/n)
+        collision = (1-1/tau)*np.eye(5) + equilibrium[:, None]/tau
+        operator = np.exp(-1j*(_C5NP @ wave)/n)[:, None]*collision
+        discrete = (np.linalg.matrix_power(operator, steps) @ equilibrium).sum()
+        discrete_error = abs(coefficient-discrete)
+        mean_error = abs(field.mean().item()-1.5)
+        errors = dict(amplitude=abs(abs(coefficient)-abs(exact)),
+                      phase_rad=abs(np.angle(coefficient/exact)),
+                      field=float((field-1.5-(exact*torch.exp(1j*phase)).real).abs().max()))
+        record_property(f"n{n}_discrete_coefficient_error", discrete_error)
+        record_property(f"n{n}_mean_error", mean_error)
+        assert discrete_error < 1e-12 and mean_error < 1e-12
+        for name, error in errors.items():
+            record_property(f"n{n}_{name}_error", error)
+            if previous is not None:
+                order = math.log2(previous[name]/error)
+                record_property(f"n{n}_{name}_order", order)
+                assert order > 1.8
+        previous = errors
