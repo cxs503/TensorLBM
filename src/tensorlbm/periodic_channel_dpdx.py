@@ -20,7 +20,7 @@ answer at finite resolution:
   form with the ``(1 - omega/2)`` weight and the ``+F/2`` velocity correction.
 
 Both closures are implemented here so that the difference can be *measured*
-instead of argued about (see ``xval/xval_lbm_periodic_dpdx`` and the round-2
+instead of argued about (see ``benchmarks/cross_validation/periodic_channel_dpdx`` and the round-2
 report in ``docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX.md``).
 
 Physics / discretisation

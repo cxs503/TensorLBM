@@ -1,5 +1,7 @@
 # m23997 · PR#2653 重开第3轮 · 交付确认（2026-11-16）
 
+> Repository migration note: the current case and replay commands are in [benchmarks/cross_validation/periodic_channel_dpdx](../../benchmarks/cross_validation/periodic_channel_dpdx/). Original mission paths below identify the archived revision. Historical scientific verdicts are not new acceptance.
+
 ## 背景
 
 原 PR#2653（m21273，periodic-x + constant dP/dx 通道 R3 xval）已裁定关闭（owner 2026-11-05）。

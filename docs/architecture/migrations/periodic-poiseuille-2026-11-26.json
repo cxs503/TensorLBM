@@ -1,0 +1,238 @@
+{
+  "source_commit": "7ea337498d0c5e85c332742d74b629f2cd8a21df",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 40
+    }
+  },
+  "retired_paths": [
+    "xval/xval_lbm_periodic_dpdx",
+    "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/life_ref.py",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/life_ref.py",
+      "git_mode": "100644",
+      "original_git_blob": "1ad30685e30b78d0afdbcd1e619cde81cb10110f",
+      "size_bytes": 10078,
+      "original_sha256": "60cacfbe855b5a3d0775f1d77e4e4e0f86a2587fe64f80d846d81485e458f4c7",
+      "new_sha256": "2b6bb256d9e022eddf0aebdf55a404fb219a843040f0401f6b8a9ee61296533a"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/make_r3_report.py",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/make_r3_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "b2a27a103f2c6b0f56fc957530da6dd6125614b5",
+      "size_bytes": 17184,
+      "original_sha256": "66dab250abd3fc60bd8abbfb912afc8c4728e362d81068c902de2886e5503049",
+      "new_sha256": "8249fe55e919b5fa2b552c1faa14a098ca4da93ce5664edca9d38b7e27baf5e1"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/make_r4_report.py",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/make_r4_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "f5f912c4619622d055d76a544cf74639f93e3c70",
+      "size_bytes": 17681,
+      "original_sha256": "ced4141618cd37013ee741a221d6bc25d67e5bf1f31ddd19faf39532b927968c",
+      "new_sha256": "d0842d8ddebb022c80251cbbffe22c499c8923331744faccb320ae7357b0dde1"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/out/report_payload_r3.json",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/out/report_payload_r3.json",
+      "git_mode": "100644",
+      "original_git_blob": "b045d1b3ec6f58929975b84777f6caae00f19db3",
+      "size_bytes": 329602,
+      "original_sha256": "0ce72fe05bddfe987683a1caf77ffbb5350458dfeeedd100bea26a7a024f3d86",
+      "new_sha256": "0ce72fe05bddfe987683a1caf77ffbb5350458dfeeedd100bea26a7a024f3d86"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/out/report_payload_r4.json",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/out/report_payload_r4.json",
+      "git_mode": "100644",
+      "original_git_blob": "8d5eed2e4efb2b0356dba3406eb1509a1d5ef79b",
+      "size_bytes": 359218,
+      "original_sha256": "e434420826948ec44eb838655f460c1c1cffe9aa4b6f44930b29d73030d015ab",
+      "new_sha256": "e434420826948ec44eb838655f460c1c1cffe9aa4b6f44930b29d73030d015ab"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/out/xval_life_periodic_dpdx.json",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx.json",
+      "git_mode": "100644",
+      "original_git_blob": "7f198af54d33cab4013adb17cdcca723e8c8a4f5",
+      "size_bytes": 10105,
+      "original_sha256": "cc60d10a5411138bca2700f92b8da2dfaa1708c9af4c82afdae3bd2b134d711e",
+      "new_sha256": "cc60d10a5411138bca2700f92b8da2dfaa1708c9af4c82afdae3bd2b134d711e"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/out/xval_life_periodic_dpdx_r2.json",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r2.json",
+      "git_mode": "100644",
+      "original_git_blob": "10464a69e82a1807da69ee4965b36f12700f4b9b",
+      "size_bytes": 12807,
+      "original_sha256": "ceded27d3e9f61156539fae3ec418a0013b960a917e2b9ef76785737fcd78722",
+      "new_sha256": "ceded27d3e9f61156539fae3ec418a0013b960a917e2b9ef76785737fcd78722"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/out/xval_life_periodic_dpdx_r3.json",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r3.json",
+      "git_mode": "100644",
+      "original_git_blob": "98503392f76aaf4dd2794a4e62c73b29708c61cc",
+      "size_bytes": 44075,
+      "original_sha256": "696846595e1a014311bf0108b682f678072bc90e96139606546e7a1f3d00aa2b",
+      "new_sha256": "696846595e1a014311bf0108b682f678072bc90e96139606546e7a1f3d00aa2b"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/out/xval_life_periodic_dpdx_r4.json",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r4.json",
+      "git_mode": "100644",
+      "original_git_blob": "3c40cb1f97963e252ee542272a043de315e30589",
+      "size_bytes": 174688,
+      "original_sha256": "3b6588230bc8e4e90a2c4ae248e00cc50ac71c897ed09919032cd1c4a7b04227",
+      "new_sha256": "3b6588230bc8e4e90a2c4ae248e00cc50ac71c897ed09919032cd1c4a7b04227"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/out/xval_life_periodic_dpdx_r4_quick.json",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r4_quick.json",
+      "git_mode": "100644",
+      "original_git_blob": "6d14db83662b8915aa19789e604947a9e6a049a6",
+      "size_bytes": 120981,
+      "original_sha256": "e3eeac29954176e10f91fdefa2ff5724535bc9d9b61345ac9c13850e7a8ddeba",
+      "new_sha256": "e3eeac29954176e10f91fdefa2ff5724535bc9d9b61345ac9c13850e7a8ddeba"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/run_xval.py",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "426a0bbc7315509859648f08875e3aa30650c397",
+      "size_bytes": 9823,
+      "original_sha256": "3e96f773b7e6adbb2c56beba85bca25b2d8d0b0b8f55d649f37c1f29c10d4669",
+      "new_sha256": "0766bf276e3860615ce039708b666d000e8770e47e6efe9688b24b15a0391dee"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/run_xval_r2.py",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r2.py",
+      "git_mode": "100644",
+      "original_git_blob": "7c8317338a99aabb104b3dfd24ce9e74fc1f206d",
+      "size_bytes": 13783,
+      "original_sha256": "4c9f7102ef0f1188478cec05f3c69daeb1bc2cc4eedb89676cf8379e1aa7a5e1",
+      "new_sha256": "d81cec5f074bfe81cab1bd8a544daf4e1dbc1d7f9a536ad23dfec7a2bb8c3739"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/run_xval_r3.py",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r3.py",
+      "git_mode": "100644",
+      "original_git_blob": "08110ac763b881778e67dbc41914b4e1a04c4888",
+      "size_bytes": 18679,
+      "original_sha256": "74ea4455e7dc99ad8ff24d1888bbd55888ec114bb8ccc8a647da8f3b63c950bb",
+      "new_sha256": "aaab51db330eb6c6e7585ab9d4f38508e40c40d8ed81892cc6a145322cdf31b9"
+    },
+    {
+      "old_path": "xval/xval_lbm_periodic_dpdx/run_xval_r4.py",
+      "new_path": "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r4.py",
+      "git_mode": "100644",
+      "original_git_blob": "403a47a34202a07729ea85d4f00e9bcd09603197",
+      "size_bytes": 10946,
+      "original_sha256": "1709a7915dc443778c67d9e6f6976b947dae44a2153c610d46bf54ca7dba7337",
+      "new_sha256": "7a6d037060704b54e5321405e3b464b0eb047d9158cc9ffb4ceac05315cfb094"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON/analyze.py",
+      "new_path": "development/verification/poiseuille_baseline_skeleton/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "6c4f9342c9ef94474411f8c7779ebde76530b24d",
+      "size_bytes": 11775,
+      "original_sha256": "992ac3531f2f5db57bf0819840d727dd70cf8ac0afd00c49578e6d0ed80201e6",
+      "new_sha256": "992ac3531f2f5db57bf0819840d727dd70cf8ac0afd00c49578e6d0ed80201e6"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON/arm_oss.py",
+      "new_path": "development/verification/poiseuille_baseline_skeleton/arm_oss.py",
+      "git_mode": "100644",
+      "original_git_blob": "86a85a7efbb6ed696591d06ca158d9545216e8a2",
+      "size_bytes": 7548,
+      "original_sha256": "1e12e34d01df1b6f4ebdf882bd79a13f9f2a80cc700cf8ec6fb7600db4d7214a",
+      "new_sha256": "1e12e34d01df1b6f4ebdf882bd79a13f9f2a80cc700cf8ec6fb7600db4d7214a"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON/arm_tl.py",
+      "new_path": "development/verification/poiseuille_baseline_skeleton/arm_tl.py",
+      "git_mode": "100644",
+      "original_git_blob": "0cc1634f72842cf4493607807ffd473a7c28447a",
+      "size_bytes": 3406,
+      "original_sha256": "54fbaa6416043cc0c94083ea0c8ad8c55a084e1b93147ed47b2faa530cb5e289",
+      "new_sha256": "54fbaa6416043cc0c94083ea0c8ad8c55a084e1b93147ed47b2faa530cb5e289"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON/cases.py",
+      "new_path": "development/verification/poiseuille_baseline_skeleton/cases.py",
+      "git_mode": "100644",
+      "original_git_blob": "006fe104861bc20bf680dace60b9321136e998ff",
+      "size_bytes": 5923,
+      "original_sha256": "335ed9c4a35ffc830a98b0ba1c13f2804d25a2d289fe816b2d9d6520619f21ce",
+      "new_sha256": "335ed9c4a35ffc830a98b0ba1c13f2804d25a2d289fe816b2d9d6520619f21ce"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON/predeclared.json",
+      "new_path": "development/verification/poiseuille_baseline_skeleton/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "68112ebceb416cc226b71ed6d3df1b92302ce086",
+      "size_bytes": 11577,
+      "original_sha256": "91a5f8b784be1ccbfac7e85c2fe1da634dc9c49d8df90741868024033342323e",
+      "new_sha256": "91a5f8b784be1ccbfac7e85c2fe1da634dc9c49d8df90741868024033342323e"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON/run_all.py",
+      "new_path": "development/verification/poiseuille_baseline_skeleton/run_all.py",
+      "git_mode": "100644",
+      "original_git_blob": "24e26cc4f05e1a2be74ebddeb5274e1e1264999e",
+      "size_bytes": 6770,
+      "original_sha256": "d2ff89ed3682cad8633c2a5b842757ee6abead4ca1deafb707dd545499255d5c",
+      "new_sha256": "5edde4795023832071767e784672338d389db2f53d696c1aae817aa76aaa252c"
+    }
+  ],
+  "verification": [
+    "Pre-move full test pair tests/test_xval_poiseuille_force_anchor.py and tests/test_xval_life_periodic_dpdx_r3.py: 12 passed, 1 failed (existing force-anchor analytic/reference mismatch). The moved periodic cohort passed all 9 tests in that run, and all 9 after move (31.59 s). Force-anchor not moved.",
+    "R4 report renderer succeeded before and after from tracked R4 measured data; complete report payload JSON identical after replacing only old/new path in markdown, including four byte-identical PNGs. Restored all original tracked report and result assets. No fresh scientific campaign or external publishing.",
+    "Skeleton and R4 --help and compileall succeeded. Scope expansion into benchmarks fixed 9 existing Ruff import-order/redundant f-string issues and added narrow E402 comment for module search setup; formatting AST checks identical for all 7 Python files. Solver source module AST unchanged excluding docstring.",
+    "All 20 original Git blob/SHA256 and destination hashes verified; 9 archive links resolve. Registry query links historical R2/R3/R4 JSON, published reports and retained figures; specific registry test passed. Historical current_acceptance remains not_evaluated.",
+    "87 baseline governance tests passed on main; candidate existing governance suite passed, added one additional registry test. Independent main format repair #3048 required for aggregate lint. No baselines relaxed."
+  ],
+  "reference_scan": "Checked tracked literal and split paths in tests, src, docs, workflows, tools, benchmark manifests and development. Updated direct R2 evidence test, R4 output resolver, report root lookups and one module docstring. Published URLs unchanged. Baseline skeleton has no tracked output; driver path updated and protocol preserved.",
+  "compatibility": "Original command flags and output filenames unchanged. Source solver executable AST unchanged. New registered formal periodic benchmark references archived reports and figures. Original source commit provides historical paths. Retired directory guard rejects reintroduction.",
+  "scientific_scope": "Static migration and actual focused CPU regression tests only. No inferred current acceptance from archived verdicts. No external OSS run or mock.",
+  "remaining_blockers": [
+    "Independent third force-anchor directory retained: before any move, test_reference_profile_is_symmetric_about_midplane in tests/test_xval_poiseuille_force_anchor.py fails on main (analytic profile and repo helper disagree). Do not alter numeric algorithm or test assertion merely for relocation.",
+    "Baseline skeleton external upstream and measured output absent; no current scientific gate result.",
+    "Full R1–R4 campaign deferred."
+  ],
+  "file_counts": {
+    "moved": 20,
+    "byte_identical": 12,
+    "path_or_lint_only": 8
+  },
+  "renderer_replay": {
+    "figures": [
+      {
+        "name": "profiles",
+        "sha256": "0ec18525650f4d0fe5ad2ee8aacc4e61198a3ad53c7ce98f44faa2babf5bd64b"
+      },
+      {
+        "name": "growth",
+        "sha256": "9fe3c395f24e0b4420bb8b4c7dff43b5d703a8afb27de3d543b0483a0dbe3c5d"
+      },
+      {
+        "name": "order",
+        "sha256": "865cb37d360e419e75c386305be8684c2632f314856fe5c3961fc7de087e2c27"
+      },
+      {
+        "name": "offset",
+        "sha256": "ceab9427448ab47e3f7681b9fc4a15b7d8da1858d5d4baa6e63316f188dba1a2"
+      }
+    ],
+    "normalized_payload_equal": true
+  }
+}

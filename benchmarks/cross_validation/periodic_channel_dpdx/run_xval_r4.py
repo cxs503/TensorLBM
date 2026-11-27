@@ -2,9 +2,9 @@
 periodic-x + constant-dp/dx channel (``joconnor22/LIFE`` tag
 ``single-phase-periodic-x-plus-constant-dpdx-driving``).
 
-Run (cluster):  python xval/xval_lbm_periodic_dpdx/run_xval_r4.py --workers 8
-Quick (laptop): python xval/xval_lbm_periodic_dpdx/run_xval_r4.py --quick
-Writes:         xval/xval_lbm_periodic_dpdx/out/xval_life_periodic_dpdx_r4.json
+Run (cluster):  python benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r4.py --workers 8
+Quick (laptop): python benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r4.py --quick
+Writes:         benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r4.json
 
 Why a fourth round
 ------------------
@@ -55,15 +55,15 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.periodic_channel_dpdx import (  # noqa: E402
-    DpdxChannel,
     FORCE_GUO_HALF_FROZEN,
     FORCE_SPLIT_GUO,
     WALL_HALFWAY_BB,
     WALL_REGULARISED,
+    DpdxChannel,
     observed_order,
     poiseuille_analytic,
     poiseuille_transient,
@@ -110,21 +110,23 @@ def run_transient(arm: str, ny: int) -> dict:
         y = ch.y_centres()
         u = ch.profile()
         y_c = u.size // 2
-        rows.append({
-            "tau_nd": tau_nd,
-            "y": [float(v) for v in y],
-            "u_profile": [float(v) for v in u],
-            "u_analytic": [float(v) for v in ua],
-            "steps": ch.steps,
-            "rel_l2_over_steady": float(np.linalg.norm(u - ua) / norm_ss),
-            "rel_l2_over_instant": float(np.linalg.norm(u - ua) / np.linalg.norm(ua)),
-            "u_centre": float(u[y_c]),
-            "u_centre_analytic": float(ua[y_c]),
-            "uc_ratio": float(u.max() / u_ss.max()),
-            "uc_ratio_analytic": float(ua.max() / u_ss.max()),
-            "mass_drift": float((ch.mass() - m0) / m0),
-            "modes": modes,
-        })
+        rows.append(
+            {
+                "tau_nd": tau_nd,
+                "y": [float(v) for v in y],
+                "u_profile": [float(v) for v in u],
+                "u_analytic": [float(v) for v in ua],
+                "steps": ch.steps,
+                "rel_l2_over_steady": float(np.linalg.norm(u - ua) / norm_ss),
+                "rel_l2_over_instant": float(np.linalg.norm(u - ua) / np.linalg.norm(ua)),
+                "u_centre": float(u[y_c]),
+                "u_centre_analytic": float(ua[y_c]),
+                "uc_ratio": float(u.max() / u_ss.max()),
+                "uc_ratio_analytic": float(ua.max() / u_ss.max()),
+                "mass_drift": float((ch.mass() - m0) / m0),
+                "modes": modes,
+            }
+        )
     return {"arm": arm, "ny": ny, "h": h, "g": g, "rows": rows}
 
 
@@ -134,9 +136,8 @@ def run_early(arm: str, tau_relax: float, nsteps: int = 6) -> dict:
     ny = 17
     h = h_for(ny, wall)
     nu = (tau_relax - 0.5) / 3.0
-    g = 8.0 * nu * U_TARGET / h ** 2
-    ch = DpdxChannel(2, ny, tau_relax, g, wall=wall,
-                     force_scheme=ARMS[arm]["scheme"])
+    g = 8.0 * nu * U_TARGET / h**2
+    ch = DpdxChannel(2, ny, tau_relax, g, wall=wall, force_scheme=ARMS[arm]["scheme"])
     hist = []
     for _ in range(nsteps):
         ch.step()
@@ -145,7 +146,9 @@ def run_early(arm: str, tau_relax: float, nsteps: int = 6) -> dict:
     omega = 1.0 / tau_relax
     predicted = 0.0 if arm == "PORT-BB" else 0.5 * (1.0 - omega)
     return {
-        "arm": arm, "tau": tau_relax, "omega": omega,
+        "arm": arm,
+        "tau": tau_relax,
+        "omega": omega,
         "offset_measured": hist[-1],
         "offset_span": hist,
         "offset_predicted": predicted,
@@ -157,8 +160,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=min(8, os.cpu_count() or 1))
     ap.add_argument("--quick", action="store_true")
-    ap.add_argument("--taus", default="",
-                    help="comma list of nondimensional times, e.g. 0.02,0.05,0.1,0.2")
+    ap.add_argument(
+        "--taus", default="", help="comma list of nondimensional times, e.g. 0.02,0.05,0.1,0.2"
+    )
     args = ap.parse_args()
 
     global TAUS
@@ -174,13 +178,17 @@ def main() -> None:
             print("done", arm, ny, flush=True)
     else:
         from concurrent.futures import as_completed
+
         with ProcessPoolExecutor(max_workers=args.workers) as ex:
             futs = {ex.submit(run_transient, arm, ny): (arm, ny) for arm, ny in jobs}
             for fut in as_completed(futs):
                 results.append(fut.result())
                 print("done", futs[fut], flush=True)
-    early = [run_early(arm, tau_r)
-             for arm in ARMS for tau_r in ((TAU, 0.6) if args.quick else (TAU, 0.6, 0.8))]
+    early = [
+        run_early(arm, tau_r)
+        for arm in ARMS
+        for tau_r in ((TAU, 0.6) if args.quick else (TAU, 0.6, 0.8))
+    ]
 
     # -- resolution order of the transient error (fixed nondimensional time) --
     order_rows = []
@@ -190,31 +198,42 @@ def main() -> None:
             coarse, fine = by_ny[nys[k]], by_ny[nys[k + 1]]
             rc = next(r for r in coarse["rows"] if r["tau_nd"] == 0.1)
             rf = next(r for r in fine["rows"] if r["tau_nd"] == 0.1)
-            order_rows.append({
-                "arm": arm, "ny_pair": [nys[k], nys[k + 1]],
-                "h_pair": [coarse["h"], fine["h"]],
-                "p_rel_l2": observed_order(rc["rel_l2_over_steady"],
-                                          rf["rel_l2_over_steady"],
-                                          coarse["h"], fine["h"]),
-                "p_uc": observed_order(abs(rc["uc_ratio"] - rc["uc_ratio_analytic"]),
-                                       abs(rf["uc_ratio"] - rf["uc_ratio_analytic"]),
-                                       coarse["h"], fine["h"]),
-            })
+            order_rows.append(
+                {
+                    "arm": arm,
+                    "ny_pair": [nys[k], nys[k + 1]],
+                    "h_pair": [coarse["h"], fine["h"]],
+                    "p_rel_l2": observed_order(
+                        rc["rel_l2_over_steady"], rf["rel_l2_over_steady"], coarse["h"], fine["h"]
+                    ),
+                    "p_uc": observed_order(
+                        abs(rc["uc_ratio"] - rc["uc_ratio_analytic"]),
+                        abs(rf["uc_ratio"] - rf["uc_ratio_analytic"]),
+                        coarse["h"],
+                        fine["h"],
+                    ),
+                }
+            )
 
     # centreline-velocity growth error vs the analytic value (u_c/u_ss)
     for r in results:
         for row in r["rows"]:
             row["uc_ratio_err"] = row["uc_ratio"] - row["uc_ratio_analytic"]
 
-    flat = [row | {"arm": r["arm"], "ny": r["ny"], "h": r["h"]}
-            for r in results for row in r["rows"]]
+    flat = [
+        row | {"arm": r["arm"], "ny": r["ny"], "h": r["h"]} for r in results for row in r["rows"]
+    ]
     worst = max(flat, key=lambda x: x["rel_l2_over_steady"])
     worst_uc = max(flat, key=lambda x: abs(x["uc_ratio_err"]))
     mass_worst = max(abs(x["mass_drift"]) for x in flat)
 
     try:
-        commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
-                                capture_output=True, text=True, check=True).stdout.strip()
+        commit = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
     except Exception:  # pragma: no cover
         commit = "unknown"
 
@@ -233,11 +252,14 @@ def main() -> None:
             "quick": args.quick,
         },
         "lattice_units": {
-            "tau": TAU, "nu": NU, "u_max_target": U_TARGET,
-            "gate": GATE, "target_3pct": TARGET_3PCT, "nondim_times": list(TAUS),
+            "tau": TAU,
+            "nu": NU,
+            "u_max_target": U_TARGET,
+            "gate": GATE,
+            "target_3pct": TARGET_3PCT,
+            "nondim_times": list(TAUS),
         },
-        "arms": {k: {"wall": v["wall"], "force_scheme": v["scheme"]}
-                 for k, v in ARMS.items()},
+        "arms": {k: {"wall": v["wall"], "force_scheme": v["scheme"]} for k, v in ARMS.items()},
         "transient_line": results,
         "transient_rows": flat,
         "resolution_order": order_rows,
@@ -254,7 +276,7 @@ def main() -> None:
             "early_offset_max_abs_error": max(abs(e["offset_error"]) for e in early),
         },
     }
-    out = ROOT / "xval" / "xval_lbm_periodic_dpdx" / "out"
+    out = pathlib.Path(__file__).resolve().parent / "out"
     out.mkdir(parents=True, exist_ok=True)
     path = out / ("xval_life_periodic_dpdx_r4" + ("_quick" if args.quick else "") + ".json")
     path.write_text(json.dumps(rep, indent=2))

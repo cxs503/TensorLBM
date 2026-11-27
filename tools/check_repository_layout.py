@@ -64,6 +64,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-MOVING-WALL-WALL-SHEAR-ME-D2Q9-BGK"),
     ("xval", "XVAL-LBM-REG-BC-NEQ-STRESS"),
     ("xval", "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC"),
+    ("xval", "xval_lbm_periodic_dpdx"),
+    ("xval", "XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON"),
     ("xval", "XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64"),
     ("scripts", "verification"),
     ("scripts", "audit_m18430"),

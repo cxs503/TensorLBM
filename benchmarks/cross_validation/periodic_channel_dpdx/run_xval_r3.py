@@ -2,8 +2,8 @@
 wall origin for the periodic-x + constant-dp/dx channel
 (``joconnor22/LIFE`` tag ``single-phase-periodic-x-plus-constant-dpdx-driving``).
 
-Run (cluster, 8 cores):  python xval/xval_lbm_periodic_dpdx/run_xval_r3.py
-Writes:                  xval/xval_lbm_periodic_dpdx/out/xval_life_periodic_dpdx_r3.json
+Run (cluster, 8 cores):  python benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r3.py
+Writes:                  benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r3.json
 
 Why a third round
 -----------------
@@ -55,15 +55,15 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.periodic_channel_dpdx import (  # noqa: E402
-    DpdxChannel,
     FORCE_GUO_HALF_FROZEN,
     FORCE_SPLIT_GUO,
     WALL_HALFWAY_BB,
     WALL_REGULARISED,
+    DpdxChannel,
     fit_parabola,
     observed_order,
     poiseuille_analytic,
@@ -75,8 +75,8 @@ OUT.mkdir(exist_ok=True)
 NX = 2
 TAU = 0.5375
 NU = (TAU - 0.5) / 3.0
-GATE = 0.15            # owner accuracy standard: >15 % unacceptable
-TARGET_3PCT = 0.03     # the stricter bar this round is judged by
+GATE = 0.15  # owner accuracy standard: >15 % unacceptable
+TARGET_3PCT = 0.03  # the stricter bar this round is judged by
 TOL = 1e-10
 
 # arm -> (wall closure, force injection) — the two validated pairs of round 2
@@ -103,8 +103,7 @@ def solve(task: tuple[str, int, float]) -> dict:
     name, ny, u_target = task
     wall, force_scheme = ARMS[name]
     force = g_for(ny, u_target, wall)
-    ch = DpdxChannel(nx=NX, ny=ny, tau=TAU, force=force, wall=wall,
-                     force_scheme=force_scheme)
+    ch = DpdxChannel(nx=NX, ny=ny, tau=TAU, force=force, wall=wall, force_scheme=force_scheme)
     t0 = time.time()
     info = ch.run_until_steady(tol=TOL, max_steps=3_000_000)
     u = ch.profile()
@@ -126,8 +125,7 @@ def solve(task: tuple[str, int, float]) -> dict:
         "u_max": u_max,
         "u_max_analytic": float(u_target),
         "u_max_rel_err": abs(u_max / u_target - 1.0),
-        "rel_l2_vs_analytic": float(
-            np.linalg.norm(u - u_ana) / np.linalg.norm(u_ana)),
+        "rel_l2_vs_analytic": float(np.linalg.norm(u - u_ana) / np.linalg.norm(u_ana)),
         "mass_drift_rel": float(ch.mass() / (ch.rho0 * NX * (ny - 2)) - 1.0),
         "rho_dev_max": float(np.max(np.abs(ch.rho - ch.rho0))),
         "Re_h": float(u_target * h_for(ny, wall) / NU),
@@ -137,10 +135,13 @@ def solve(task: tuple[str, int, float]) -> dict:
         "h_nominal": float(h_nom),
         "wall_time_s": time.time() - t0,
     }
-    print(f"[{name}] ny={ny:3d} u={u_target:.4f} steps={rec['steps']:7d} "
-          f"L2={rec['rel_l2_vs_analytic']:.6f} uerr={rec['u_max_rel_err']:.6f} "
-          f"y_w={fit['y_wall']:+.4f} H={fit['h']:.4f} "
-          f"({rec['wall_time_s']:.0f}s)", flush=True)
+    print(
+        f"[{name}] ny={ny:3d} u={u_target:.4f} steps={rec['steps']:7d} "
+        f"L2={rec['rel_l2_vs_analytic']:.6f} uerr={rec['u_max_rel_err']:.6f} "
+        f"y_w={fit['y_wall']:+.4f} H={fit['h']:.4f} "
+        f"({rec['wall_time_s']:.0f}s)",
+        flush=True,
+    )
     return rec
 
 
@@ -168,8 +169,7 @@ def r2_audit() -> dict:
     r2 = json.loads(path.read_text())
     steady = r2["steady"]
     claimed = {
-        arm: r2.get("grid_order", {}).get(arm, {}).get("observed_order_17_25")
-        for arm in ARMS
+        arm: r2.get("grid_order", {}).get(arm, {}).get("observed_order_17_25") for arm in ARMS
     }
     rows = []
     per_arm = {}
@@ -183,15 +183,20 @@ def r2_audit() -> dict:
             for metric in ("rel_l2_vs_analytic", "u_max_rel_err"):
                 p = observed_order(a[metric], b[metric], a["H"], b["H"])
                 p_log2_assumed = float(np.log2(a[metric] / b[metric]))
-                pairs.append({
-                    "metric": metric,
-                    "ny_coarse": a["ny"], "ny_fine": b["ny"],
-                    "H_coarse": a["H"], "H_fine": b["H"],
-                    "h_ratio": b["H"] / a["H"],
-                    "err_coarse": a[metric], "err_fine": b[metric],
-                    "order_resolution_explicit": p,
-                    "order_if_refinement_assumed_2x": p_log2_assumed,
-                })
+                pairs.append(
+                    {
+                        "metric": metric,
+                        "ny_coarse": a["ny"],
+                        "ny_fine": b["ny"],
+                        "H_coarse": a["H"],
+                        "H_fine": b["H"],
+                        "h_ratio": b["H"] / a["H"],
+                        "err_coarse": a[metric],
+                        "err_fine": b[metric],
+                        "order_resolution_explicit": p,
+                        "order_if_refinement_assumed_2x": p_log2_assumed,
+                    }
+                )
         per_arm[arm] = {
             "ny": [v["ny"] for v in sel],
             "claimed_order_17_25": claimed[arm],
@@ -202,9 +207,11 @@ def r2_audit() -> dict:
     rep["diagnosis"] = {
         "log2_to_true_scale": float(np.log(2.0) / np.log(24.0 / 16.0)),
         "claimed_reproduced_from_log2": {
-            arm: next(p["order_if_refinement_assumed_2x"]
-                      for p in per_arm[arm]["pairs"]
-                      if p["metric"] == "rel_l2_vs_analytic")
+            arm: next(
+                p["order_if_refinement_assumed_2x"]
+                for p in per_arm[arm]["pairs"]
+                if p["metric"] == "rel_l2_vs_analytic"
+            )
             for arm in ARMS
         },
         "claimed_recorded": claimed,
@@ -219,26 +226,29 @@ def r2_audit() -> dict:
 def grid_line(rows: dict) -> dict:
     out = {}
     for arm in ARMS:
-        sel = sorted((r for r in rows.values()
-                      if r["arm"] == arm and r["u_max_target"] == 0.01),
-                     key=lambda r: r["ny"])
+        sel = sorted(
+            (r for r in rows.values() if r["arm"] == arm and r["u_max_target"] == 0.01),
+            key=lambda r: r["ny"],
+        )
         if len(sel) < 2:
             continue
         pairs = []
         for a, b in zip(sel, sel[1:]):
-            pairs.append({
-                "ny": [a["ny"], b["ny"]],
-                "h": [a["h"], b["h"]],
-                "h_ratio": b["h"] / a["h"],
-                "rel_l2": [a["rel_l2_vs_analytic"], b["rel_l2_vs_analytic"]],
-                "order_rel_l2": observed_order(a["rel_l2_vs_analytic"],
-                                               b["rel_l2_vs_analytic"],
-                                               a["h"], b["h"]),
-                "u_max_err": [a["u_max_rel_err"], b["u_max_rel_err"]],
-                "order_u_max": observed_order(a["u_max_rel_err"],
-                                              b["u_max_rel_err"],
-                                              a["h"], b["h"]),
-            })
+            pairs.append(
+                {
+                    "ny": [a["ny"], b["ny"]],
+                    "h": [a["h"], b["h"]],
+                    "h_ratio": b["h"] / a["h"],
+                    "rel_l2": [a["rel_l2_vs_analytic"], b["rel_l2_vs_analytic"]],
+                    "order_rel_l2": observed_order(
+                        a["rel_l2_vs_analytic"], b["rel_l2_vs_analytic"], a["h"], b["h"]
+                    ),
+                    "u_max_err": [a["u_max_rel_err"], b["u_max_rel_err"]],
+                    "order_u_max": observed_order(
+                        a["u_max_rel_err"], b["u_max_rel_err"], a["h"], b["h"]
+                    ),
+                }
+            )
         # log-log least-squares over all points (slope = -p)
         h = np.array([r["h"] for r in sel])
         e_l2 = np.array([r["rel_l2_vs_analytic"] for r in sel])
@@ -262,10 +272,14 @@ def grid_line(rows: dict) -> dict:
 def mach_line(rows: dict) -> dict:
     out = {}
     for arm in ARMS:
-        sel = sorted((r for r in rows.values()
-                      if r["arm"] == arm and r["ny"] == 33
-                      and r["u_max_target"] != 0.02),
-                     key=lambda r: r["u_max_target"])
+        sel = sorted(
+            (
+                r
+                for r in rows.values()
+                if r["arm"] == arm and r["ny"] == 33 and r["u_max_target"] != 0.02
+            ),
+            key=lambda r: r["u_max_target"],
+        )
         if len(sel) < 3:
             continue
         u = np.array([r["u_max_target"] for r in sel])
@@ -301,16 +315,20 @@ def r2_cross_check(rows: dict) -> dict:
     for (arm, ny), k in keys.items():
         if k not in r2:
             continue
-        mine = next((r for r in rows.values()
-                     if r["arm"] == arm and r["ny"] == ny
-                     and r["u_max_target"] == 0.02), None)
+        mine = next(
+            (
+                r
+                for r in rows.values()
+                if r["arm"] == arm and r["ny"] == ny and r["u_max_target"] == 0.02
+            ),
+            None,
+        )
         if mine is None:
             continue
         out[f"{arm}|ny{ny}"] = {
             "r2_rel_l2": r2[k]["rel_l2_vs_analytic"],
             "r3_rel_l2": mine["rel_l2_vs_analytic"],
-            "rel_diff": abs(mine["rel_l2_vs_analytic"]
-                            - r2[k]["rel_l2_vs_analytic"])
+            "rel_diff": abs(mine["rel_l2_vs_analytic"] - r2[k]["rel_l2_vs_analytic"])
             / r2[k]["rel_l2_vs_analytic"],
             "r2_u_max_rel_err": r2[k]["u_max_rel_err"],
             "r3_u_max_rel_err": mine["u_max_rel_err"],
@@ -350,23 +368,25 @@ def wall_offset_orders(rows: dict) -> dict:
     """
     out = {}
     for arm in ARMS:
-        sel = sorted((r for r in rows.values()
-                      if r["arm"] == arm and r["u_max_target"] == 0.01),
-                     key=lambda r: r["ny"])
+        sel = sorted(
+            (r for r in rows.values() if r["arm"] == arm and r["u_max_target"] == 0.01),
+            key=lambda r: r["ny"],
+        )
         if len(sel) < 2:
             continue
         h = np.array([r["h"] for r in sel])
-        dy = np.array([abs(r["wall_origin_fit"]["y_wall"]
-                           - r["wall_origin_nominal"]) for r in sel])
+        dy = np.array([abs(r["wall_origin_fit"]["y_wall"] - r["wall_origin_nominal"]) for r in sel])
         dh = np.array([abs(r["wall_origin_fit"]["h"] - r["h_nominal"]) for r in sel])
         pairs = []
         for i in range(len(sel) - 1):
             if dy[i] > 0.0 and dy[i + 1] > 0.0:
-                pairs.append({
-                    "ny": [sel[i]["ny"], sel[i + 1]["ny"]],
-                    "abs_y_wall_dev": [dy[i], dy[i + 1]],
-                    "order": observed_order(dy[i], dy[i + 1], h[i], h[i + 1]),
-                })
+                pairs.append(
+                    {
+                        "ny": [sel[i]["ny"], sel[i + 1]["ny"]],
+                        "abs_y_wall_dev": [dy[i], dy[i + 1]],
+                        "order": observed_order(dy[i], dy[i + 1], h[i], h[i + 1]),
+                    }
+                )
         out[arm] = {
             "ny": [r["ny"] for r in sel],
             "h": h.tolist(),
@@ -378,9 +398,10 @@ def wall_offset_orders(rows: dict) -> dict:
             "pairs": pairs,
             "regression_order_abs_y_wall_dev": (
                 float(-np.polyfit(np.log(h), np.log(np.maximum(dy, 1e-300)), 1)[0])
-                if np.all(dy > 0) else None),
-            "max_rel_l2_fit_residual": max(
-                r["wall_origin_fit"]["rel_l2_residual"] for r in sel),
+                if np.all(dy > 0)
+                else None
+            ),
+            "max_rel_l2_fit_residual": max(r["wall_origin_fit"]["rel_l2_residual"] for r in sel),
         }
     return out
 
@@ -398,11 +419,19 @@ def main() -> dict:
 
     rep = {
         "anchor": "XVAL-LBM-SINGLE-PHASE-PERIODIC-X-PLUS-CONSTANT-DP",
-        "oss": {"repo": "joconnor22/LIFE",
-                "tag": "single-phase-periodic-x-plus-constant-dpdx-driving"},
+        "oss": {
+            "repo": "joconnor22/LIFE",
+            "tag": "single-phase-periodic-x-plus-constant-dpdx-driving",
+        },
         "round": 3,
-        "lattice_units": {"nx": NX, "tau": TAU, "nu": NU, "gate": GATE,
-                          "target_3pct": TARGET_3PCT, "steady_tol": TOL},
+        "lattice_units": {
+            "nx": NX,
+            "tau": TAU,
+            "nu": NU,
+            "gate": GATE,
+            "target_3pct": TARGET_3PCT,
+            "steady_tol": TOL,
+        },
         "execution": {
             "python": platform.python_version(),
             "numpy": np.__version__,
@@ -426,9 +455,10 @@ def main() -> dict:
         "worst_arm": max(rows, key=lambda k: rows[k]["rel_l2_vs_analytic"]),
         "all_rows_pass_gate": bool(worst_l2 < GATE),
         "all_rows_within_3pct": bool(worst_l2 < TARGET_3PCT),
-        "grid_order_regression": {k: {"rel_l2": v["regression_order_rel_l2"],
-                                      "u_max": v["regression_order_u_max"]}
-                                  for k, v in grids.items()},
+        "grid_order_regression": {
+            k: {"rel_l2": v["regression_order_rel_l2"], "u_max": v["regression_order_u_max"]}
+            for k, v in grids.items()
+        },
         "min_grid_order_pair": {
             k: min(min(p["order_rel_l2"], p["order_u_max"]) for p in v["pairs"])
             for k, v in grids.items()
@@ -437,11 +467,13 @@ def main() -> dict:
             k: v["claimed_order_17_25"] for k, v in rep["r2_audit"].get("r2", {}).items()
         },
         "r2_diagnosis": rep["r2_audit"].get("diagnosis"),
-        "wall_offset_order": {k: v["regression_order_abs_y_wall_dev"]
-                               for k, v in rep["wall_offset_orders"].items()},
-        "mach_exponent": {k: {"u_max_err": v["exponent_u_max_err"],
-                              "rel_l2": v["exponent_rel_l2"]}
-                          for k, v in rep["mach_line"].items()},
+        "wall_offset_order": {
+            k: v["regression_order_abs_y_wall_dev"] for k, v in rep["wall_offset_orders"].items()
+        },
+        "mach_exponent": {
+            k: {"u_max_err": v["exponent_u_max_err"], "rel_l2": v["exponent_rel_l2"]}
+            for k, v in rep["mach_line"].items()
+        },
     }
     rep["execution"]["wall_time_s"] = time.time() - t_start
     (OUT / "xval_life_periodic_dpdx_r3.json").write_text(json.dumps(rep, indent=1))

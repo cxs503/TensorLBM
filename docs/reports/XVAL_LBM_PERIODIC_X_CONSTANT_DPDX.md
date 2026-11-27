@@ -1,5 +1,7 @@
 # XVAL：本仓 vs joconnor22/LIFE `single-phase-periodic-x-plus-constant-dpdx-driving`
 
+> Repository migration note: the current case and replay commands are in [benchmarks/cross_validation/periodic_channel_dpdx](../../benchmarks/cross_validation/periodic_channel_dpdx/). Original mission paths below identify the archived revision. Historical scientific verdicts are not new acceptance.
+
 锚点 `XVAL-LBM-SINGLE-PHASE-PERIODIC-X-PLUS-CONSTANT-DP`｜轮次 1｜OSS 版本 v1.0.3（2020-06-10）｜GPL-3.0：只转写算法，不复制代码。
 
 ## ① 问题与 ref 出处

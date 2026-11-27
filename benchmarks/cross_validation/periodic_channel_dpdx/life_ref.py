@@ -64,8 +64,17 @@ import numpy as np
 
 # OSS lattice, ``src/Grid.cpp:1248-1249`` verbatim (index order preserved)
 LIFE_C = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1))
-LIFE_W = (4.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0,
-          1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0)
+LIFE_W = (
+    4.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 36.0,
+    1.0 / 36.0,
+    1.0 / 36.0,
+    1.0 / 36.0,
+)
 LIFE_OPP = (0, 2, 1, 4, 3, 6, 5, 8, 7)
 
 _CI = np.array(LIFE_C, dtype=np.int64)
@@ -78,12 +87,11 @@ CS2 = 1.0 / 3.0
 class LifeKernel2D:
     """``eFluid`` in x (periodic) + ``eWall`` in y + constant ``dpdx`` body force."""
 
-    def __init__(self, nx: int, ny: int, tau: float, force: float = 0.0,
-                 rho0: float = 1.0) -> None:
+    def __init__(self, nx: int, ny: int, tau: float, force: float = 0.0, rho0: float = 1.0) -> None:
         self.nx, self.ny = int(nx), int(ny)
         self.tau = float(tau)
         self.omega = 1.0 / self.tau
-        self.force = float(force)          # lattice force density, FROZEN (Grid.cpp:1042)
+        self.force = float(force)  # lattice force density, FROZEN (Grid.cpp:1042)
         self.rho0 = float(rho0)
         n = (self.nx, self.ny)
         # Grid.cpp:1010-1035 (uniform initial velocity = 0) then
@@ -101,18 +109,26 @@ class LifeKernel2D:
         ux, uy = u[0], u[1]
         cu = _CF[:, 0, None, None] * ux[None] + _CF[:, 1, None, None] * uy[None]
         cx2, cy2 = _CF[:, 0, None, None] ** 2, _CF[:, 1, None, None] ** 2
-        return rho[None] * _W[:, None, None] * (
-            1.0 + 3.0 * cu
-            + 4.5 * (ux[None] ** 2 * (cx2 - CS2) + uy[None] ** 2 * (cy2 - CS2))
-            + 9.0 * _CF[:, 0, None, None] * _CF[:, 1, None, None] * ux[None] * uy[None]
+        return (
+            rho[None]
+            * _W[:, None, None]
+            * (
+                1.0
+                + 3.0 * cu
+                + 4.5 * (ux[None] ** 2 * (cx2 - CS2) + uy[None] ** 2 * (cy2 - CS2))
+                + 9.0 * _CF[:, 0, None, None] * _CF[:, 1, None, None] * ux[None] * uy[None]
+            )
         )
 
     def _lattice_force(self, u: np.ndarray) -> np.ndarray:
         """``Grid.cpp:274-285`` — ``3 w_i [(c-u) + 3 c (c.u)] . F``, ``F`` frozen."""
         fx, ux, uy = self.force, u[0], u[1]
         cu = _CF[:, 0, None, None] * ux[None] + _CF[:, 1, None, None] * uy[None]
-        return 3.0 * _W[:, None, None] * (
-            fx * (_CF[:, 0, None, None] - ux[None] + 3.0 * _CF[:, 0, None, None] * cu))
+        return (
+            3.0
+            * _W[:, None, None]
+            * (fx * (_CF[:, 0, None, None] - ux[None] + 3.0 * _CF[:, 0, None, None] * cu))
+        )
 
     def _macroscopic(self, f: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """``Grid.cpp:287-299`` — ``u = (sum(c f) + F/2)/rho``."""
@@ -135,15 +151,15 @@ class LifeKernel2D:
     def _regularised_bc(self, f: np.ndarray, row: int, normal: int) -> None:
         """``Grid.cpp`` ``regularisedBC`` — axis-aligned, non-corner branch."""
         u_n = self.u_n
-        u_n[:, :, row] = 0.0                      # eWall: u = 0
-        sel_in = _CI[:, 1] == -normal             # c . n < 0
+        u_n[:, :, row] = 0.0  # eWall: u = 0
+        sel_in = _CI[:, 1] == -normal  # c . n < 0
         sel_zero = _CI[:, 1] == 0
         fplus = f[sel_in, :, row].sum(axis=0)
         fzero = f[sel_zero, :, row].sum(axis=0)
         rho_w = (2.0 * fplus + fzero) / (1.0 - normal * u_n[1, :, row])
         self.rho_n[:, row] = rho_w
         feq = _W[:, None] * rho_w[None, :]
-        sel_unk = _CI[:, 1] == normal             # unknown: they would come from the wall
+        sel_unk = _CI[:, 1] == normal  # unknown: they would come from the wall
         f[sel_unk, :, row] = feq[sel_unk] + (f[_OPP[sel_unk], :, row] - feq[_OPP[sel_unk]])
         fneq = f[:, :, row] - feq
         sxx = (_CF[:, 0] ** 2) @ fneq
@@ -186,8 +202,9 @@ class LifeKernel2D:
         u = self.profile()
         return float(np.linalg.norm(u - u_ana) / np.linalg.norm(u_ana))
 
-    def run_until_steady(self, *, tol: float = 1e-11, max_steps: int = 400_000,
-                         check_every: int = 200) -> dict:
+    def run_until_steady(
+        self, *, tol: float = 1e-11, max_steps: int = 400_000, check_every: int = 200
+    ) -> dict:
         prev = self.profile()
         n = 0
         delta = float("nan")

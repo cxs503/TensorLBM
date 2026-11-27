@@ -1,0 +1,50 @@
+{
+  "scope": "Periodic pressure-gradient planar Poiseuille: historical rounds R1\u2013R4 steady and transient comparisons with LIFE method and analytic channel solution. Archival verdicts are not current acceptance.",
+  "criteria": {
+    "R3": "Archived steady relative L2 comparison against current analytic reference, 15% owner gate and 3% target; observed convergence order and mass drift reported separately.",
+    "R4": "Archived transient relative L2 normalized by steady profile, 15% gate and 3% target; auxiliary centerline, mass drift, order and offset metrics per run_xval_r4.py.",
+    "current_acceptance": "Not evaluated by relocation."
+  },
+  "source": [
+    "benchmarks/cross_validation/periodic_channel_dpdx/run_xval.py",
+    "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r2.py",
+    "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r3.py",
+    "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r4.py",
+    "benchmarks/cross_validation/periodic_channel_dpdx/life_ref.py",
+    "src/tensorlbm/periodic_channel_dpdx.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r3.py",
+    "benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r4.py"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/periodic_channel_dpdx/README.md",
+    "docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX.md",
+    "docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX_R3.md",
+    "docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX_R4.md",
+    "docs/reports/M23997_REOPEN_R3_DELIVERY_CONFIRM.md"
+  ],
+  "reference_files": [
+    "docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX.md",
+    "docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX_R4.md",
+    "benchmarks/cross_validation/periodic_channel_dpdx/life_ref.py"
+  ],
+  "results": [
+    "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx.json",
+    "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r2.json",
+    "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r3.json",
+    "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r4.json",
+    "benchmarks/cross_validation/periodic_channel_dpdx/out/xval_life_periodic_dpdx_r4_quick.json"
+  ],
+  "evidence": [
+    "docs/reports/figures/xval_periodic_dpdx_r3_grid_order.png",
+    "docs/reports/figures/xval_periodic_dpdx_r3_mach_wall.png",
+    "docs/reports/figures/xval_periodic_dpdx_r3_wall_origin.png",
+    "docs/reports/figures/xval_periodic_dpdx_r4_growth.png",
+    "docs/reports/figures/xval_periodic_dpdx_r4_offset.png",
+    "docs/reports/figures/xval_periodic_dpdx_r4_order.png",
+    "docs/reports/figures/xval_periodic_dpdx_r4_profiles.png",
+    "benchmarks/cross_validation/periodic_channel_dpdx/out/report_payload_r3.json",
+    "benchmarks/cross_validation/periodic_channel_dpdx/out/report_payload_r4.json"
+  ]
+}

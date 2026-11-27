@@ -39,7 +39,7 @@ TAU = 0.5375
 NU = (TAU - 0.5) / 3.0
 GATE = 0.15
 R2_ARTIFACT = (pathlib.Path(__file__).resolve().parents[1]
-               / "xval" / "xval_lbm_periodic_dpdx" / "out"
+               / "benchmarks" / "cross_validation" / "periodic_channel_dpdx" / "out"
                / "xval_life_periodic_dpdx_r2.json")
 
 
@@ -154,7 +154,7 @@ def test_second_order_convergence_between_two_resolutions():
 
     Two points only -- enough to fail an order loss (the round-2 report claimed
     1.15), not enough to certify the asymptotic rate; the five-point sweep
-    lives in ``xval/xval_lbm_periodic_dpdx/run_xval_r3.py``.
+    lives in ``benchmarks/cross_validation/periodic_channel_dpdx/run_xval_r3.py``.
     """
     ch_a, info_a = steady(9, 0.01)
     ch_b, info_b = steady(17, 0.01)
