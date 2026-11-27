@@ -63,7 +63,7 @@ from tensorlbm.nebb_bodyforce import (  # noqa: E402
 )
 
 ANCHOR = "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S"
-OSS_AUDIT_JSON = _REPO / "xval" / "oss_vivsim_d2q9_reference_m17963.json"
+OSS_AUDIT_JSON = _REPO / "docs" / "board_audit" / "m17963" / "rerun" / "xval_nebb_bodyforce_driver.json"
 
 # Pre-declared thresholds (NOT tuned after seeing results)
 OWNER_THRESHOLD = 0.15
@@ -209,7 +209,7 @@ def main(argv=None) -> int:
         oss_ny10 = oss_raw["runs"]["vivsim_bgk_edm"]
         oss = {
             "arm": "oss_vivsim_d2q9",
-            "source": "board-audit rerun m17963, in-repo copy xval/oss_vivsim_d2q9_reference_m17963.json (sha256 c62ff2bd...f2c197; jax NOT_RUN here)",
+            "source": "board-audit rerun m17963, in-repo copy docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json (sha256 c62ff2bd...f2c197; jax NOT_RUN here)",
             "u_max": oss_ny10["umax"],
             "u_max_analytic": oss_ny10["umax_analytic"],
             "u_max_rel_err": oss_ny10["umax_rel_err"],

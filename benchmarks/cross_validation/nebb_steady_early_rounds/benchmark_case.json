@@ -1,0 +1,36 @@
+{
+  "scope": "Archive-only early steady NEBB Poiseuille comparison, not the existing transient CPU case. Original m17963 audit recorded a failed predeclared metric; a later repair report is retained separately and not promoted. The R3 tool continues to read exactly the same reference bytes. Native JAX and current full scientific acceptance are not evaluated.",
+  "criteria": {
+    "original_predeclared_max_interior_relative_error_pct_strictly_below": 15.0,
+    "source": "docs/board_audit/m17963/AUDIT_m17759.md",
+    "note": "Recorded original gate; do not reinterpret later repair claims as fresh pass."
+  },
+  "source": [
+    "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.py",
+    "development/verification/nebb_steady_early_rounds/make_xval_figure.py",
+    "tools/nebb_bodyforce_xval.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/cross_validation/nebb_steady_early_rounds/README.md",
+    "development/verification/nebb_steady_early_rounds/README.md",
+    "docs/board_audit/m17963/rerun/REPORT_XVAL_NEBB_BODYFORCE.md",
+    "docs/board_audit/m17963/rerun/DIFF_OSS_VS_TENSORLBM.md",
+    "development/verification/nebb_steady_early_rounds/REPORT_XVAL_NEBB_BODYFORCE.md",
+    "docs/board_audit/m17963/AUDIT_m17759.md"
+  ],
+  "reference_files": [
+    "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json"
+  ],
+  "results": [
+    "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json"
+  ],
+  "evidence": [
+    "development/verification/nebb_steady_early_rounds/xval_figure_b64.json",
+    "development/verification/nebb_steady_early_rounds/archived_nebb_profile.png",
+    "docs/board_audit/m17963/audit_numbers.json",
+    "docs/board_audit/m17963/fig_m17963_metrics.png",
+    "docs/board_audit/m17963/fig_m17963_profile.png",
+    "docs/architecture/migrations/nebb-early-rounds-and-sparse-audits-2026-11-27.json"
+  ]
+}

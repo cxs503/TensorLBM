@@ -46,6 +46,13 @@ RETIRED_ROOT_DIRECTORIES = {
     "tmp",
 }
 RETIRED_FILES = {
+    "xval/DIFF_OSS_VS_TENSORLBM.md",
+    "xval/xval_nebb_bodyforce_driver.py",
+    "xval/xval_nebb_bodyforce_driver.json",
+    "xval/oss_vivsim_d2q9_reference_m17963.json",
+    "xval/REPORT_XVAL_NEBB_BODYFORCE.md",
+    "xval/make_xval_figure.py",
+    "xval/xval_figure_b64.json",
     "xval/xval_phasefield_mcmp_poiseuille.py",
     "xval/xval_fingering_dynamics.py",
     "xval/xval_lbmconfig_single_point_config.py",
@@ -56,6 +63,8 @@ RETIRED_FILES = {
     "src/tensorlbm/dg_verification.py",
 }
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
+    ("docs", "audit_m18748"),
+    ("docs", "audit_m17677"),
     ("xval", "XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF"),
     ("docs", "audit_m17835"),
     ("docs", "audit_m17592"),

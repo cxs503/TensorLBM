@@ -1,0 +1,398 @@
+{
+  "scope": "Consolidate four byte-identical loose NEBB paths, move three unique early NEBB artifacts and two complete historical sparse/compressed audit directories; preserve original reference and data.",
+  "source_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 72,
+    "xval_second_level_count": 16,
+    "xval_loose_files": 16
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 70,
+    "xval_second_level_count": 16,
+    "xval_loose_files": 9
+  },
+  "retired_second_level_directories": [
+    "docs/audit_m18748",
+    "docs/audit_m17677"
+  ],
+  "retired_files": [
+    "xval/DIFF_OSS_VS_TENSORLBM.md",
+    "xval/xval_nebb_bodyforce_driver.py",
+    "xval/xval_nebb_bodyforce_driver.json",
+    "xval/oss_vivsim_d2q9_reference_m17963.json",
+    "xval/REPORT_XVAL_NEBB_BODYFORCE.md",
+    "xval/make_xval_figure.py",
+    "xval/xval_figure_b64.json"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/DIFF_OSS_VS_TENSORLBM.md",
+      "new_path": "docs/board_audit/m17963/rerun/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "ae5019af3efa960b39e5e454f0bb3e596530880e",
+      "original_sha256": "daae85d6b63bf4ccbe9daa3152e2f03277a48eba8fdfc1c828959786ce966d6a",
+      "size_bytes": 2066,
+      "disposition": "verified_identical_duplicate_consolidation",
+      "byte_identical": true,
+      "current_sha256": "daae85d6b63bf4ccbe9daa3152e2f03277a48eba8fdfc1c828959786ce966d6a",
+      "current_size_bytes": 2066
+    },
+    {
+      "old_path": "xval/xval_nebb_bodyforce_driver.py",
+      "new_path": "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.py",
+      "git_mode": "100644",
+      "original_git_blob": "09a0382165220e8c132472893739e5b15530fe57",
+      "original_sha256": "89ef4905886ee2ed4335b14cb676d6b0c60e268839fe0c2480323a419d8d7614",
+      "size_bytes": 14629,
+      "disposition": "verified_identical_duplicate_consolidation",
+      "byte_identical": true,
+      "current_sha256": "89ef4905886ee2ed4335b14cb676d6b0c60e268839fe0c2480323a419d8d7614",
+      "current_size_bytes": 14629
+    },
+    {
+      "old_path": "xval/xval_nebb_bodyforce_driver.json",
+      "new_path": "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json",
+      "git_mode": "100644",
+      "original_git_blob": "3a37398ffae007d09520a14785cf9704fab6d711",
+      "original_sha256": "c62ff2bd899b4a4e0aa00b5a939c15742e7bfdb18b110dac40066bcc39f2c197",
+      "size_bytes": 2695,
+      "disposition": "verified_identical_duplicate_consolidation",
+      "byte_identical": true,
+      "current_sha256": "c62ff2bd899b4a4e0aa00b5a939c15742e7bfdb18b110dac40066bcc39f2c197",
+      "current_size_bytes": 2695
+    },
+    {
+      "old_path": "xval/oss_vivsim_d2q9_reference_m17963.json",
+      "new_path": "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json",
+      "git_mode": "100644",
+      "original_git_blob": "3a37398ffae007d09520a14785cf9704fab6d711",
+      "original_sha256": "c62ff2bd899b4a4e0aa00b5a939c15742e7bfdb18b110dac40066bcc39f2c197",
+      "size_bytes": 2695,
+      "disposition": "verified_identical_duplicate_consolidation",
+      "byte_identical": true,
+      "current_sha256": "c62ff2bd899b4a4e0aa00b5a939c15742e7bfdb18b110dac40066bcc39f2c197",
+      "current_size_bytes": 2695
+    },
+    {
+      "old_path": "xval/REPORT_XVAL_NEBB_BODYFORCE.md",
+      "new_path": "development/verification/nebb_steady_early_rounds/REPORT_XVAL_NEBB_BODYFORCE.md",
+      "git_mode": "100644",
+      "original_git_blob": "b874943202390923b87634f535d7ea44b7aa5c02",
+      "original_sha256": "23fb666084cd8755d85025fa6b0df196ca34f26641c5c87026564f1c5e3eb958",
+      "size_bytes": 9953,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "23fb666084cd8755d85025fa6b0df196ca34f26641c5c87026564f1c5e3eb958",
+      "current_size_bytes": 9953
+    },
+    {
+      "old_path": "xval/make_xval_figure.py",
+      "new_path": "development/verification/nebb_steady_early_rounds/make_xval_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "471a9258a6390b0857e4315f5f0e362173761cb8",
+      "original_sha256": "35c1db3f56be39953c80507b0c52d27218874db4f7f739cc1bbd15ea4b3d05cd",
+      "size_bytes": 2158,
+      "disposition": "move",
+      "byte_identical": false,
+      "current_sha256": "63a81f3137973c9eb2222397c9530de146b76bde118891e203c9024e8daf62f9",
+      "current_size_bytes": 2199,
+      "path_only_replacements": [
+        {
+          "old": "(HERE / \"xval_nebb_bodyforce_driver.json\")",
+          "new": "(HERE.parents[2] / \"docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json\")"
+        }
+      ]
+    },
+    {
+      "old_path": "xval/xval_figure_b64.json",
+      "new_path": "development/verification/nebb_steady_early_rounds/xval_figure_b64.json",
+      "git_mode": "100644",
+      "original_git_blob": "de8b231976dcdd6a0e9798df6eb3567d52740247",
+      "original_sha256": "b699899f9fad663bca036d06775294056bdeb1be9d5a8c977e48ac3d2bf41c62",
+      "size_bytes": 99677,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "b699899f9fad663bca036d06775294056bdeb1be9d5a8c977e48ac3d2bf41c62",
+      "current_size_bytes": 99677
+    },
+    {
+      "old_path": "docs/audit_m18748/AUDIT_m18748.md",
+      "new_path": "development/audit/m18748/AUDIT_m18748.md",
+      "git_mode": "100644",
+      "original_git_blob": "389ffd40e122112ff816f7f85bcca56afd07b7a5",
+      "original_sha256": "77d1304199126f0df707d68f7721268655f59aa986f9c0825dda2bf29b75d8aa",
+      "size_bytes": 10383,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "77d1304199126f0df707d68f7721268655f59aa986f9c0825dda2bf29b75d8aa",
+      "current_size_bytes": 10383
+    },
+    {
+      "old_path": "docs/audit_m18748/land_verdict.py",
+      "new_path": "development/audit/m18748/land_verdict.py",
+      "git_mode": "100644",
+      "original_git_blob": "764a6c4c083aaaa414d8db12539488b1c2e092f3",
+      "original_sha256": "684e2072b8e3a41621240947bcd2e7b24126e9d85a52d322944e7a01827b791b",
+      "size_bytes": 12631,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "684e2072b8e3a41621240947bcd2e7b24126e9d85a52d322944e7a01827b791b",
+      "current_size_bytes": 12631
+    },
+    {
+      "old_path": "docs/audit_m18748/publish_report.py",
+      "new_path": "development/audit/m18748/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "6fad2da1acd98688b6db9767bf21f723148626f7",
+      "original_sha256": "74917bce2ee674b14925cc5bf5e95ce3af3005a94ca11dbb985488d104fe4453",
+      "size_bytes": 12039,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "74917bce2ee674b14925cc5bf5e95ce3af3005a94ca11dbb985488d104fe4453",
+      "current_size_bytes": 12039
+    },
+    {
+      "old_path": "docs/audit_m17677/AUDIT_m17677.md",
+      "new_path": "development/audit/m17677/AUDIT_m17677.md",
+      "git_mode": "100644",
+      "original_git_blob": "1da53c6c4b0ecdbf9b06c6a056808e33d8f2fce2",
+      "original_sha256": "12b5a3b30a11df30e13834472c717e729b8880917aba80c75ce400f3c0b6effa",
+      "size_bytes": 11461,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "12b5a3b30a11df30e13834472c717e729b8880917aba80c75ce400f3c0b6effa",
+      "current_size_bytes": 11461
+    },
+    {
+      "old_path": "docs/audit_m17677/land_verdict.py",
+      "new_path": "development/audit/m17677/land_verdict.py",
+      "git_mode": "100644",
+      "original_git_blob": "faf7e40a3440000df6ce029d2c670d3104995484",
+      "original_sha256": "79946fdcc42a770acceb62f803e974b58b255d5e6ff885b87d9b18ced68eaa30",
+      "size_bytes": 11131,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "79946fdcc42a770acceb62f803e974b58b255d5e6ff885b87d9b18ced68eaa30",
+      "current_size_bytes": 11131
+    },
+    {
+      "old_path": "docs/audit_m17677/publish_report.py",
+      "new_path": "development/audit/m17677/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "de65fe59fb3583461c286fcb80d5089fb51dba57",
+      "original_sha256": "5d1d97b9a029c8e8dc5610bf23b7602291e3ae3af4dc6a02fe5151296a29f7aa",
+      "size_bytes": 3686,
+      "disposition": "move",
+      "byte_identical": true,
+      "current_sha256": "5d1d97b9a029c8e8dc5610bf23b7602291e3ae3af4dc6a02fe5151296a29f7aa",
+      "current_size_bytes": 3686
+    }
+  ],
+  "unchanged_prior_archive": [
+    {
+      "path": "development/audit/m18748/tools/m18748_make_field_figure.py",
+      "git_mode": "100644",
+      "git_blob": "b929e5a03db2634acfd44d85f4d8c810a4a1bcb2",
+      "sha256": "b7d57ada45e3b66a271220a5851f2fa700d3368de0f5ee69b814f9bd58604f95",
+      "size_bytes": 2873
+    },
+    {
+      "path": "development/audit/m18748/tools/m18748_make_figure.py",
+      "git_mode": "100644",
+      "git_blob": "7bf88bb3fd8ac540ffa4ef89ae5b2e835a3f8195",
+      "sha256": "99132908ff0b19e891a6b80c111dc054eeea67a3ff67e0166c044de90b9363c6",
+      "size_bytes": 3197
+    },
+    {
+      "path": "development/audit/m18748/tools/m18748_sparse_sublist_board_audit.py",
+      "git_mode": "100644",
+      "git_blob": "488fb8f73438a77e49457ea895375ab5bba439ad",
+      "sha256": "3c3ae0266ed6070ac8ee1680eb327e6acf95b8b2960a99f15519ad2255afb230",
+      "size_bytes": 19977
+    },
+    {
+      "path": "development/audit/m18748/verdict_m18748.sql",
+      "git_mode": "100644",
+      "git_blob": "4b5c4e899d3f94137bdf63e894a3805bbd416ca6",
+      "sha256": "9ee602e9036a62a47ac9eebb8cad1147061172bc89acf4aecf204e81a7ad8aa4",
+      "size_bytes": 9696
+    },
+    {
+      "path": "development/audit/m17677/tools/m17677_compressed_node_table_audit.py",
+      "git_mode": "100644",
+      "git_blob": "d8bb1309735b2a8c751f8d2c39bd155a74d8d9f5",
+      "sha256": "6b105269e783d1e0753f9c2a69d9bdffc887b533f9c2fd40631a68d68f60af8c",
+      "size_bytes": 31333
+    },
+    {
+      "path": "development/audit/m17677/verdict_m17677.sql",
+      "git_mode": "100644",
+      "git_blob": "f52fa6cb7dc2b637a9dec3d5f7df80919f8877a7",
+      "sha256": "4291b684bdf7a6b4f8475ea8c255dde05875240a1b47c46b147b91d6d6027f42",
+      "size_bytes": 8233
+    }
+  ],
+  "compatibility_edits": [
+    {
+      "path": "tools/nebb_bodyforce_xval.py",
+      "original_sha256": "9cf99982a4fd62aadf74e42c9af15304815066aec5fd1acabdf7b5ae7d5a7c91",
+      "current_sha256": "53d99f893df18adf9402a905922f080fb5af7a7a86e2e46dff8e43f2656331ff",
+      "replacements": [
+        {
+          "old": "_REPO / \"xval\" / \"oss_vivsim_d2q9_reference_m17963.json\"",
+          "new": "_REPO / \"docs\" / \"board_audit\" / \"m17963\" / \"rerun\" / \"xval_nebb_bodyforce_driver.json\""
+        },
+        {
+          "old": "xval/oss_vivsim_d2q9_reference_m17963.json",
+          "new": "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json"
+        }
+      ]
+    },
+    {
+      "path": "src/tensorlbm/nebb_bodyforce.py",
+      "original_sha256": "9cb9a5e956218b3cda0c610edba235f5fcea8a40e508a0fe527f8aeabc5d2f4d",
+      "current_sha256": "3f9d5c8db751954625946d644fbc21783b83e4b4dec18b3be332f4df1611c9e9",
+      "replacements": [
+        {
+          "old": "xval/REPORT_XVAL_NEBB_BODYFORCE.md",
+          "new": "development/verification/nebb_steady_early_rounds/REPORT_XVAL_NEBB_BODYFORCE.md"
+        },
+        {
+          "old": "xval/DIFF_OSS_VS_TENSORLBM.md",
+          "new": "docs/board_audit/m17963/rerun/DIFF_OSS_VS_TENSORLBM.md"
+        }
+      ]
+    },
+    {
+      "path": "src/tensorlbm/boundary/nebb.py",
+      "original_sha256": "97df6bd1941ed15b41992e4ca204fc73052a7e83b7d478f7f9a6cde7212d1458",
+      "current_sha256": "9134c9dfbdb82d4867ff542ad707d73802768a11ca5e1017c94c00271b57e781",
+      "replacements": [
+        {
+          "old": "xval/xval_nebb_bodyforce_driver.py",
+          "new": "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.py"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/cross_validation/compressed_fluid_node_table/benchmark_case.json",
+      "original_sha256": "0566d45650ef70aa6375a0f2247e5671e70df2fcd086a05c687f7e4a8784d980",
+      "current_sha256": "42a2cf8762b313be40bf4e0e4007bd65d9bd914f9538fae12db6682ba3dec6f9"
+    },
+    {
+      "path": "tools/check_repository_layout.py",
+      "original_sha256": "0497609776cb0eaa03fe63183bbeb057b9a0d823882313701e1336df94e2d666",
+      "current_sha256": "237fba62e8bcf9fcaf88518e0b356e09a001c64c287f3a03ba1cd71b9d6c3223"
+    },
+    {
+      "path": "docs/architecture/target_repository_layout.md",
+      "original_sha256": "9de013d6e8d05fdfe041c46a054bd958c6b0cadacc400c1880049c1010aa6ffa",
+      "current_sha256": "87a5a5b382d1143f02dac824bfd78dfe13a13da333bcd59e99d0ab8a51d51a0a"
+    }
+  ],
+  "derived_image": {
+    "source": "development/verification/nebb_steady_early_rounds/xval_figure_b64.json",
+    "target": "development/verification/nebb_steady_early_rounds/archived_nebb_profile.png",
+    "sha256": "36f1bb216481d0534e127f02e6aa28506d54376d1fb40d4d172fb6705e6f8ee9",
+    "size_bytes": 74592,
+    "kind": "exact decode of original base64 PNG; not new scientific output"
+  },
+  "case_ownership": {
+    "nebb": "benchmarks/cross_validation/nebb_steady_early_rounds",
+    "sparse": "benchmarks/cross_validation/sparse_sublist_neighbor_list",
+    "compressed": "benchmarks/cross_validation/compressed_fluid_node_table"
+  },
+  "reference_scan": "Tracked literal and constructed path references scanned; indexed organization search found only TensorLBM references. Historical audit/FSI report strings remain frozen; active tool reference lookup and source citations updated. Published official report URLs unchanged; external bookmark coverage unknown.",
+  "science": {
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false,
+    "gaps": {
+      "nebb": "Earliest deliverable and reference payload retained byte-exact, R3 tool uses exact data; independent audit failed predeclared gate, later repair report distinct. Remaining later loose NEBB items, R4-R7 directory and native JAX/GPU validation not moved or declared accepted.",
+      "sparse": "Original preregistration, frozen result and archived audit retained; canonical import and independent Fortran execution unresolved. Original audit-specific raw JSON and figures not recovered.",
+      "compressed": "Independent historical audit kept distinct from already registered historical and later CPU result. Original audit-specific raw output not located. No current scientific repro."
+    }
+  },
+  "prior_compressed_contract": {
+    "scope": "D2Q9 compressed neighbour-table versus dense control and analytic plane-channel permeability. The historical campaign translated the OpenLBMPM indexing semantics and did not execute the external CUDA solver.",
+    "criteria": {
+      "primary_analytic_error_percent_strictly_below": 15.0,
+      "representation_relative_error_strictly_below": 1e-08,
+      "admitted_mach_number_upper_bound": 0.1
+    },
+    "results": [
+      "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/results.json",
+      "benchmarks/cross_validation/compressed_fluid_node_table/evidence/2026-11-25-cpu-replay.json"
+    ],
+    "source": [
+      "benchmarks/cross_validation/compressed_fluid_node_table/run_xval.py",
+      "src/tensorlbm/porous/fluid_node_table.py"
+    ],
+    "config": [
+      "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json"
+    ]
+  },
+  "gaps_from_actual_main": {
+    "nebb_core_mass_test": {
+      "test": "tests/test_nebb_bodyforce_force_corrected.py::test_core_path_nebb_wall_option_is_wired",
+      "observed_absolute_mass_error": 3.491210021078217e-08,
+      "required_strict_upper_bound": 1e-09,
+      "base_suite": "57 passed, 1 failed",
+      "disposition": "No numerical edits or test relaxations. Loose archival duplicate/input-path migration only; do not retire the later NEBB active directory or claim full acceptance.",
+      "candidate_suite": "57 passed, one failed, exact same absolute mass error 3.491210021078217e-8 vs 1e-9 bound"
+    }
+  },
+  "previous_main_recheck": {
+    "merged_pr": 3071,
+    "actual_main": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+    "actual_tree": "d52441cf4c81c58c8b4f542e91eef65cbcfbbe70",
+    "matches_prior_tested_tree": true,
+    "actual_main_local_governance_tests_passed": 117,
+    "remote_pr_head_checks": "14 completed success, two native jobs test/platform-test queued; validation matrix workflow not present for this scope. Actual merged commit connector returned no check records; no pass inferred. Independent merge observed, not initiated by this migration run."
+  },
+  "remaining_loose_files": [
+    "xval/DIFF_OSS_VS_TENSORLBM_ROUND2.md",
+    "xval/REPORT_XVAL_NEBB_BODYFORCE_R2.md",
+    "xval/REPORT_XVAL_NEBB_BODYFORCE_R3.md",
+    "xval/insert_verdict_r2.sql",
+    "xval/make_xval_figure_r2.py",
+    "xval/probe_real_repo_channel.json",
+    "xval/probe_real_repo_channel.py",
+    "xval/xval_nebb_bodyforce_driver_r2.json",
+    "xval/xval_nebb_bodyforce_driver_r2.py"
+  ],
+  "remaining_disposition": "Method-selection diff belongs to the separate method-selection campaign. Later NEBB round-2/3 paths and all R4–R7 remain in place: actual main core mass-gate failure; the older R2 renderer also points to an external sibling mission worktree. No replacement with fake raw data or scientific threshold relaxation.",
+  "verification": [
+    "13 original paths mapped to 12 distinct retained destinations. Four entries verified byte-identical in original independent audit snapshot (three distinct Git blobs); 8 other moves byte-identical and the one figure renderer adjusted only its data input path, reversible to exact original bytes. Both source files changed docstrings only, normalized ASTs identical. Existing six archived auditor assets preserved. All migrated and derived assets accessible from registry entries; previous compressed case criteria, scope, source, config and results unchanged.",
+    "Actual R3 tool --help identical before/after. Imported the real tool without invoking main; resolved same JSON to original m17963 independent audit snapshot, SHA-256 c62ff2bd899b4a4e0aa00b5a939c15742e7bfdb18b110dac40066bcc39f2c197. Original historical figure base64 decoded exactly; same-environment before/after isolated renderer produced byte-identical PNG cf448203cc1395875f2434ce6fa73a9c6dcbacc60fad552b0280632ad758f9c9 and JSON 83e162e460f2fe28d14cb08833e4a1e824de33f739b7e83eaf056dc3a39754aa from original measured data, no new scientific runs. Regenerated figures are not substituted for the historical PNG.",
+    "Local candidate governance 118 tests passed (20+62+7+3+26); registry 251, manuals 35 (33 PDF and 33 Word), source-authority 33 explicit existing references, generated status views current, machine pass/fail/unknown 1/19/44 unchanged, 0 hard and 15 existing soft findings. Ruff 3021/3023 findings, 2195/2195 format, 0 invalid syntax.",
+    "Real CPU Torch targeted tests: NEBB suite 57 passed / 1 failed before and after, same pre-existing mass-gate numerical error; porous table and Darcy layout suites 28 passed. No mock or test criterion changed; candidate remains draft pending remote applicable checks and independent triage of the mass-gate failure. No full scientific repro."
+  ]
+}
