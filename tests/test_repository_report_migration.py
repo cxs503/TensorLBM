@@ -1103,6 +1103,35 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn("cpu_reference", re400)
         self.assertIn("sdaa_short_run", re400)
 
+    def test_cavity_three_way_archive_preserves_original_objects_and_gap(self):
+        ledger_path = LEDGER_PATH.parent / "cavity-three-way-archive-2026-11-27.json"
+        ledger = json.loads(ledger_path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            paths = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                     if row["verification"] == ledger_path.relative_to(REPO).as_posix()}
+        self.assertEqual(paths, {entry["old_path"]: entry["new_path"] for entry in ledger["entries"]})
+        self.assertEqual(len(paths), 14)
+        for entry in ledger["entries"]:
+            with self.subTest(path=entry["new_path"]):
+                self.assert_fingerprint(
+                    REPO / entry["new_path"], entry["original_sha256"], entry["size_bytes"],
+                )
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+                ).split()
+                self.assertEqual(index[:2], [entry["git_mode"], entry["original_git_blob"]])
+                self.assertFalse((REPO / entry["old_path"]).exists())
+        self.assertFalse((REPO / ledger["retired_second_level_directories"][0]).exists())
+        self.assertEqual(len(ledger["evidence_gaps"]["not_retrievable_as_tracked_objects_in_fetched_refs"]), 7)
+        self.assertFalse(ledger["science"]["rerun_performed"])
+        self.assertFalse(ledger["archived_comparison"]["verdict"]["inter_tool_pass"])
+        case_readme = REPO / "benchmarks/verified/cavity/re100/README.md"
+        self.assertIn("benchmarks/verified/cavity/re100/run.py", case_readme.read_text())
+        index = REPO / "benchmarks/cross_validation/cavity_three_way/README.md"
+        self.assertIn("../../../cross_validation/cavity_three_way/README.md", case_readme.read_text())
+        for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+            self.assertTrue((index.parent / link).is_file(), link)
+
     def test_poiseuille_sdaa_evidence_preserves_bytes_links_and_scope(self):
         ledger_path = LEDGER_PATH.parent / "poiseuille-channel-duct-pipe-sdaa-2026-11-22.json"
         entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]

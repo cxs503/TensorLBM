@@ -1,0 +1,277 @@
+{
+  "scope": "Retire the historical XVAL-LBM-CAVITY directory without changing the numerical methods, shim, historical report or its original comparison result. Formal Re=100 case and manual keep stable paths.",
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "prerequisite": "#3048 exact candidate; not merged at creation",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "BB",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 42
+  },
+  "candidate_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 42
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 41
+  },
+  "retired_second_level_directories": [
+    "xval/XVAL-LBM-CAVITY"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/METHOD_SURVEY.md",
+      "new_path": "development/verification/cavity_three_way/METHOD_SURVEY.md",
+      "git_mode": "100644",
+      "original_git_blob": "60a0f91905df5e50070c3e01e3d5575999fd18fc",
+      "original_sha256": "534abdf8cbdf555c140c07f9082a821027025e5b6569df2886f8f8c267fd6d65",
+      "size_bytes": 8749,
+      "current_sha256": "534abdf8cbdf555c140c07f9082a821027025e5b6569df2886f8f8c267fd6d65",
+      "current_size_bytes": 8749,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/REPORT.md",
+      "new_path": "development/verification/cavity_three_way/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "298d7df30d4be3ffc1db9c5804eec44977befe5b",
+      "original_sha256": "8cf594a43e5535ef3668a871bb9ab4fccdb3c544b429e3545b2eac85b8e2dc0a",
+      "size_bytes": 5564,
+      "current_sha256": "8cf594a43e5535ef3668a871bb9ab4fccdb3c544b429e3545b2eac85b8e2dc0a",
+      "current_size_bytes": 5564,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/artifacts/comparison.json",
+      "new_path": "development/verification/cavity_three_way/artifacts/comparison.json",
+      "git_mode": "100644",
+      "original_git_blob": "59b83b3f5ea975f7b560977eeedd17f89233816e",
+      "original_sha256": "8da2d1820bd5facafaaab671428b3a4c416c11966eb0f7447f19cf326254800c",
+      "size_bytes": 4764,
+      "current_sha256": "8da2d1820bd5facafaaab671428b3a4c416c11966eb0f7447f19cf326254800c",
+      "current_size_bytes": 4764,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/artifacts/comparison.md",
+      "new_path": "development/verification/cavity_three_way/artifacts/comparison.md",
+      "git_mode": "100644",
+      "original_git_blob": "30c690e064454fb0c46a8df7801074d5cb4f869d",
+      "original_sha256": "b38b198fa7c60d04e35ea15adce826fa9f0d3bdd8f1950ad8066999b3b54cc13",
+      "size_bytes": 2102,
+      "current_sha256": "b38b198fa7c60d04e35ea15adce826fa9f0d3bdd8f1950ad8066999b3b54cc13",
+      "current_size_bytes": 2102,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/cases.json",
+      "new_path": "development/verification/cavity_three_way/cases.json",
+      "git_mode": "100644",
+      "original_git_blob": "72c75e15b42076b100dfa10abf84a3beea1edc49",
+      "original_sha256": "25063a3cc5208b3576cac9cf042f72f385985462b7390ade3205a9ac81d5800a",
+      "size_bytes": 1110,
+      "current_sha256": "25063a3cc5208b3576cac9cf042f72f385985462b7390ade3205a9ac81d5800a",
+      "current_size_bytes": 1110,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/cavity_spec.py",
+      "new_path": "development/verification/cavity_three_way/cavity_spec.py",
+      "git_mode": "100644",
+      "original_git_blob": "f7da56243783f0b9f9a252dcf1508afd403eef9d",
+      "original_sha256": "6a899a3fffd3bd90a4fef42cbdd94611a0d028517cafa9cb53f58c7eb81a1773",
+      "size_bytes": 7133,
+      "current_sha256": "6a899a3fffd3bd90a4fef42cbdd94611a0d028517cafa9cb53f58c7eb81a1773",
+      "current_size_bytes": 7133,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/make_comparison.py",
+      "new_path": "development/verification/cavity_three_way/make_comparison.py",
+      "git_mode": "100644",
+      "original_git_blob": "39ad720bfa5fb367096b3b575954a7dfe1e89901",
+      "original_sha256": "0580f4be5003d8a18d26929946ef7db44920f3fca491def4327525055ec8890b",
+      "size_bytes": 12655,
+      "current_sha256": "0580f4be5003d8a18d26929946ef7db44920f3fca491def4327525055ec8890b",
+      "current_size_bytes": 12655,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/mpi4py_shim/mpi4py/MPI.py",
+      "new_path": "development/verification/cavity_three_way/mpi4py_shim/mpi4py/MPI.py",
+      "git_mode": "100644",
+      "original_git_blob": "1442913470e469c307863035448761938395810a",
+      "original_sha256": "9eaff8cd9a2442a764be5641cab51da16ecae9971644bda34fc824dc7518bc64",
+      "size_bytes": 4168,
+      "current_sha256": "9eaff8cd9a2442a764be5641cab51da16ecae9971644bda34fc824dc7518bc64",
+      "current_size_bytes": 4168,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/mpi4py_shim/mpi4py/__init__.py",
+      "new_path": "development/verification/cavity_three_way/mpi4py_shim/mpi4py/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "4fdd257cf5bc068cce1f777197f117f1c54afa55",
+      "original_sha256": "c43c763102721a5e7a3398ac51d9021961290bbec72c422d12a06a6e8725f75f",
+      "size_bytes": 144,
+      "current_sha256": "c43c763102721a5e7a3398ac51d9021961290bbec72c422d12a06a6e8725f75f",
+      "current_size_bytes": 144,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/oss_solutions.json",
+      "new_path": "development/verification/cavity_three_way/oss_solutions.json",
+      "git_mode": "100644",
+      "original_git_blob": "953267fa568c0a3e71dc405403e71e3c2c5ce3bf",
+      "original_sha256": "86dcbcbbd1ad6e3ef09890c4f743978b89859c6b55904b916606c1f8c9c2ef06",
+      "size_bytes": 1714,
+      "current_sha256": "86dcbcbbd1ad6e3ef09890c4f743978b89859c6b55904b916606c1f8c9c2ef06",
+      "current_size_bytes": 1714,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/party_a_tensorlbm.py",
+      "new_path": "development/verification/cavity_three_way/party_a_tensorlbm.py",
+      "git_mode": "100644",
+      "original_git_blob": "693bf477ff7fd259be32ac9a31fd742dae890b89",
+      "original_sha256": "02c9759532e55ee6840d1936b478d2b15a6245d2ec070fc3dd3c604d626f2629",
+      "size_bytes": 7718,
+      "current_sha256": "02c9759532e55ee6840d1936b478d2b15a6245d2ec070fc3dd3c604d626f2629",
+      "current_size_bytes": 7718,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/party_b_pylbm.py",
+      "new_path": "development/verification/cavity_three_way/party_b_pylbm.py",
+      "git_mode": "100644",
+      "original_git_blob": "8974a290da27ed5ac72f1657d004b02fbaddd010",
+      "original_sha256": "230fd26171bc360019a0d69d65603624cacb559db5b666a739f3d0714ea10cb0",
+      "size_bytes": 9076,
+      "current_sha256": "230fd26171bc360019a0d69d65603624cacb559db5b666a739f3d0714ea10cb0",
+      "current_size_bytes": 9076,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/run_all.py",
+      "new_path": "development/verification/cavity_three_way/run_all.py",
+      "git_mode": "100644",
+      "original_git_blob": "c0c7e46039e845d636705c2ecf74164337d8ff17",
+      "original_sha256": "8ea6b872e25ec1375987444ff849f386871dd954bc82ef3b70811c464dfcf051",
+      "size_bytes": 619,
+      "current_sha256": "8ea6b872e25ec1375987444ff849f386871dd954bc82ef3b70811c464dfcf051",
+      "current_size_bytes": 619,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-CAVITY/run_shard.py",
+      "new_path": "development/verification/cavity_three_way/run_shard.py",
+      "git_mode": "100644",
+      "original_git_blob": "76f5b3733baae94d00306e7d7e138d9c20277db7",
+      "original_sha256": "a2d19776e5ace3380d9264cc92565c606136b1dee01cbe2197288c6229e84ce8",
+      "size_bytes": 2141,
+      "current_sha256": "a2d19776e5ace3380d9264cc92565c606136b1dee01cbe2197288c6229e84ce8",
+      "current_size_bytes": 2141,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact XVAL-LBM-CAVITY literal across candidate base and main; only frozen historical audit record outside campaign and legacy checkout. No active runtime consumer. Prior original report inline command and paths remain immutable as historical provenance, not supported execution commands. New canonical archive index maps all tracked files.",
+    "historical_incoming_reference": "development/audit/m21174/verdict_evidence.json",
+    "historical_incoming_sha256": "d1b622839dd8a0002671d2992597361b18590900eae66ea584aebfb2f2e95908",
+    "formal_case": "benchmarks/verified/cavity/re100",
+    "registry_case_id": "xval:cavity_three_way",
+    "formal_case_readme": {
+      "path": "benchmarks/verified/cavity/re100/README.md",
+      "original_sha256": "5d53691f8469751dc3e2f7cb641b500a8a754ef46f03dfbdf7cc96167feb944c",
+      "current_sha256": "2ad0c9bf09e357431b4fbe5a03dd9b9c41c77da258ed898021bfdf45fcf0fe5c",
+      "change": "correct stale runner path and link to historical archive only"
+    },
+    "original_tree": "c59b6a3b3ca0ede545e7e0703d59be5896e3cc49",
+    "nonexecuted_archived_mpi_shim": true
+  },
+  "evidence_gaps": {
+    "not_retrievable_as_tracked_objects_in_fetched_refs": [
+      "xval/XVAL-LBM-CAVITY/runs/A_re100_W32.json",
+      "xval/XVAL-LBM-CAVITY/runs/A_re100_W64.json",
+      "xval/XVAL-LBM-CAVITY/runs/B_re100_N32.json",
+      "xval/XVAL-LBM-CAVITY/runs/B_re100_N64.json",
+      "xval/XVAL-LBM-CAVITY/artifacts/fig_centerline_re100.png",
+      "xval/XVAL-LBM-CAVITY/artifacts/fig_error_items.png",
+      "xval/XVAL-LBM-CAVITY/artifacts/fig_convergence.png"
+    ],
+    "scope": "Actual main and all fetched refs checked with git log; absence does not prove that an external historical copy never existed. Do not regenerate, fabricate, or relabel assets as originals."
+  },
+  "archived_comparison": {
+    "re": 100,
+    "W": 64,
+    "verdict": {
+      "vs_ref_pass": {
+        "A": true,
+        "B": true
+      },
+      "inter_tool_pass": false
+    },
+    "inter_tool_pct": 3.124797741040908,
+    "threshold_pct": 3.0,
+    "other_not_run_specs": [
+      {
+        "re": 100.0,
+        "W": 128
+      },
+      {
+        "re": 400.0,
+        "W": 128
+      },
+      {
+        "re": 400.0,
+        "W": 64
+      }
+    ],
+    "source": "development/verification/cavity_three_way/artifacts/comparison.json"
+  },
+  "science": {
+    "current_acceptance": "not_evaluated",
+    "rerun_performed": false,
+    "historical_serial_mpi_shim": "Preserved as historical bytes, not imported/run. Full reproducibility requires authentic pylbm, MPI and raw run assets. Archived comparison does not pass the inter-tool threshold."
+  }
+}

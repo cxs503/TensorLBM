@@ -1,0 +1,39 @@
+{
+  "scope": "Archive-only historical 2-D lid-driven cavity cross-validation, separate from the maintained formal Re=100 case. Preserved original source snapshots and comparison; no fresh benchmark acceptance. A serial MPI stand-in is present only as frozen historical evidence and was not executed; raw runs and figures referenced by the comparison are absent.",
+  "criteria": {
+    "max_abs_dev_pct_ref": 3.0,
+    "inter_tool_pct": 3.0,
+    "convergence_decrease": true
+  },
+  "source": [
+    "development/verification/cavity_three_way/party_a_tensorlbm.py",
+    "development/verification/cavity_three_way/party_b_pylbm.py",
+    "development/verification/cavity_three_way/cavity_spec.py",
+    "development/verification/cavity_three_way/run_all.py",
+    "development/verification/cavity_three_way/run_shard.py",
+    "development/verification/cavity_three_way/make_comparison.py"
+  ],
+  "config": [
+    "development/verification/cavity_three_way/cases.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/cavity_three_way/README.md",
+    "development/verification/cavity_three_way/REPORT.md",
+    "development/verification/cavity_three_way/METHOD_SURVEY.md",
+    "development/verification/cavity_three_way/artifacts/comparison.md"
+  ],
+  "reference_files": [
+    "benchmarks/verified/cavity/re5000/reference/ghia_re5000_reference.json",
+    "development/verification/cavity_three_way/oss_solutions.json"
+  ],
+  "results": [
+    "development/verification/cavity_three_way/artifacts/comparison.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/cavity-three-way-archive-2026-11-27.json",
+    "development/audit/m21174/verdict_evidence.json",
+    "benchmarks/verified/cavity/re100/result.json",
+    "development/verification/cavity_three_way/mpi4py_shim/mpi4py/MPI.py",
+    "development/verification/cavity_three_way/mpi4py_shim/mpi4py/__init__.py"
+  ]
+}
