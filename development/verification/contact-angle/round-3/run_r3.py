@@ -28,10 +28,10 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
-R2 = HERE.parent / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS"
+R2 = HERE.parent / "round-2"
 PRED2 = json.loads((R2 / "predeclared.json").read_text())
 PRED3 = json.loads((HERE / "predeclared_r3.json").read_text())
 RUNS = HERE / "runs_r3"

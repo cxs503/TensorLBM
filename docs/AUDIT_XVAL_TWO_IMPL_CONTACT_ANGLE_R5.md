@@ -1,5 +1,7 @@
 # Audit — XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS, round 5
 
+> Repository migration note: archived campaign assets now live at [development/verification/contact-angle/round-2](../development/verification/contact-angle/round-2/), [development/verification/contact-angle/round-3](../development/verification/contact-angle/round-3/). Historical mission paths and verdicts remain tied to the original revision.
+
 [Later Round 4 snapshot in the migration base](../development/verification/contact-angle/round-4/results_r4.json) · [Round 5 evidence and runner](../development/verification/contact-angle/round-5/)
 
 **Subject under review.** `xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/run_r3.py::geodesic_angle`

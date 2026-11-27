@@ -39,8 +39,8 @@ REPO = HERE.parents[3]
 OUTPUT = REPO / "outputs/verification/contact-angle/round-5"
 sys.path.insert(0, str(REPO / "src"))
 
-R3 = REPO / "xval" / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3"
-R2 = REPO / "xval" / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS"
+R3 = HERE.parent / "round-3"
+R2 = HERE.parent / "round-2"
 PRED = json.loads((HERE / "predeclared_r5.json").read_text())
 PRED2 = json.loads((R2 / "predeclared.json").read_text()) if (R2 / "predeclared.json").exists() else {}
 TH = PRED["thresholds"]

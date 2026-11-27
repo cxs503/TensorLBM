@@ -379,9 +379,9 @@ Artefacts: `predeclared.json` (gates, frozen), `runs/<tag>/result.json` (+ `psi.
 Reproduce:
 
 ```bash
-python3 xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/run_xval.py sweep
-python3 xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/run_xval.py summarize
-python3 xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS/make_report.py
+python3 development/verification/contact-angle/round-2/run_xval.py sweep
+python3 development/verification/contact-angle/round-2/run_xval.py summarize
+python3 development/verification/contact-angle/round-2/make_report.py
 python3 -m pytest tests/test_two_impl_contact_angle.py -q
 ```
 

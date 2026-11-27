@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[3]
 FIG = HERE / "figures"
 ORIENT = ("bottom", "top", "left", "right")
 ARMS = ("contact", "wall_order")
