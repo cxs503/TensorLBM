@@ -38,7 +38,7 @@ import numpy as np
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO_ROOT = HERE.parents[2]
+REPO_ROOT = HERE.parents[3]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from tensorlbm.validation import cylinder_dfg as cdfg  # noqa: E402
