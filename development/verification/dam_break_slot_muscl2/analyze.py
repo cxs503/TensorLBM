@@ -2,15 +2,15 @@
 
 Anchor: XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2 (mission m17725).
 
-Every number below is derived from ``xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_*.json``
+Every number below is derived from ``development/verification/dam_break_slot_muscl2/artifacts/arm_*.json``
 (written by ``run_arms.py``) plus the library analytic anchors
 ``tensorlbm.shallow_water.ritter_depth/ritter_front`` -- nothing is typed by
 hand.  Outputs:
 
-  xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/result.json   xval_table / criteria / differences / frictions
-  xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/table.csv     one row per arm x grid
-  figures/xval_dam_break_slot_profiles.png
-  figures/xval_dam_break_slot_convergence.png
+  development/verification/dam_break_slot_muscl2/artifacts/result.json   xval_table / criteria / differences / frictions
+  development/verification/dam_break_slot_muscl2/artifacts/table.csv     one row per arm x grid
+  artifacts/figures/xval_dam_break_slot_profiles.png
+  artifacts/figures/xval_dam_break_slot_convergence.png
 """
 
 from __future__ import annotations
@@ -24,9 +24,9 @@ from pathlib import Path
 import numpy as np
 
 CASE_DIR = Path(__file__).resolve().parent
-REPO_ROOT = CASE_DIR.parents[1]
+REPO_ROOT = CASE_DIR.parents[2]
 RUN_DIR = CASE_DIR / "artifacts"   # versioned (runs/ is gitignored)
-FIG_DIR = REPO_ROOT / "figures"
+FIG_DIR = RUN_DIR / "figures"
 sys.path.insert(0, str(REPO_ROOT / "src"))
 from tensorlbm.shallow_water import ritter_depth, ritter_front  # noqa: E402
 

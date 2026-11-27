@@ -9,7 +9,7 @@ Anchor: `loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow` 的
 
 ## 0. 结论（一句话）
 
-2-D 半边（`xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/`，误差 0.88–2.45%）
+2-D 半边（`development/verification/zou_he_channel_2d/`，误差 0.88–2.45%）
 已经有 round-2/round-3 证据；**3-D 半边只有代码 + 单元测试里的单点断言，没有任何发布过的
 产物/曲线/报告**。本单补的是这条验证欠账：跑通 3-D 通道阶梯、把原始剖面写进 artifact、
 用**原始数组**而不是自报标量重算误差，并在过程中抓出该套件在 HEAD 上就是红的两处断言。
@@ -149,3 +149,6 @@ PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campa
 PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campaign3d_ladder.py --arms ladder
 python -m pytest tests/test_zou_he_channel3d_ladder_gate.py tests/test_zou_he_3d_inlet_outlet.py -q
 ```
+
+
+Repository relocation: [canonical historical case index](../benchmarks/cross_validation/zou_he_channel_2d/README.md). Tracked numeric evidence and historical verdicts are unchanged; linked plots are derived from the original tracked data, not a new solver run.

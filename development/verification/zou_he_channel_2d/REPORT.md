@@ -182,12 +182,12 @@ The residual profile error is therefore **not** a wall-placement artefact (the o
 
 ```bash
 # full suite (cluster submission, 2 cores)
-python3 xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/run_xval.py --out artifacts
+python3 development/verification/zou_he_channel_2d/run_xval.py --out artifacts
 # regression tests (fast, local)
 python3 -m pytest tests/test_zou_he_channel_reconstruction.py -q
 # figures + this report
-python3 xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/make_figures.py
-python3 xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION/make_report.py
+python3 development/verification/zou_he_channel_2d/make_figures.py
+python3 development/verification/zou_he_channel_2d/make_report.py
 ```
 
 **Artifacts**

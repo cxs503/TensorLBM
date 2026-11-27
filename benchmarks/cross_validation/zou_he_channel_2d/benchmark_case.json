@@ -1,0 +1,57 @@
+{
+  "scope": "Historical generic straight-channel inlet/outlet comparison and independent follow-up review; retain original steady-state criteria and recorded verdicts only.",
+  "criteria": {
+    "historical_protocol": "development/verification/zou_he_channel_2d/PREREG.md",
+    "historical_review": "development/verification/zou_he_channel_2d/REVIEW_ROUND3.md",
+    "current_acceptance": "Not evaluated by relocation."
+  },
+  "source": [
+    "development/verification/zou_he_channel_2d/independent_zouhe.py",
+    "development/verification/zou_he_channel_2d/make_figures.py",
+    "development/verification/zou_he_channel_2d/make_report.py",
+    "development/verification/zou_he_channel_2d/make_review_figures.py",
+    "development/verification/zou_he_channel_2d/make_verify.py",
+    "development/verification/zou_he_channel_2d/repro_round2.py",
+    "development/verification/zou_he_channel_2d/run_xval.py",
+    "development/verification/zou_he_channel_2d/run_xval_r3.py",
+    "src/tensorlbm/boundary/boundaries.py",
+    "tests/test_xval_zouhe_verdict_steady_gate.py",
+    "tests/test_zou_he_independent_closure.py",
+    "tests/test_zou_he_channel_reconstruction.py"
+  ],
+  "config": [
+    "development/verification/zou_he_channel_2d/PREREG.md"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/zou_he_channel_2d/README.md",
+    "development/verification/zou_he_channel_2d/OSS_DIFF.md",
+    "development/verification/zou_he_channel_2d/README.md",
+    "development/verification/zou_he_channel_2d/REPORT.md",
+    "development/verification/zou_he_channel_2d/REVIEW_ROUND3.md",
+    "docs/XVAL-ZOU-HE-CHANNEL-3D-D3Q19-LADDER.md"
+  ],
+  "reference_files": [
+    "development/verification/zou_he_channel_2d/independent_zouhe.py",
+    "development/verification/zou_he_channel_2d/OSS_DIFF.md"
+  ],
+  "results": [
+    "development/verification/zou_he_channel_2d/artifacts/r3_part_c1.json",
+    "development/verification/zou_he_channel_2d/artifacts/r3_part_c3.json",
+    "development/verification/zou_he_channel_2d/artifacts/r3_part_coarse.json",
+    "development/verification/zou_he_channel_2d/artifacts/r3_steady_gate.json",
+    "development/verification/zou_he_channel_2d/artifacts/repro_round2.json",
+    "development/verification/zou_he_channel_2d/artifacts/round1_baseline_smoke.json",
+    "development/verification/zou_he_channel_2d/artifacts/verification.json",
+    "development/verification/zou_he_channel_2d/artifacts/zou_he_channel_results.json"
+  ],
+  "evidence": [
+    "development/verification/zou_he_channel_2d/figures/fig1_profiles.png",
+    "development/verification/zou_he_channel_2d/figures/fig2_error.png",
+    "development/verification/zou_he_channel_2d/figures/fig3_sweep.png",
+    "development/verification/zou_he_channel_2d/figures/fig4_convergence.png",
+    "development/verification/zou_he_channel_2d/figures/fig5_drift_gate.png",
+    "development/verification/zou_he_channel_2d/figures/fig6_dpmax_convergence.png",
+    "development/verification/zou_he_channel_2d/figures/figures_manifest.json",
+    "docs/architecture/migrations/zou-he-dam-break-slot-xval-2026-11-27.json"
+  ]
+}

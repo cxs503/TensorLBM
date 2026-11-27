@@ -62,6 +62,19 @@ class BenchmarkRegistryTests(unittest.TestCase):
             self.assertIn(f"{archive}/{item}", evidence)
         self.assertEqual(record["current_acceptance"], "not_evaluated")
 
+    def test_zou_he_and_dam_slot_archives_have_searchable_evidence(self):
+        for name, result, image in (
+            ("zou_he_channel_2d", "artifacts/r3_steady_gate.json", "figures/fig5_drift_gate.png"),
+            ("dam_break_slot_muscl2", "artifacts/result.json", "artifacts/figures/xval_dam_break_slot_profiles.png"),
+        ):
+            with self.subTest(case=name):
+                (record,) = self.registry("--case", f"xval:{name}")
+                archive = f"development/verification/{name}"
+                variant = record["variants"][0]
+                self.assertIn(f"{archive}/{result}", variant["results"])
+                self.assertIn(f"{archive}/{image}", variant["evidence"])
+                self.assertEqual(record["current_acceptance"], "not_evaluated")
+
     def test_free_surface_case_links_replay_and_historical_campaigns(self):
         case_path = "benchmarks/xval_oracle_minimal_d2q9_fs"
         (record,) = self.registry("--case", case_path)

@@ -2,7 +2,7 @@
 
 Two things are asserted:
 
-1. the frozen artifact ``xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/result.json`` is *reproducible*
+1. the frozen artifact ``development/verification/dam_break_slot_muscl2/artifacts/result.json`` is *reproducible*
    from the arm files (``analyze.build()`` must regenerate every criterion to
    1e-9), so the published numbers cannot drift from the raw arm profiles;
 2. the XVAL criteria hold: cross-implementation agreement between the in-house
@@ -22,9 +22,9 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RUN_DIR = REPO_ROOT / "xval" / "dam_break_slot_muscl2_local_hll_ssprk2" / "artifacts"
+RUN_DIR = REPO_ROOT / "development" / "verification" / "dam_break_slot_muscl2" / "artifacts"
 RESULT = RUN_DIR / "result.json"
-CASE_DIR = REPO_ROOT / "xval" / "dam_break_slot_muscl2_local_hll_ssprk2"
+CASE_DIR = REPO_ROOT / "development" / "verification" / "dam_break_slot_muscl2"
 
 pytestmark = pytest.mark.skipif(
     not RESULT.exists() or not list(RUN_DIR.glob("arm_*.json")),

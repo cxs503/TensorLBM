@@ -23,11 +23,7 @@ from pathlib import Path
 
 import pytest
 
-XVAL = (
-    Path(__file__).resolve().parents[1]
-    / "xval"
-    / ("XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION")
-)
+XVAL = Path(__file__).resolve().parents[1] / "development" / "verification" / "zou_he_channel_2d"
 
 pytest.importorskip("numpy")
 pytest.importorskip("torch")

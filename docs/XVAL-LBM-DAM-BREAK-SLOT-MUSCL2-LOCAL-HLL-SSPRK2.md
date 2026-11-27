@@ -2,7 +2,7 @@
 
 锚点 `XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2` · 任务 m17725 · 仓 TensorLBM · 分支 agent/m17725
 
-机器可复核产物：`xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/result.json`（case_spec / xval_table / criteria / differences / frictions）、`xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/table.csv`、`xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_*.json`（33 个臂×网格原始剖面目）、`figures/xval_dam_break_slot_profiles.png`、`figures/xval_dam_break_slot_convergence.png`。本文所有数字由 `make_doc.py` 从 result.json 程序化注入（零手抄），全部剖面由 `run_arms.py` 现场重算。
+机器可复核产物：`development/verification/dam_break_slot_muscl2/artifacts/result.json`（case_spec / xval_table / criteria / differences / frictions）、`development/verification/dam_break_slot_muscl2/artifacts/table.csv`、`development/verification/dam_break_slot_muscl2/artifacts/arm_*.json`（33 个臂×网格原始剖面目）、`development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_profiles.png`、`development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_convergence.png`。本文所有数字由 `make_doc.py` 从 result.json 程序化注入（零手抄），全部剖面由 `run_arms.py` 现场重算。
 
 **总裁决：PASS**（C1–C5 全过；方案级一致性 0.29–1.86%，低于 owner 15% 精度标准，也低于 3%）
 
@@ -43,7 +43,7 @@
 * **判据（预声明，跑前写定，不得为结果让路）**：`C1_cross_tool_l2_pct` < 15%；`C1b_icmatched_l2_pct` < 15%；`C2_front_diff_pct` < 15%；`C3_profile_l2_pct_vs_analytic` < 5%；`C4_mass_drift_pct` < 1%；`C5_cross_tool_vs_highorder_l2_pct` < 15%
 * **混杂与消除**：①半格错位（本仓节点制 vs Clawpack 单元中心）→ 线性插值 + bulk 变体；②OSS 干床底垫 ε 引入附加质量 → A_matched/A(1e-2) 同 IC 对照 + ε 敏感度；③波速估计（Davis vs HLLE/Einfeldt）与限制器作用对象（守恒量分量式 vs 波强式）→ D 臂换通量族 + C 臂换高阶格式界定；④时间推进（固定 dt vs 逐步自适应 dt）→ CFL 敏感度；⑤边界（wall/extrap 两码一致）。
 
-**实现要点**（`xval/dam_break_slot_muscl2_local_hll_ssprk2/`）
+**实现要点**（`development/verification/dam_break_slot_muscl2/`）
 
 * `predeclared.json`：先于 OSS 运行写定的决策/假设/指标/阈值/停止规则/混杂/环境。
 * `run_arms.py`：A/A_matched/A(1e-2) 复用库内 `swe_step`（不复制求解器代码，只改初值干区）；B/B_1st/D/C 走 PyClaw，`num_eqn=2/num_waves=2` 由驱动按 SWE 系统规模声明（f2py 模块不带此元数据）。下游体积一律按各臂**自身初值**的体积差计算，保证 `x_f=27V/(4h0)` 对带底垫的臂仍成立。
@@ -108,7 +108,7 @@
 | 本仓 vs OSS 二阶（同 IC）[%] | 1.857 | 1.064 | 0.532 | 0.289 | 单调收敛 |
 | 本仓前沿误差 [%] | 0.256 | 0.119 | 0.057 | 0.028 | 单调收敛 |
 
-收敛曲线见 `figures/xval_dam_break_slot_convergence.png`（log-log）。本仓 A×OSS 二阶同 IC 差从 1.86%（nx=100）→ 0.29%（nx=800），**随加密单调下降**，这是两码收敛到同一解的直接证据；A×WENO5 稳定在 0.75–1.20%（五阶参照自身的残差量级）。
+收敛曲线见 `development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_convergence.png`（log-log）。本仓 A×OSS 二阶同 IC 差从 1.86%（nx=100）→ 0.29%（nx=800），**随加密单调下降**，这是两码收敛到同一解的直接证据；A×WENO5 稳定在 0.75–1.20%（五阶参照自身的残差量级）。
 
 ### 5.2 参数敏感性 I：CFL（M6，nx=400）
 
@@ -183,9 +183,9 @@ CFL 0.2→0.8：本仓剖面误差在 0.62–0.87% 内变化（<0.3pp），跨�
 
 ```bash
 pip install clawpack            # 5.14.0，loongarch64 需源码构建（meson+gfortran）
-python xval/dam_break_slot_muscl2_local_hll_ssprk2/run_arms.py    # 33 个臂文件，~30s CPU
-python xval/dam_break_slot_muscl2_local_hll_ssprk2/analyze.py     # result.json/table.csv/2 图
-python xval/dam_break_slot_muscl2_local_hll_ssprk2/make_doc.py    # 本文 + 上报载荷
+python development/verification/dam_break_slot_muscl2/run_arms.py    # 33 个臂文件，~30s CPU
+python development/verification/dam_break_slot_muscl2/analyze.py     # result.json/table.csv/2 图
+python development/verification/dam_break_slot_muscl2/make_doc.py    # 本文 + 上报载荷
 pytest tests/test_xval_dam_break_slot.py -q                       # 判据回归
 ```
 
@@ -195,4 +195,7 @@ pytest tests/test_xval_dam_break_slot.py -q                       # 判据回归
 * `api_gap` · clawpack.riemann (f2py modules)：compiled riemann modules expose only rp1/cparam; pyclaw raises AttributeError on num_eqn → run_arms._claw_solve declares num_eqn=2/num_waves=2 for the SWE system
 * `oss_robustness_gap` · clawpack shallow_hlle_1D / shallow_roe_with_efix_1D：2nd-order minmod reconstruction on a near-dry layer (eps<=1e-3) produces NaN: the OSS 1-D SWE solvers have no positivity fallback → OSS arm needs dry floor 3e-3 (HLLE) / 1e-2 (Roe); the in-house arm runs at h=0 with the alpha-fallback. Reported as an XVAL difference, not a port target
 
-* `report_ingest_defect` · `$TENSOR_API_BASE/tensor/reports`：POST 正文 markdown 被原样入库（长度 10967 = 我发稿长度、md5 `9eefccb0…` 与本地 `/tmp/report.json` 完全一致），但 title/summary/scenario_key 被**旧任务（m15467 MCMP-Laplace）**覆盖、mission_id 记成 15467，`GET /tensor/reports?mission_id=17725` 返 0 条 → m17725 的报告在库但不可按任务检索。证据：`xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/report_ingest_friction.json`（报告行 id 16698/16700，psql 实查）。本仓无法修平台侧 handler，已就地留档 + 建议回填。
+* `report_ingest_defect` · `$TENSOR_API_BASE/tensor/reports`：POST 正文 markdown 被原样入库（长度 10967 = 我发稿长度、md5 `9eefccb0…` 与本地 `/tmp/report.json` 完全一致），但 title/summary/scenario_key 被**旧任务（m15467 MCMP-Laplace）**覆盖、mission_id 记成 15467，`GET /tensor/reports?mission_id=17725` 返 0 条 → m17725 的报告在库但不可按任务检索。证据：`development/verification/dam_break_slot_muscl2/artifacts/report_ingest_friction.json`（报告行 id 16698/16700，psql 实查）。本仓无法修平台侧 handler，已就地留档 + 建议回填。
+
+
+Repository relocation: [canonical historical case index](../benchmarks/cross_validation/dam_break_slot_muscl2/README.md). Tracked numeric evidence and historical verdicts are unchanged; linked plots are derived from the original tracked data, not a new solver run.

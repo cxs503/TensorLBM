@@ -1,6 +1,6 @@
 """Render the XVAL report for anchor XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2.
 
-Input : xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/result.json  (produced by analyze.py)
+Input : development/verification/dam_break_slot_muscl2/artifacts/result.json  (produced by analyze.py)
 Output: docs/XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2.md
          /tmp/report.json  (TensorPlatform report payload with embedded figures)
 
@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 CASE_DIR = Path(__file__).resolve().parent
-REPO_ROOT = CASE_DIR.parents[1]
+REPO_ROOT = CASE_DIR.parents[2]
 RUN_DIR = CASE_DIR / "artifacts"   # versioned (runs/ is gitignored)
 DOC = REPO_ROOT / "docs" / "XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2.md"
 
@@ -33,6 +33,16 @@ def tick(ok: bool) -> str:
 
 def main() -> int:
     r = json.loads((RUN_DIR / "result.json").read_text())
+    # Keep the historical result artifact immutable; resolve its old output names.
+    legacy_figures = {
+        "figures/xval_dam_break_slot_profiles.png",
+        "figures/xval_dam_break_slot_convergence.png",
+    }
+    r["figures"] = [
+        str((RUN_DIR / "figures" / Path(rel).name).relative_to(REPO_ROOT))
+        if rel in legacy_figures else rel
+        for rel in r["figures"]
+    ]
     cs, crit, tab = r["case_spec"], r["criteria"], r["xval_table"]
     by_nx = {t["nx"]: t for t in tab}
     j200, j400 = by_nx[200], by_nx[400]
@@ -48,9 +58,9 @@ def main() -> int:
     A("")
     A(f"锚点 `{r['anchor']}` · 任务 m17725 · 仓 TensorLBM · 分支 agent/m17725")
     A("")
-    A(f"机器可复核产物：`xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/result.json`（case_spec / xval_table / "
-      f"criteria / differences / frictions）、`xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/table.csv`、"
-      f"`xval/dam_break_slot_muscl2_local_hll_ssprk2/artifacts/arm_*.json`（33 个臂×网格原始剖面目）、"
+    A(f"机器可复核产物：`development/verification/dam_break_slot_muscl2/artifacts/result.json`（case_spec / xval_table / "
+      f"criteria / differences / frictions）、`development/verification/dam_break_slot_muscl2/artifacts/table.csv`、"
+      f"`development/verification/dam_break_slot_muscl2/artifacts/arm_*.json`（33 个臂×网格原始剖面目）、"
       f"`{r['figures'][0]}`、`{r['figures'][1]}`。本文所有数字由 `make_doc.py` 从 result.json "
       f"程序化注入（零手抄），全部剖面由 `run_arms.py` 现场重算。")
     A("")
@@ -107,7 +117,7 @@ def main() -> int:
       "③波速估计（Davis vs HLLE/Einfeldt）与限制器作用对象（守恒量分量式 vs 波强式）→ D 臂换通量族 + C 臂换高阶格式界定；"
       "④时间推进（固定 dt vs 逐步自适应 dt）→ CFL 敏感度；⑤边界（wall/extrap 两码一致）。")
     A("")
-    A("**实现要点**（`xval/dam_break_slot_muscl2_local_hll_ssprk2/`）")
+    A("**实现要点**（`development/verification/dam_break_slot_muscl2/`）")
     A("")
     A("* `predeclared.json`：先于 OSS 运行写定的决策/假设/指标/阈值/停止规则/混杂/环境。")
     A("* `run_arms.py`：A/A_matched/A(1e-2) 复用库内 `swe_step`（不复制求解器代码，只改初值干区）；"
@@ -203,7 +213,7 @@ def main() -> int:
         trend = "单调收敛" if all(abs(vals[i]) >= abs(vals[i+1]) for i in range(3)) else "非单调（有界抖动）"
         A(f"| {lab} | {f(vals[0],3)} | {f(vals[1],3)} | {f(vals[2],3)} | {f(vals[3],3)} | {trend} |")
     A("")
-    A("收敛曲线见 `figures/xval_dam_break_slot_convergence.png`（log-log）。"
+    A("收敛曲线见 `development/verification/dam_break_slot_muscl2/artifacts/figures/xval_dam_break_slot_convergence.png`（log-log）。"
       "本仓 A×OSS 二阶同 IC 差从 1.86%（nx=100）→ 0.29%（nx=800），**随加密单调下降**，"
       "这是两码收敛到同一解的直接证据；A×WENO5 稳定在 0.75–1.20%（五阶参照自身的残差量级）。")
     A("")
@@ -295,9 +305,9 @@ def main() -> int:
     A("")
     A("```bash")
     A("pip install clawpack            # 5.14.0，loongarch64 需源码构建（meson+gfortran）")
-    A("python xval/dam_break_slot_muscl2_local_hll_ssprk2/run_arms.py    # 33 个臂文件，~30s CPU")
-    A("python xval/dam_break_slot_muscl2_local_hll_ssprk2/analyze.py     # result.json/table.csv/2 图")
-    A("python xval/dam_break_slot_muscl2_local_hll_ssprk2/make_doc.py    # 本文 + 上报载荷")
+    A("python development/verification/dam_break_slot_muscl2/run_arms.py    # 33 个臂文件，~30s CPU")
+    A("python development/verification/dam_break_slot_muscl2/analyze.py     # result.json/table.csv/2 图")
+    A("python development/verification/dam_break_slot_muscl2/make_doc.py    # 本文 + 上报载荷")
     A("pytest tests/test_xval_dam_break_slot.py -q                       # 判据回归")
     A("```")
     A("")
