@@ -30,8 +30,8 @@ from tensorlbm.oscillatory_cylinder_inertia import (
     run_arm,
 )
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "xval"
-                       / "XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "development" / "verification"
+                       / "addedmass_kc_response_envelope"))
 
 import reference as ref  # noqa: E402
 

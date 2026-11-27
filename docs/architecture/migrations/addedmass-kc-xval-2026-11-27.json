@@ -1,0 +1,440 @@
+{
+  "scope": "Retire one complete legacy xval subdirectory into development verification with a distinct registered case index. Preserve original results and acceptance status; two runner path-parent edits and one test import path edit only.",
+  "source_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "candidate_base_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 72,
+    "xval_second_level_count": 16
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 72,
+    "xval_second_level_count": 15
+  },
+  "retired_second_level_directories": [
+    "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/REPORT.md",
+      "new_path": "development/verification/addedmass_kc_response_envelope/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "0a30463ddd4d87777809c9bd9026fe5e821d0560",
+      "original_sha256": "9782e1caaaa8357e905040ffc107a5c588c5ea4a586c00e46f58e447de7ba419",
+      "size_bytes": 8449,
+      "current_sha256": "9782e1caaaa8357e905040ffc107a5c588c5ea4a586c00e46f58e447de7ba419",
+      "current_size_bytes": 8449,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/diag_acoustic.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/diag_acoustic.py",
+      "git_mode": "100644",
+      "original_git_blob": "aad68b653031649123e60d8bcf22c9f9aa3e2076",
+      "original_sha256": "42c6b3b707b7811fbeedda74ddc9ed39d6e7193a7460a0a574f8fd649cc36206",
+      "size_bytes": 1607,
+      "current_sha256": "42c6b3b707b7811fbeedda74ddc9ed39d6e7193a7460a0a574f8fd649cc36206",
+      "current_size_bytes": 1607,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/diag_beta.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/diag_beta.py",
+      "git_mode": "100644",
+      "original_git_blob": "7110de38b551f5299ce173962f7e0eb47c4167c3",
+      "original_sha256": "eafff3610ad7d0916d7d4743f257efb3d99c9ba5213ca031bc3592c4fc7c71f7",
+      "size_bytes": 1512,
+      "current_sha256": "eafff3610ad7d0916d7d4743f257efb3d99c9ba5213ca031bc3592c4fc7c71f7",
+      "current_size_bytes": 1512,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/diag_cheap_acoustic.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/diag_cheap_acoustic.py",
+      "git_mode": "100644",
+      "original_git_blob": "cca8dbecdb438884bff3ddc74e11641214d74278",
+      "original_sha256": "321a9bf16bf1e553cc0f17bc35781db4fe9e84f2b0152040005dbdc6ebc0f0a4",
+      "size_bytes": 1263,
+      "current_sha256": "321a9bf16bf1e553cc0f17bc35781db4fe9e84f2b0152040005dbdc6ebc0f0a4",
+      "current_size_bytes": 1263,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/diag_phase.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/diag_phase.py",
+      "git_mode": "100644",
+      "original_git_blob": "838200d196466a5594b17be127f87c62d192425a",
+      "original_sha256": "599b53ffc629256b9ad08d19ed4b9d7600b7fe50a60cfb6019c990d9229656fd",
+      "size_bytes": 2812,
+      "current_sha256": "599b53ffc629256b9ad08d19ed4b9d7600b7fe50a60cfb6019c990d9229656fd",
+      "current_size_bytes": 2812,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/diag_spinup.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/diag_spinup.py",
+      "git_mode": "100644",
+      "original_git_blob": "3e5afa029162e261be93cf17eb17a83405525bd5",
+      "original_sha256": "e7a5705814b475d2b96e424a0473ac436563b93cfb3f35889c36aa0602434d75",
+      "size_bytes": 2068,
+      "current_sha256": "e7a5705814b475d2b96e424a0473ac436563b93cfb3f35889c36aa0602434d75",
+      "current_size_bytes": 2068,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/diag_windows.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/diag_windows.py",
+      "git_mode": "100644",
+      "original_git_blob": "41245edeff933c8fdb3e6be53ec359f24fce8c8c",
+      "original_sha256": "6e62e29d74e9415adedce6aeaf2b58858ae70ba539241a1774b8289bfb62cb1a",
+      "size_bytes": 2085,
+      "current_sha256": "6e62e29d74e9415adedce6aeaf2b58858ae70ba539241a1774b8289bfb62cb1a",
+      "current_size_bytes": 2085,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/predeclared.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "0ed57cace45b174a5477fbbf1ed28a4cad16ed01",
+      "original_sha256": "fde562b9af9cd54a73dd7a8d0ed2fad11a99f610329e69977f1e1009c1d56ed5",
+      "size_bytes": 4366,
+      "current_sha256": "fde562b9af9cd54a73dd7a8d0ed2fad11a99f610329e69977f1e1009c1d56ed5",
+      "current_size_bytes": 4366,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/reference.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "ef6fb3ea5e20af977f98924c43db21600889d53c",
+      "original_sha256": "5422b74b7bb25701ef4c71162abc6d3dec6d3a885a98427774317a7d3655d9e3",
+      "size_bytes": 5629,
+      "current_sha256": "5422b74b7bb25701ef4c71162abc6d3dec6d3a885a98427774317a7d3655d9e3",
+      "current_size_bytes": 5629,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/refs.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/refs.json",
+      "git_mode": "100644",
+      "original_git_blob": "5b95bc92845e692f1bb55bfa7379fe580c365b8b",
+      "original_sha256": "d069718bbf1537df9d54ab3c678b59d0ba6fad343a132c6b66c37510e321c262",
+      "size_bytes": 2037,
+      "current_sha256": "d069718bbf1537df9d54ab3c678b59d0ba6fad343a132c6b66c37510e321c262",
+      "current_size_bytes": 2037,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/results.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "84478a7cc38eefd073757b0a44ec4e269f8bc4ab",
+      "original_sha256": "9dba24ebce4ce79b4aa4949d80ebd31cea0d3b8aa9129c37017461fd01106b5f",
+      "size_bytes": 260537,
+      "current_sha256": "9dba24ebce4ce79b4aa4949d80ebd31cea0d3b8aa9129c37017461fd01106b5f",
+      "current_size_bytes": 260537,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/run_xval.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "66d750f27cf04db5ba3ac06b4cd84ea571d6f4f7",
+      "original_sha256": "e79c64ad1aadd833a04e192e22f3bf68d2b58ddc0392bf01b2d7ea9367a31d26",
+      "size_bytes": 12492,
+      "current_sha256": "14db739877c2acdd01bff715616f4d90d348610a963b4ce32c3063f822152c80",
+      "current_size_bytes": 12492,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "REPO = HERE.parents[1]",
+        "new": "REPO = HERE.parents[2]"
+      }
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/beta00025.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/beta00025.json",
+      "git_mode": "100644",
+      "original_git_blob": "6500542b2e3f574c80680ee72b275dd9ea828fbe",
+      "original_sha256": "7d473dc849fe6d9bd1d49cec649ad6d2bc2232a55e6a7dd13d3b8d5831a593cf",
+      "size_bytes": 14452,
+      "current_sha256": "7d473dc849fe6d9bd1d49cec649ad6d2bc2232a55e6a7dd13d3b8d5831a593cf",
+      "current_size_bytes": 14452,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/beta00050.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/beta00050.json",
+      "git_mode": "100644",
+      "original_git_blob": "e96d29559ea26450af1c25325885587ab695d046",
+      "original_sha256": "8ea2c931a81279571855f77a3e2089b93a2162ede49f4acc5c2e4127c47b9ca5",
+      "size_bytes": 14233,
+      "current_sha256": "8ea2c931a81279571855f77a3e2089b93a2162ede49f4acc5c2e4127c47b9ca5",
+      "current_size_bytes": 14233,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/beta00100.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/beta00100.json",
+      "git_mode": "100644",
+      "original_git_blob": "6ad4a051d944e4cf05d9990178b849ef0a1a71da",
+      "original_sha256": "20680739e685e13ba8164215b65ba4cadd5900e08b98d7723707ff566693f3ac",
+      "size_bytes": 14101,
+      "current_sha256": "20680739e685e13ba8164215b65ba4cadd5900e08b98d7723707ff566693f3ac",
+      "current_size_bytes": 14101,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/beta00200.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/beta00200.json",
+      "git_mode": "100644",
+      "original_git_blob": "3a0f6c777585e28438535713857b733508f67de8",
+      "original_sha256": "d3ab54546773603717b5dcccc2e46be89e9f7fc98ba3778a2dcf444dfa505712",
+      "size_bytes": 11552,
+      "current_sha256": "d3ab54546773603717b5dcccc2e46be89e9f7fc98ba3778a2dcf444dfa505712",
+      "current_size_bytes": 11552,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/beta00400.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/beta00400.json",
+      "git_mode": "100644",
+      "original_git_blob": "47294dcbd0902784e8a675b2da5e0b8d5af1e5b6",
+      "original_sha256": "80ced5b7ed7e812f5f7b437a4e2b80b31dbacd302266e2dbf9f7a723526d7687",
+      "size_bytes": 9881,
+      "current_sha256": "80ced5b7ed7e812f5f7b437a4e2b80b31dbacd302266e2dbf9f7a723526d7687",
+      "current_size_bytes": 9881,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/kc0.05.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/kc0.05.json",
+      "git_mode": "100644",
+      "original_git_blob": "8cc8c0a4706a98944c625b995316de90981e3b7c",
+      "original_sha256": "d6311ea1a8b2a68c7fc84b2a11194f0f210aa966651872ff3febb885807a8d25",
+      "size_bytes": 15324,
+      "current_sha256": "d6311ea1a8b2a68c7fc84b2a11194f0f210aa966651872ff3febb885807a8d25",
+      "current_size_bytes": 15324,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/kc0.10.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/kc0.10.json",
+      "git_mode": "100644",
+      "original_git_blob": "6d9aad9e0abcb41ec4066fa76c6107aa0096ef8d",
+      "original_sha256": "57dab59f5c89b93a6903da052e190f6f8fafc72fb3eec2ea5fb137cd28551184",
+      "size_bytes": 15373,
+      "current_sha256": "57dab59f5c89b93a6903da052e190f6f8fafc72fb3eec2ea5fb137cd28551184",
+      "current_size_bytes": 15373,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/kc0.20.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/kc0.20.json",
+      "git_mode": "100644",
+      "original_git_blob": "1e2e22f137c90ec986262bda03f01651a5b0dfae",
+      "original_sha256": "2836f35a14e0eb0abbfc4417df0e1a7c09f8ef3a44e2157b0073feca3c3077d8",
+      "size_bytes": 14228,
+      "current_sha256": "2836f35a14e0eb0abbfc4417df0e1a7c09f8ef3a44e2157b0073feca3c3077d8",
+      "current_size_bytes": 14228,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/kc0.40.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/kc0.40.json",
+      "git_mode": "100644",
+      "original_git_blob": "b5f45deb44cf30a54012afbf11fe130c1415ade7",
+      "original_sha256": "1553439e43276368a38bb7fbd13a637c470c8a33e0615756eb3376e54175bfc0",
+      "size_bytes": 14407,
+      "current_sha256": "1553439e43276368a38bb7fbd13a637c470c8a33e0615756eb3376e54175bfc0",
+      "current_size_bytes": 14407,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/kc1.00.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/kc1.00.json",
+      "git_mode": "100644",
+      "original_git_blob": "4b182e085e2964725b2ba75f23cb9940e34ed5ce",
+      "original_sha256": "893c49adca8673984f0d982145e5a84befc60071523fba5d75268c1f35f11227",
+      "size_bytes": 10891,
+      "current_sha256": "893c49adca8673984f0d982145e5a84befc60071523fba5d75268c1f35f11227",
+      "current_size_bytes": 10891,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/shipped_kc10.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/shipped_kc10.json",
+      "git_mode": "100644",
+      "original_git_blob": "c54fd9c2012618b287c8857f11619754e226c4ae",
+      "original_sha256": "92227d4062d638670a263ce8ce985340032169efaa0e230f61a55ccd1f569e88",
+      "size_bytes": 13565,
+      "current_sha256": "92227d4062d638670a263ce8ce985340032169efaa0e230f61a55ccd1f569e88",
+      "current_size_bytes": 13565,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/spin01.5.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/spin01.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "0865d13d77363c15f6e494da6ade68ba71380930",
+      "original_sha256": "b192511eda4bc5f2880983ae6a2c89071c94fc46ca9675443635d9de0f5a92db",
+      "size_bytes": 20976,
+      "current_sha256": "b192511eda4bc5f2880983ae6a2c89071c94fc46ca9675443635d9de0f5a92db",
+      "current_size_bytes": 20976,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/spin05.0.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/spin05.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "ef53c6d319167edb70c774e6a216f8b77020e688",
+      "original_sha256": "62708a8b19685c46ce1cb48ea3eeca5b039627b533884ada322dc14ec27ed47d",
+      "size_bytes": 16903,
+      "current_sha256": "62708a8b19685c46ce1cb48ea3eeca5b039627b533884ada322dc14ec27ed47d",
+      "current_size_bytes": 16903,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/spin10.0.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/spin10.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "a6bdf937c56ce52d396e3a853bdf0e914e1bb9e5",
+      "original_sha256": "75bba8b7d25ce0cdb08c651e3d0e301e80f2d2743c7b1a4ba8184cf64bfbbde8",
+      "size_bytes": 13537,
+      "current_sha256": "75bba8b7d25ce0cdb08c651e3d0e301e80f2d2743c7b1a4ba8184cf64bfbbde8",
+      "current_size_bytes": 13537,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/spin20.0.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/spin20.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "97310f58b1033e7b685926ee1d2ece533f284b10",
+      "original_sha256": "4a82c55bf8fbca0c679486c13866cebdebe8751e666f869690fd443b1b28115a",
+      "size_bytes": 14848,
+      "current_sha256": "4a82c55bf8fbca0c679486c13866cebdebe8751e666f869690fd443b1b28115a",
+      "current_size_bytes": 14848,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/runs/spin30.0.json",
+      "new_path": "development/verification/addedmass_kc_response_envelope/runs/spin30.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "96f26d471a3a0995d0034f3128127932fa530625",
+      "original_sha256": "066086abf155c4c9edabe1b79cca9171b54208600747e9af56812abe42b175ea",
+      "size_bytes": 14128,
+      "current_sha256": "066086abf155c4c9edabe1b79cca9171b54208600747e9af56812abe42b175ea",
+      "current_size_bytes": 14128,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE/xval_envelope.py",
+      "new_path": "development/verification/addedmass_kc_response_envelope/xval_envelope.py",
+      "git_mode": "100644",
+      "original_git_blob": "49d1377d869dd42d4cf65d1d489ceafc0983c749",
+      "original_sha256": "ba95fea879039b1f930d2ce74928c9608eec6716794663c239f894302969cee9",
+      "size_bytes": 27023,
+      "current_sha256": "c82c84a2d7e32375c25a9511213afe26175406c53bf9d3a3baca6fa50ba37d7b",
+      "current_size_bytes": 27023,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "REPO = HERE.parents[1]",
+        "new": "REPO = HERE.parents[2]"
+      }
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "tests/test_xval_addedmass_spinup.py",
+      "new_path": "tests/test_xval_addedmass_spinup.py",
+      "git_mode": "100644",
+      "original_git_blob": "25a828b8881b057d01a6bd597e862e673a6ae56b",
+      "original_sha256": "2dbdc9a2346d8f1786ad405655db52c30fdd2674722d32d7ad139d4db07d5fd2",
+      "size_bytes": 4241,
+      "current_sha256": "58dbf35cf930756c7f1df33700b83014ee3ea9418a5939b49609a55de920b751",
+      "current_size_bytes": 4256,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "/ \"xval\"\n                       / \"XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE\"",
+        "new": "/ \"development\" / \"verification\"\n                       / \"addedmass_kc_response_envelope\""
+      }
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact directory, anchor and split Path references checked in main. Only maintained consumer is tests/test_xval_addedmass_spinup.py. docs/ci/staged_gate_semantics.md is a historical example, retained verbatim. The adjacent historical no-mass inventory study remains separate. Cross-repo indexed search (TensorKnowledge, TensorPhysics, TensorPlatform, TensorBench) returned no hits; external bookmarks not exhaustive.",
+    "dependencies": "Reference and main entrypoints retain real CPU Torch/numpy/scipy dependencies. Six diag_*.py historical probes use original absolute worktree paths and are not executed. Original two report PNG paths absent in tracked baseline; renderer parity performed from the committed numerical JSON, no raw campaign replay.",
+    "case_id": "xval:addedmass_kc_response_envelope",
+    "case_path": "benchmarks/cross_validation/addedmass_kc_response_envelope",
+    "archive_path": "development/verification/addedmass_kc_response_envelope",
+    "readme": "benchmarks/cross_validation/addedmass_kc_response_envelope/README.md",
+    "historical_missing_figures": [
+      "fig1_spinup_ladder.png",
+      "fig2_beta_ladder.png"
+    ],
+    "other_root_retention": {
+      "xval/benchmark_method_selection": "Actual baseline 9 tests passed, one external OSS cache skip, two tests with synthetic input/patching not selected. Multiple active wrappers, shell launchers, report builders and external worktree dependencies; retain pending full compatibility."
+    }
+  },
+  "science": {
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated",
+    "algorithm_changed": false,
+    "original_verdict": "HONEST_FAIL",
+    "original_passing_arms": []
+  },
+  "verification": {
+    "baseline_targeted_tests": 4,
+    "baseline_cpu_runtime": "PyTorch 2.15.0+cpu, pytest 9.2.0",
+    "baseline_render_hashes": {
+      "fig1_spinup_ladder.png": "68b86f0000026b0328262b9de96fecdd1a19d7b7074f1938d13ad0a644286773",
+      "fig2_beta_ladder.png": "d0c117dee567459f01a2953aeefc1bae5396c889df3405c0125ef3bcba0ef697",
+      "rendered-report.md": "9782e1caaaa8357e905040ffc107a5c588c5ea4a586c00e46f58e447de7ba419"
+    },
+    "candidate_render_hashes": {
+      "fig1_spinup_ladder.png": "68b86f0000026b0328262b9de96fecdd1a19d7b7074f1938d13ad0a644286773",
+      "fig2_beta_ladder.png": "d0c117dee567459f01a2953aeefc1bae5396c889df3405c0125ef3bcba0ef697",
+      "rendered-report.md": "9782e1caaaa8357e905040ffc107a5c588c5ea4a586c00e46f58e447de7ba419"
+    },
+    "candidate_targeted_tests": 4,
+    "entrypoint_help_byte_identical": [
+      "run_xval.py",
+      "xval_envelope.py"
+    ],
+    "renderer_note": "Replayed figures and report from exact committed results/refs JSON in scratch before and after; all three derived files byte-identical within runtime. These are not original missing image files or fresh scientific results.",
+    "lint_ratchet": {
+      "ruff_check_findings": 3021,
+      "baseline_findings": 3023,
+      "format_unformatted_files": 2195,
+      "baseline_unformatted_files": 2195,
+      "invalid_syntax_findings": 0
+    },
+    "placement_decision": "Initial proposed move into benchmarks introduced 3 new formatter debt entries. Historical runnable scripts are therefore archived in development/verification, with a benchmark metadata index only; no historical code reformatted and no lint baseline changed. Revised candidate passes."
+  }
+}

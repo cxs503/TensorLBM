@@ -118,6 +118,8 @@ groups the m27100 drop-entry histories, preregistration and tooling under the
 drop-entry campaign. Its verdict and histories are discoverable from the
 existing 3D drop-entry registry entry alongside the formal comparison inputs.
 
+The [added-mass KC campaign ledger](migrations/addedmass-kc-xval-2026-11-27.json) archives one complete historical XVAL directory under development and links it from its distinct registered case and retains the original negative verdict.
+
 The [plotting and maintenance ledger](migrations/legacy-plotting-maintenance-2026-11-24.json)
 records the final two script subdirectories and the maintained channel plotting
 entry point. The legacy cleanup and synthetic fixture sources are archived.
