@@ -15,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 
 
 def main():
-    res = json.loads((HERE / "xval_nebb_bodyforce_driver.json").read_text())
+    res = json.loads((HERE.parents[2] / "docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json").read_text())
     runs = res["runs"]
     NY = res["params"]["primary"]["NY"]
     y = np.arange(NY)

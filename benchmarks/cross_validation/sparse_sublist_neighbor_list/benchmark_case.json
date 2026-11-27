@@ -1,0 +1,35 @@
+{
+  "scope": "Historical archive-only sparse-sublist neighbor-list m18377. This is distinct from sparse-list AOS. Frozen legacy source is not an official current solver entry; audit verdict is L2 only, no current acceptance or external Fortran replay.",
+  "criteria": {
+    "table_equivalence": "bit-identical (0.0)",
+    "operator_equivalence": "1e-14",
+    "physics": "15%"
+  },
+  "source": [
+    "development/audit/m18748/tools/m18748_sparse_sublist_board_audit.py"
+  ],
+  "config": [
+    "development/verification/sparse-sublist-neighbor-list/m18377/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/sparse_sublist_neighbor_list/README.md",
+    "development/audit/m18748/README.md",
+    "development/audit/m18748/AUDIT_m18748.md",
+    "docs/xval_sparse_sublist_neighbor_list.md"
+  ],
+  "reference_files": [
+    "development/verification/sparse-sublist-neighbor-list/m18377/predeclared.json",
+    "development/legacy/TensorLBM/src/tensorlbm/sparse_sublist_neighbor_list.py"
+  ],
+  "results": [
+    "development/legacy/TensorLBM/artifacts/xval_sparse_sublist_neighbor_list/results.json"
+  ],
+  "evidence": [
+    "development/audit/m18748/land_verdict.py",
+    "development/audit/m18748/publish_report.py",
+    "development/audit/m18748/verdict_m18748.sql",
+    "development/audit/m18748/tools/m18748_make_field_figure.py",
+    "development/audit/m18748/tools/m18748_make_figure.py",
+    "docs/architecture/migrations/nebb-early-rounds-and-sparse-audits-2026-11-27.json"
+  ]
+}

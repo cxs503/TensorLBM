@@ -49,6 +49,71 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.ledger = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
 
+    def test_nebb_loose_and_sparse_audits_preserve_unique_originals(self):
+        path = LEDGER_PATH.parent / "nebb-early-rounds-and-sparse-audits-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(rows, {r["old_path"]: r["new_path"] for r in ledger["entries"]})
+        self.assertEqual(len(rows), 13)
+        self.assertEqual(len(set(rows.values())), 12)
+        self.assertEqual(sum(row["disposition"] == "verified_identical_duplicate_consolidation"
+                             for row in ledger["entries"]), 4)
+        for retired in ledger["retired_second_level_directories"] + ledger["retired_files"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        for row in ledger["entries"]:
+            destination = REPO / row["new_path"]
+            self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+            mode, blob = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
+            ).split()[:2]
+            self.assertEqual(mode, row["git_mode"])
+            if row["byte_identical"]:
+                self.assertEqual(blob, row["original_git_blob"])
+                self.assertEqual(row["current_sha256"], row["original_sha256"])
+            else:
+                original = destination.read_bytes()
+                for edit in reversed(row["path_only_replacements"]):
+                    original = original.replace(edit["new"].encode(), edit["old"].encode())
+                self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+        for row in ledger["unchanged_prior_archive"]:
+            self.assert_fingerprint(REPO / row["path"], row["sha256"], row["size_bytes"])
+        fig = ledger["derived_image"]
+        archived = json.loads((REPO / fig["source"]).read_text())
+        self.assertEqual(base64.b64decode(archived["png_base64"]), (REPO / fig["target"]).read_bytes())
+        self.assert_fingerprint(REPO / fig["target"], fig["sha256"], fig["size_bytes"])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        for key, owner in ledger["case_ownership"].items():
+            raw = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", owner],
+                cwd=REPO, text=True,
+            )
+            (record,) = json.loads(raw)["cases"]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            (variant,) = record["variants"]
+            registered = set(variant["source"] + variant["documentation"] +
+                             variant["config"] + variant["results"] +
+                             variant["reference_files"] + variant["evidence"])
+            if key == "nebb":
+                subset = {r["new_path"] for r in ledger["entries"] if r["old_path"].startswith("xval/")}
+                self.assertTrue(subset <= registered)
+                self.assertIn(fig["target"], registered)
+                self.assertEqual(variant["results"], ["docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json"])
+                root = "development/verification/nebb_steady_early_rounds"
+            else:
+                root = "development/audit/m18748" if key == "sparse" else "development/audit/m17677"
+                self.assertTrue({r["new_path"] for r in ledger["entries"]
+                                 if r["new_path"].startswith(root + "/")} <= registered)
+                if key == "compressed":
+                    manifest = json.loads((REPO / owner / "benchmark_case.json").read_text())
+                    self.assertEqual({k: manifest[k] for k in ledger["prior_compressed_contract"]},
+                                     ledger["prior_compressed_contract"])
+            for rel in (f"{root}/README.md", f"{owner}/README.md"):
+                doc = REPO / rel
+                for link in re.findall(r"\]\(([^)]+)\)", doc.read_text()):
+                    self.assertTrue((doc.parent / link).is_file(), link)
+
     def test_peskin_and_convolution_archive_preserves_original_evidence(self):
         path = LEDGER_PATH.parent / "peskin-and-conv-audit-2026-11-27.json"
         ledger = json.loads(path.read_text())

@@ -21,7 +21,7 @@ The做法 of items 1-3 and of the two body-force schemes below is taken from the
 mature open-source implementation **haimingz/vivsim** (JAX).  Every formula in
 this module maps 1:1 onto a named upstream function, so the port can be audited
 line by line (no hand-copy: the upstream tree used was ``/tmp/vivsim_src``,
-recorded in ``xval/REPORT_XVAL_NEBB_BODYFORCE.md``):
+recorded in ``development/verification/nebb_steady_early_rounds/REPORT_XVAL_NEBB_BODYFORCE.md``):
 
 ===========================================  ==========================================
 this module                                  vivsim source
@@ -37,7 +37,7 @@ this module                                  vivsim source
 ===========================================  ==========================================
 
 Two deliberate deviations from the upstream code, both documented in
-``xval/DIFF_OSS_VS_TENSORLBM.md``:
+``docs/board_audit/m17963/rerun/DIFF_OSS_VS_TENSORLBM.md``:
 
 * **Un-shifted populations.**  vivsim stores ``f_i = f_i^full - w_i`` for
   precision; this module stores the full populations.  The NEBB algebra is
@@ -355,7 +355,7 @@ def recovered_wall_density(f, loc: str, ux_wall=0.0, uy_wall=0.0):
     prescribed wall velocity is imposed exactly.  The OSS ``wrap_velocity``
     wrapper uses it; the Poiseuille example uses the ``rho_wall = 1`` default of
     ``wrap_force_corrected`` instead (difference measured: 6.4e-14 relative,
-    see ``xval/DIFF_OSS_VS_TENSORLBM.md``).
+    see ``docs/board_audit/m17963/rerun/DIFF_OSS_VS_TENSORLBM.md``).
     """
     spec = wall_spec(loc)
     idx = 0 if loc in ("bottom", "left") else -1

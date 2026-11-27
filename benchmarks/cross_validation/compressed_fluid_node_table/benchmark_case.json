@@ -14,7 +14,8 @@
   ],
   "documentation": [
     "docs/xval_compressed_fluid_node_neighbour_table.md",
-    "docs/audit_m17677/AUDIT_m17677.md"
+    "development/audit/m17677/AUDIT_m17677.md",
+    "benchmarks/cross_validation/compressed_fluid_node_table/README.md"
   ],
   "reference_files": [
     "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json",
@@ -39,6 +40,12 @@
   "evidence": [
     "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/REPORT.md",
     "development/audit/m22754/verdict_m22754_compressed_node_table.sql",
-    "docs/architecture/migrations/compressed-fluid-node-table-xval-2026-11-25.json"
+    "docs/architecture/migrations/compressed-fluid-node-table-xval-2026-11-25.json",
+    "development/audit/m17677/README.md",
+    "development/audit/m17677/land_verdict.py",
+    "development/audit/m17677/publish_report.py",
+    "development/audit/m17677/tools/m17677_compressed_node_table_audit.py",
+    "development/audit/m17677/verdict_m17677.sql",
+    "docs/architecture/migrations/nebb-early-rounds-and-sparse-audits-2026-11-27.json"
   ]
 }

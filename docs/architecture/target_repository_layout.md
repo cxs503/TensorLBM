@@ -156,6 +156,8 @@ The [AMR, buffer, survey and LES audit archive ledger](migrations/amr-survey-les
 
 The [Peskin and convolution audit archive ledger](migrations/peskin-and-conv-audit-2026-11-27.json) retires one XVAL campaign directory and one historical audit directory, with preserved original vendor provenance, recorded evidence and compatible entry paths.
 
+The [early NEBB and sparse audit archive ledger](migrations/nebb-early-rounds-and-sparse-audits-2026-11-27.json) consolidates exact original audit copies, restores a discoverable archived figure, and archives two internal audit directories without altering formal solver algorithms.
+
 ## Root files and rollout
 
 The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.json)

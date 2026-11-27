@@ -20,7 +20,7 @@ Lineage (read from source, no hand-copied tables)
   (``get_velocity_correction = F/(2 rho)``).
   The implemented forms are the standard Guo (2002) forcing + the standard
   non-equilibrium bounce-back; the vivsim port of the same algorithm lives in
-  ``xval/xval_nebb_bodyforce_driver.py`` (cross-benchmark arm A) and is used as
+  ``docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.py`` (cross-benchmark arm A) and is used as
   an independent implementation arm by the benchmark entry point.
 * TensorLBM reuse: lattice constants from :mod:`tensorlbm.boundary.d2q9`
   (``C2Q9``/``W2Q9``/``OPPOSITE_2Q9``) and the solver primitives from
