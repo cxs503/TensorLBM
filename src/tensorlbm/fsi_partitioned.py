@@ -122,7 +122,7 @@ def clamp_aitken_factor(
     re-introduces divergence for ``beta_eff > 1/omega_min - 1`` on a linear
     added-mass interface, because the clipped factor then violates
     ``omega < 2/(1+beta_eff)``.  Measured thresholds (see
-    ``xval/aitken_underrelaxation_life/out/scale_guard.json``):
+    ``development/verification/aitken_underrelaxation_life/out/scale_guard.json``):
     ``omega_min=5e-2`` -> diverges at ``beta_eff > 39``,
     ``omega_min=1e-4`` -> ``beta_eff > 9999``,
     ``omega_min=1e-3`` (sibling module) -> ``beta_eff > 999``.
@@ -360,7 +360,7 @@ class AitkenRelaxation:
     ``omega_min=0.05`` diverges for ``beta_eff > 39``; ``omega_min=1e-4`` (the
     first fix in mission m17727) only moves the threshold to
     ``beta_eff > 9999`` and still diverges at ``beta_eff = 2e4``
-    (``xval/aitken_underrelaxation_life/out/scale_guard.json``).
+    (``development/verification/aitken_underrelaxation_life/out/scale_guard.json``).
     ``clip=False`` reproduces the raw joconnor22/LIFE convention (no clipping,
     negative factors allowed).
     """

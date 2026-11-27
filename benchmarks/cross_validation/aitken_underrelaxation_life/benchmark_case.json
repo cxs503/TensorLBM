@@ -1,0 +1,41 @@
+{
+  "scope": "Archived displacement-Aitken cross-validation and subsequent scale-guard audit. This scalar interface case remains discoverable and its reference is used by maintained regression tests. Independent method transcription is not an external solver rerun; no fresh scientific acceptance.",
+  "criteria": {
+    "owner_acceptance_pct": 15.0,
+    "pass_rule": "K1, K2, K4 and K6 must be < 15% for the aligned arms (ours_life_conv vs life_ref); K5 must be true",
+    "iteration_cost_rule": "a K3 difference between ours_life_conv and life_ref larger than 15% must be attributed to a listed convention difference (predictor, start factor, tolerance normalisation, clipping) or reported as an implementation defect; K3 is diagnostic, not an accuracy gate",
+    "physical_accuracy_rule": "K2 < 3% is reported explicitly against the owner's stricter 3% question",
+    "stability_rule": "non-finite interface state or |d| > 1e6 * (F0/k) is a failure, reported as measured, never tuned away"
+  },
+  "source": [
+    "development/verification/aitken_underrelaxation_life/reference.py",
+    "development/verification/aitken_underrelaxation_life/run_xval.py",
+    "development/verification/aitken_underrelaxation_life/scale_guard_probe.py",
+    "development/verification/aitken_underrelaxation_life/figures.py",
+    "development/verification/aitken_underrelaxation_life/scale_guard_figures.py",
+    "development/verification/aitken_underrelaxation_life/make_report.py"
+  ],
+  "config": [
+    "development/verification/aitken_underrelaxation_life/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/aitken_underrelaxation_life/README.md",
+    "docs/XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXED-POINT.md",
+    "docs/AUDIT-XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE.md"
+  ],
+  "reference_files": [
+    "development/verification/aitken_underrelaxation_life/reference.py"
+  ],
+  "results": [
+    "development/verification/aitken_underrelaxation_life/out/results.json",
+    "development/verification/aitken_underrelaxation_life/out/scale_guard.json"
+  ],
+  "evidence": [
+    "development/verification/aitken_underrelaxation_life/out/cases.csv",
+    "development/verification/aitken_underrelaxation_life/out/summary.csv",
+    "development/audit/m17828/verdict_m17828.sql",
+    "docs/architecture/migrations/aitken-xval-archive-2026-11-27.json",
+    "tests/test_fsi_aitken_guard_scale.py",
+    "tests/test_fsi_aitken_life_xval.py"
+  ]
+}

@@ -125,6 +125,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT"),
     ("scripts", "p399w2_n04_curved_force"),
     ("xval", "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO"),
+    ("xval", "aitken_underrelaxation_life"),
     ("xval", "ludwig_fe_stress"),
     ("xval", "lbmconfig_single_point"),
     ("xval", "XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES"),

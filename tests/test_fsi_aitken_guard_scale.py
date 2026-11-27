@@ -37,7 +37,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                "xval", "aitken_underrelaxation_life"))
+                                "development", "verification", "aitken_underrelaxation_life"))
 
 import reference as R  # noqa: E402
 

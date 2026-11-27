@@ -9,7 +9,7 @@ run on the same physical target and judged against two independent references
 (discrete monolithic Newmark = ``REF-D``, continuous closed form = ``REF-C``)
 and against the analytic Aitken fixed point ``omega* = 1/(1+beta_eff)``.
 
-Usage:  PYTHONPATH=src python3 xval/aitken_underrelaxation_life/run_xval.py
+Usage:  PYTHONPATH=src python3 development/verification/aitken_underrelaxation_life/run_xval.py
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ import sys
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, HERE)
 
