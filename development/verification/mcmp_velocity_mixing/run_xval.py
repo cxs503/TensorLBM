@@ -5,10 +5,10 @@ no number is typed by hand.
 
 Usage::
 
-    python xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/run_xval.py --only W1
-    python xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/run_xval.py --only W2
-    python xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/run_xval.py --only W3
-    python xval/XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING/run_xval.py --merge
+    python development/verification/mcmp_velocity_mixing/run_xval.py --only W1
+    python development/verification/mcmp_velocity_mixing/run_xval.py --only W2
+    python development/verification/mcmp_velocity_mixing/run_xval.py --only W3
+    python development/verification/mcmp_velocity_mixing/run_xval.py --merge
 
 ``--only`` writes ``artifacts/part_<W>.json`` so the workloads can run in
 parallel processes; ``--merge`` assembles ``artifacts/result.json`` and stamps
@@ -26,7 +26,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO))

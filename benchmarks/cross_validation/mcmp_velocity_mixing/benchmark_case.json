@@ -1,0 +1,51 @@
+{
+  "scope": "Historical Shan-Chen MCMP velocity-convention comparison: static droplet, stratified Poiseuille, and momentum ledger. Separate from the maintained stratified benchmark. Figures were rendered from existing data; no new simulation verdict.",
+  "criteria": {
+    "primary": "relative deviation between GOT-MIX and the OSS arm, per observable: sigma (surface tension from dp*R), u_max_spurious, Poiseuille u_max / volume flux Q / profile L2. |dev| <= 15% = acceptable (owner precision standard).",
+    "ground_truth_checks": [
+      "Young-Laplace: sigma = dp*R must be radius independent; residual = max_i |dp_i R_i - mean| / mean (percent).",
+      "Stratified Poiseuille: relative error of u_max and Q against analytic.py, in-house strict bound 3%.",
+      "Global momentum: |P(t)-P(0)| / |P(0)| and absolute per-step drift."
+    ],
+    "unit_of_analysis": "one (arm, workload, configuration) triple; no averaging across arms.",
+    "thresholds": {
+      "owner_accept": "observed relative deviation <= 15%",
+      "in_house_strict_poiseuille": "relative error vs analytic <= 3%",
+      "in_house_strict_laplace": "radius-consistency residual <= 5%",
+      "control_must_fail": "CTRL-NORM deviation >= 15% on at least one primary observable, otherwise the harness is falsified (see falsification)"
+    }
+  },
+  "source": [
+    "development/verification/mcmp_velocity_mixing/run_xval.py",
+    "development/verification/mcmp_velocity_mixing/velocity_mixing_arms.py",
+    "development/verification/mcmp_velocity_mixing/analyze.py",
+    "src/tensorlbm/multiphase.py",
+    "src/tensorlbm/cases/two_layer_poiseuille.py"
+  ],
+  "config": [
+    "development/verification/mcmp_velocity_mixing/predeclared.json"
+  ],
+  "documentation": [
+    "development/verification/mcmp_velocity_mixing/REPORT.md",
+    "development/verification/mcmp_velocity_mixing/artifacts/tables.md"
+  ],
+  "reference_files": [
+    "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py"
+  ],
+  "results": [
+    "development/verification/mcmp_velocity_mixing/artifacts/result.json",
+    "development/verification/mcmp_velocity_mixing/artifacts/analysis.json",
+    "development/verification/mcmp_velocity_mixing/artifacts/table.csv"
+  ],
+  "evidence": [
+    "development/verification/mcmp_velocity_mixing/artifacts/part_W1.json",
+    "development/verification/mcmp_velocity_mixing/artifacts/part_W2.json",
+    "development/verification/mcmp_velocity_mixing/artifacts/part_W3.json",
+    "development/verification/mcmp_velocity_mixing/figures/fig1_deviation_bars.png",
+    "development/verification/mcmp_velocity_mixing/figures/fig2_droplet_spurious.png",
+    "development/verification/mcmp_velocity_mixing/figures/fig3_momentum_ledger.png",
+    "development/verification/mcmp_velocity_mixing/figures/fig4_profile_primary.png",
+    "development/verification/mcmp_velocity_mixing/figures/fig5_profile_shift_factor.png",
+    "docs/architecture/migrations/mcmp-force-velocity-xval-2026-11-27.json"
+  ]
+}

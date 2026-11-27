@@ -52,6 +52,26 @@ class BenchmarkRegistryTests(unittest.TestCase):
         )
         self.assertEqual(norberg["current_acceptance"], "not_evaluated")
 
+    def test_mcmp_archives_keep_distinct_protocols_and_results(self):
+        (force,) = self.registry("--case", "xval:mcmp_cross_force")
+        self.assertEqual(force["current_acceptance"], "not_evaluated")
+        evidence = force["variants"][0]
+        for path in (
+            "development/verification/mcmp_cross_force_operator/artifacts/xval_results.json",
+            "development/verification/mcmp_two_component_cross_force/artifacts/summary.json",
+        ):
+            self.assertIn(path, evidence["results"])
+        self.assertIn(
+            "development/audit/xval_mcmp_cross_force_m18289/refs/operators.py",
+            evidence["reference_files"],
+        )
+        (velocity,) = self.registry("--case", "xval:mcmp_velocity_mixing")
+        self.assertEqual(velocity["current_acceptance"], "not_evaluated")
+        self.assertIn(
+            "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py",
+            velocity["variants"][0]["reference_files"],
+        )
+
     def test_fused_streaming_archive_retains_case_ownership(self):
         case_path = "benchmarks/verified/fused_push_pull_aa_pattern"
         (record,) = self.registry("--case", case_path)

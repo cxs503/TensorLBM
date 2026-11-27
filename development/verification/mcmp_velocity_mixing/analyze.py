@@ -26,9 +26,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO))
-sys.path.insert(0, str(REPO / "cases" / "mcmp_stratified_poiseuille"))
+sys.path.insert(0, str(REPO / "benchmarks" / "verified" / "mcmp_stratified_poiseuille"))
 
 ART = HERE / "artifacts"
 FIG = HERE / "figures"

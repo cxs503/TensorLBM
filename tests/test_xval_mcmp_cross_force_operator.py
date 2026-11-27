@@ -26,7 +26,7 @@ import pytest
 import torch
 
 XVAL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                    "xval", "XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP")
+                    "development", "verification", "mcmp_cross_force_operator")
 sys.path.insert(0, XVAL)
 
 import arms  # noqa: E402

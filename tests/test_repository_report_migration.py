@@ -155,6 +155,35 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 )
                 self.assertFalse((REPO / item["old_path"]).exists())
 
+    def test_mcmp_archives_preserve_original_data_and_derived_figures(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "mcmp-force-velocity-xval-2026-11-27.json").read_text()
+        )
+        self.assertEqual(len(ledger["entries"]), 26)
+        self.assertEqual(len(ledger["restored_derived_figures"]), 9)
+        for entry in ledger["entries"]:
+            with self.subTest(path=entry["new_path"]):
+                self.assertFalse((REPO / entry["old_path"]).exists())
+                path = REPO / entry["new_path"]
+                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),
+                                 entry["current_sha256"])
+                self.assertEqual(
+                    subprocess.check_output(
+                        ["git", "ls-files", "-s", "--", entry["new_path"]],
+                        cwd=REPO, text=True,
+                    ).split()[0], entry["git_mode"],
+                )
+                if path.suffix not in {".py", ".md"}:
+                    self.assertTrue(entry["byte_identical"])
+                    self.assertEqual(entry["original_sha256"], entry["current_sha256"])
+        for figure in ledger["restored_derived_figures"]:
+            self.assertEqual(hashlib.sha256((REPO / figure["path"]).read_bytes()).hexdigest(),
+                             figure["sha256"])
+            for path, sha in figure["inputs"].items():
+                self.assertEqual(hashlib.sha256((REPO / path).read_bytes()).hexdigest(), sha)
+        self.assertEqual(ledger["validation"]["current_scientific_acceptance"],
+                         "not_evaluated")
+
     def test_runtest_r6_tools_keep_paths_and_fingerprints(self):
         ledger_path = LEDGER_PATH.parent / "runtest-r6-audit-tools-2026-11-23.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

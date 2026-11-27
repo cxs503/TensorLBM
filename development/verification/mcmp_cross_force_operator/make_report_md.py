@@ -11,7 +11,7 @@ import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 ART = os.path.join(HERE, "artifacts", "xval_results.json")
 OUT = os.path.join(ROOT, "docs", "XVAL_LBM_MCMP_CROSS_FORCE_OPERATOR_SYMBOL_SPECTRAL_OSS.md")
 
@@ -130,11 +130,11 @@ def main() -> None:
     A("")
     A("### ④ 结果图")
     A("")
-    A("- `figures/fig1_gain.png`：算符增益 vs 波数（数值 vs 闭式 `1-k²/6` vs 连续 cs²），"
+    A("- `development/verification/mcmp_cross_force_operator/figures/fig1_gain.png`：算符增益 vs 波数（数值 vs 闭式 `1-k²/6` vs 连续 cs²），"
       "右图为截断误差与 3%/15% 门的交点。")
-    A("- `figures/fig2_equilibrium.png`：ρ1−ρ2 场量云图 + y 平均界面剖面 + "
+    A("- `development/verification/mcmp_cross_force_operator/figures/fig2_equilibrium.png`：ρ1−ρ2 场量云图 + y 平均界面剖面 + "
       "两种 EOS 符号下的压力剖面（只有导出式在平界面上为常数）。")
-    A("- `figures/fig3_invariants.png`：全部不变量残差对 3%/15% 门的条形图。")
+    A("- `development/verification/mcmp_cross_force_operator/figures/fig3_invariants.png`：全部不变量残差对 3%/15% 门的条形图。")
     A("")
     A("### ⑤ 注意点")
     A("")
@@ -181,7 +181,7 @@ def main() -> None:
     A("### 复现")
     A("")
     A("```")
-    A("cd xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP")
+    A("cd development/verification/mcmp_cross_force_operator")
     A("PYTHONPATH=<repo>/src python run_xval.py --n 96 --steps 12000")
     A("PYTHONPATH=<repo>/src python -m pytest tests/test_xval_mcmp_cross_force_operator.py -q")
     A("```")
