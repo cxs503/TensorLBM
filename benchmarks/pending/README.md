@@ -404,7 +404,7 @@ forchheimer/fibrous 的参考类裁决。
 
 pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器判决 pass/fail/unknown = **1/19/44**
 
-违规：hard **0** · soft **16**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
+违规：hard **0** · soft **15**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
 
 <details><summary>soft 存量债（逐条）</summary>
 
@@ -420,7 +420,6 @@ pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器
 - `missing_machine_verdict` `ship_wave_michell` — no README and no machine verdict on disk
 - `missing_machine_verdict` `staircase_wall_offset` — no README and no machine verdict on disk
 - `missing_machine_verdict` `trt_wall_accuracy` — no README and no machine verdict on disk
-- `missing_machine_verdict` `two_phase_poiseuille_viscous` — no README and no machine verdict on disk
 - `stale_index_row` `cavity_natural_convection` — index row at line 43 points to a non-pending case (moved to verified/)
 - `stale_index_row` `channel_turb` — index row at line 44 points to a non-pending case (no such directory)
 - `stale_index_row` `channel_turb` — index row at line 46 points to a non-pending case (no such directory)
@@ -492,5 +491,5 @@ pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器
 | `taylor_aris_kh_extrapolation` | yes | **no** | unknown | 0 | **unregistered** |
 | `trt_wall_accuracy` | **no** | yes | unknown | 0 | **unregistered** |
 | `two_phase_poiseuille` | yes | yes | unknown | 1 | closed |
-| `two_phase_poiseuille_viscous` | **no** | **no** | unknown | 0 | **unregistered** |
+| `two_phase_poiseuille_viscous` | yes | **no** | unknown | 0 | **unregistered** |
 <!-- STATUS_LEDGER:END -->

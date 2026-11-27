@@ -764,7 +764,7 @@
    "machine": "unknown",
    "machine_key": null,
    "machine_source": null,
-   "readme": false,
+   "readme": true,
    "result_json": false,
    "validation_status_json": false
   }
@@ -777,7 +777,7 @@
   "pending_machine_fail": 19,
   "pending_machine_pass": 1,
   "pending_machine_unknown": 44,
-  "pending_with_readme": 49,
+  "pending_with_readme": 50,
   "pending_with_result_json": 31,
   "status_md_verified_rows": 36,
   "verified_dirs": 91
@@ -1202,12 +1202,6 @@
    },
    {
     "case": "trt_wall_accuracy",
-    "detail": "no README and no machine verdict on disk",
-    "id": "missing_machine_verdict",
-    "severity": "soft"
-   },
-   {
-    "case": "two_phase_poiseuille_viscous",
     "detail": "no README and no machine verdict on disk",
     "id": "missing_machine_verdict",
     "severity": "soft"

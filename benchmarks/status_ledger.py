@@ -30,6 +30,7 @@ Usage
 -----
     python benchmarks/status_ledger.py                 # human summary
     python benchmarks/status_ledger.py --check         # exit 1 on hard violations
+    python benchmarks/status_ledger.py --check-artifacts # exit 1 on stale generated views
     python benchmarks/status_ledger.py --write         # refresh JSON + md blocks
     python benchmarks/status_ledger.py --json out.json # dump the ledger
 
@@ -319,7 +320,7 @@ def build_ledger(root: Path = REPO_ROOT) -> Dict[str, Any]:
                     "detail": "verified case directory missing from the benchmarks/STATUS.md verified table",
                 }
             )
-    for case in set(listed):
+    for case in sorted(set(listed)):
         if listed.count(case) > 1:
             violations.append(
                 {
@@ -514,6 +515,36 @@ def write_artifacts(ledger: Dict[str, Any], root: Path = REPO_ROOT) -> Dict[str,
     return state
 
 
+def generated_artifact_errors(ledger: Dict[str, Any], root: Path = REPO_ROOT) -> List[str]:
+    """Check committed generated views against a fresh ledger without writing."""
+    errors: List[str] = []
+    expected = dict(ledger)
+    expected.pop("status_md_verified_listed", None)
+    try:
+        current = json.loads((root / LEDGER_JSON).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        errors.append(f"{LEDGER_JSON}: missing or invalid generated JSON")
+    else:
+        if current != expected:
+            errors.append(f"{LEDGER_JSON}: stale generated JSON")
+    for path in (PENDING_INDEX, STATUS_MD):
+        try:
+            text = (root / path).read_text(encoding="utf-8")
+        except OSError:
+            errors.append(f"{path}: missing generated Markdown view")
+            continue
+        if path == PENDING_INDEX:
+            block = render_pending_block(ledger)
+        else:
+            payload = dict(ledger)
+            payload["status_md_verified_listed"] = parse_status_md_verified(strip_block(text))
+            block = render_verified_block(payload)
+        if (text.count(BLOCK_BEGIN) != 1 or text.count(BLOCK_END) != 1
+                or block_text(text) != "\n" + block):
+            errors.append(f"{path}: stale generated Markdown block")
+    return errors
+
+
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
@@ -545,6 +576,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     ap.add_argument("--json", default=None, help="write the ledger JSON to this path")
     ap.add_argument("--write", action="store_true", help="refresh STATUS_LEDGER.json and the generated md blocks")
     ap.add_argument("--check", action="store_true", help="exit 1 if any hard violation is present")
+    ap.add_argument("--check-artifacts", action="store_true", help="exit 1 if generated JSON or Markdown views are stale")
     args = ap.parse_args(list(argv) if argv is not None else None)
     root = Path(args.root).resolve()
 
@@ -561,6 +593,14 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     if args.json:
         Path(args.json).write_text(json.dumps(ledger, indent=1, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
         print(f"  written   {args.json}")
+    if args.check_artifacts:
+        errors = generated_artifact_errors(ledger, root)
+        if errors:
+            for error in errors:
+                print(f"  [stale] {error}", file=sys.stderr)
+            print("  Rebuild with python benchmarks/status_ledger.py --write", file=sys.stderr)
+            return 1
+        print("  generated status artifacts are current")
     if args.check and ledger["violations"]["hard"]:
         return 1
     return 0

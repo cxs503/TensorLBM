@@ -11,4 +11,4 @@ python tests/test_benchmark_manuals.py -v
 python tools/check_benchmark_manuals.py
 python tests/test_benchmark_registry.py -v
 python tools/benchmark_registry.py
-python benchmarks/status_ledger.py --check
+python benchmarks/status_ledger.py --check --check-artifacts

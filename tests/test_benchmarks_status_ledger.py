@@ -127,6 +127,34 @@ def test_write_is_idempotent_and_registration_converges(fixture: Path):
     assert not any(v["id"] == "unregistered_pending_case" for v in led["violations"]["hard"])
 
 
+def test_generated_artifact_gate_detects_readme_change_without_promoting_case(fixture: Path):
+    # The generated ledger is a view, not an acceptance record.
+    readme = fixture / "benchmarks" / "pending" / "gamma" / "README.md"
+    readme.unlink()
+    L.write_artifacts(L.build_ledger(fixture), fixture)
+    assert L.generated_artifact_errors(L.build_ledger(fixture), fixture) == []
+    before = (fixture / L.LEDGER_JSON).read_bytes()
+    readme.write_text("# recovered case documentation\n", encoding="utf-8")
+    live = L.build_ledger(fixture)
+    assert L.machine_verdict(readme.parent)["state"] == "unknown"
+    errors = L.generated_artifact_errors(live, fixture)
+    assert f"{L.LEDGER_JSON}: stale generated JSON" in errors
+    assert f"{L.PENDING_INDEX}: stale generated Markdown block" in errors
+    assert L.main(["--root", str(fixture), "--check-artifacts"]) == 1
+    assert (fixture / L.LEDGER_JSON).read_bytes() == before  # read-only check
+    L.write_artifacts(live, fixture)
+    assert L.main(["--root", str(fixture), "--check-artifacts"]) == 0
+
+
+def test_generated_artifact_gate_rejects_edited_markdown_with_current_json(fixture: Path):
+    L.write_artifacts(L.build_ledger(fixture), fixture)
+    pending = fixture / L.PENDING_INDEX
+    text = pending.read_text(encoding="utf-8")
+    pending.write_text(text.replace("机器台账（自动生成", "改写台账（自动生成", 1), encoding="utf-8")
+    errors = L.generated_artifact_errors(L.build_ledger(fixture), fixture)
+    assert errors == [f"{L.PENDING_INDEX}: stale generated Markdown block"]
+
+
 def test_live_repo_has_no_hard_violations():
     """Anti-rot gate: the checked-in archives must agree with their indexes."""
     led = L.build_ledger(ROOT)
@@ -154,6 +182,7 @@ def test_ledger_json_artifact_is_current():
     live = L.build_ledger(ROOT)
     assert committed["counts"] == live["counts"]
     assert [c["case"] for c in committed["cases"]] == [c["case"] for c in live["cases"]]
+    assert L.generated_artifact_errors(live, ROOT) == []
 
 def test_unverified_index_and_portable_evidence_path(fixture: Path):
     text = "| [alpha](alpha/) | ⚠️ | awaiting independent reference |"
