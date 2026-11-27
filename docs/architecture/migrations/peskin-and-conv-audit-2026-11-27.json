@@ -1,0 +1,351 @@
+{
+  "scope": "Retire complete historical Peskin XVAL and independent convolution audit document directories without changing the solver or scientific criteria.",
+  "source_commit": "5ff08ba851a0e65ba886c59e781d347401884bdd",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 73,
+    "xval_second_level_count": 17
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 72,
+    "xval_second_level_count": 16
+  },
+  "retired_second_level_directories": [
+    "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF",
+    "docs/audit_m17835"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/REPORT.md",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "16c7a84dbc0c62ac4a34979c0305fd274527fb16",
+      "original_sha256": "6b7c4a035677d821d38d9a7e071dad4c7c77c96af2a1b577a4bafddb664dc5ba",
+      "size_bytes": 15684,
+      "current_sha256": "6b7c4a035677d821d38d9a7e071dad4c7c77c96af2a1b577a4bafddb664dc5ba",
+      "byte_identical": true,
+      "current_size_bytes": 15684
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/artifacts/xval_peskin_tp_mdf.json",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/artifacts/xval_peskin_tp_mdf.json",
+      "git_mode": "100644",
+      "original_git_blob": "d878d121d6d1ff8e75fd643f0dea5cae03b3c82d",
+      "original_sha256": "721c253c38f376d358edbeec80a143a8347a96087464c31453f610094055156f",
+      "size_bytes": 566483,
+      "current_sha256": "721c253c38f376d358edbeec80a143a8347a96087464c31453f610094055156f",
+      "byte_identical": true,
+      "current_size_bytes": 566483
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/PROVENANCE.json",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/PROVENANCE.json",
+      "git_mode": "100644",
+      "original_git_blob": "a0e5144dc6342b4e60b9f451c846789685b7f2a8",
+      "original_sha256": "11a4fd951f5d7b5ce5a3e497ccfa67c8451d3087dab98fbe8d1049b8497d11f9",
+      "size_bytes": 2706,
+      "current_sha256": "11a4fd951f5d7b5ce5a3e497ccfa67c8451d3087dab98fbe8d1049b8497d11f9",
+      "byte_identical": true,
+      "current_size_bytes": 2706
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/__init__.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "fbc9cc9e70e0cdbe0e1e2b5b659a633a65f36d03",
+      "original_sha256": "c230dd2813679b872a027e33340051aa02dfbae04bf4b431f5639ed91d3afc82",
+      "size_bytes": 633,
+      "current_sha256": "c230dd2813679b872a027e33340051aa02dfbae04bf4b431f5639ed91d3afc82",
+      "byte_identical": true,
+      "current_size_bytes": 633
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/geometry.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/geometry.py",
+      "git_mode": "100644",
+      "original_git_blob": "65b80b1263ce0a49034b305eec7eb9137583fd04",
+      "original_sha256": "b11df0433c38c9897782d3496c75070964c5908864861bfdd271d7fd41ca3ae5",
+      "size_bytes": 1309,
+      "current_sha256": "b11df0433c38c9897782d3496c75070964c5908864861bfdd271d7fd41ca3ae5",
+      "byte_identical": true,
+      "current_size_bytes": 1309
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/kernels.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/kernels.py",
+      "git_mode": "100644",
+      "original_git_blob": "1c669fb0bcb889fceb6306019fbddde330d6da74",
+      "original_sha256": "6de76f43c6c3ce71e17c53d3cd2ec0c58b15036ffba23b52079486bbbeb9473e",
+      "size_bytes": 1371,
+      "current_sha256": "6de76f43c6c3ce71e17c53d3cd2ec0c58b15036ffba23b52079486bbbeb9473e",
+      "byte_identical": true,
+      "current_size_bytes": 1371
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/mdf.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/mdf.py",
+      "git_mode": "100644",
+      "original_git_blob": "bd23de0c32fc748977458e1269b5ff48fd62cd31",
+      "original_sha256": "305637840017fe6c4070410c530daa8a76e8e44695489fbf27503084e99f9f98",
+      "size_bytes": 2362,
+      "current_sha256": "305637840017fe6c4070410c530daa8a76e8e44695489fbf27503084e99f9f98",
+      "byte_identical": true,
+      "current_size_bytes": 2362
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/np_jax_shim.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/np_jax_shim.py",
+      "git_mode": "100644",
+      "original_git_blob": "5c5c1d284672bc0b57479a8d502cb9647ba9ce5d",
+      "original_sha256": "81b6ee4124a7aea07fe02ec4cca55f69c77c50e9cc12bc6b37fc791dad524a07",
+      "size_bytes": 5325,
+      "current_sha256": "81b6ee4124a7aea07fe02ec4cca55f69c77c50e9cc12bc6b37fc791dad524a07",
+      "byte_identical": true,
+      "current_size_bytes": 5325
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/stencil.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/stencil.py",
+      "git_mode": "100644",
+      "original_git_blob": "42a7502fd4a3b91633e8a8f852086ddbb5ed237e",
+      "original_sha256": "5f18f4d57baef3f25b2e0be4de000dadf386a0fe250487bb37a60203b572f08c",
+      "size_bytes": 3877,
+      "current_sha256": "5f18f4d57baef3f25b2e0be4de000dadf386a0fe250487bb37a60203b572f08c",
+      "byte_identical": true,
+      "current_size_bytes": 3877
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/oss_ref/stencil3d.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/stencil3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "b0374d493e0cd93e1965a52c4e098c54085061ed",
+      "original_sha256": "00cab9059250c409789d882209369956e27fec2a692428cb0e6c4df701e130ae",
+      "size_bytes": 2279,
+      "current_sha256": "00cab9059250c409789d882209369956e27fec2a692428cb0e6c4df701e130ae",
+      "byte_identical": true,
+      "current_size_bytes": 2279
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/predeclared.json",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "9306ef9db5aa1863c8b78096e295b557d3b5ecff",
+      "original_sha256": "782ffacaff933683614eae8f8da63cbda94a5a1fa8960c8eced402ef8662ed59",
+      "size_bytes": 5643,
+      "current_sha256": "782ffacaff933683614eae8f8da63cbda94a5a1fa8960c8eced402ef8662ed59",
+      "byte_identical": true,
+      "current_size_bytes": 5643
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/r2_interior/REPORT_R2.md",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/REPORT_R2.md",
+      "git_mode": "100644",
+      "original_git_blob": "973c1dfa28028c79bb20ee14e9e0dd93868642d9",
+      "original_sha256": "a022c86ccb20483f6f6284dec8dd32ca9d753a0f9ccc3aedc2c278bae4e7dcd8",
+      "size_bytes": 3700,
+      "current_sha256": "a022c86ccb20483f6f6284dec8dd32ca9d753a0f9ccc3aedc2c278bae4e7dcd8",
+      "byte_identical": true,
+      "current_size_bytes": 3700
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/r2_interior/artifacts/screen.json",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/artifacts/screen.json",
+      "git_mode": "100644",
+      "original_git_blob": "82af90525d8bf84fbc9fe34d57b7afb3799e3f03",
+      "original_sha256": "725812784877ea62445a5e2ca7b8d7fd026841d40a14ea34cbe455350b3ddb02",
+      "size_bytes": 94336,
+      "current_sha256": "725812784877ea62445a5e2ca7b8d7fd026841d40a14ea34cbe455350b3ddb02",
+      "byte_identical": true,
+      "current_size_bytes": 94336
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/r2_interior/make_figures.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "c684292db0386035dc7a156aeee15ce70a2a7d0c",
+      "original_sha256": "30c31a65a807b066e409499dbabf91ce1432e94f4c9c16c1cf4d5d99d9c00f39",
+      "size_bytes": 5045,
+      "current_sha256": "30c31a65a807b066e409499dbabf91ce1432e94f4c9c16c1cf4d5d99d9c00f39",
+      "byte_identical": true,
+      "current_size_bytes": 5045
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/r2_interior/make_report.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "1a9f9df96149c3500ae92798a05928b8e2a527b2",
+      "original_sha256": "3d39e879a6f1944dc25a9a5a6bafc02e6aec454495f331bd5e3d1c9fcdbb2e54",
+      "size_bytes": 12856,
+      "current_sha256": "3d39e879a6f1944dc25a9a5a6bafc02e6aec454495f331bd5e3d1c9fcdbb2e54",
+      "byte_identical": true,
+      "current_size_bytes": 12856
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/r2_interior/run_l4_interior.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/run_l4_interior.py",
+      "git_mode": "100644",
+      "original_git_blob": "3bae6cf82f4192dc37d5a5c8d687f52befc9dea0",
+      "original_sha256": "092835e0306197abd811fe80d41f9d0cfd87ee3b6aaf33966c6f865267169dc3",
+      "size_bytes": 10456,
+      "current_sha256": "c7feb66d05ec0fe3eea14e4f6c3d7983b4d8be756a07b61b6e2ceb93a81e101a",
+      "byte_identical": false,
+      "current_size_bytes": 10456,
+      "path_only_edit": {
+        "old": "ROOT = XV.parents[1]",
+        "new": "ROOT = XV.parents[2]"
+      }
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF/run_xval.py",
+      "new_path": "development/verification/peskin_tensor_product_stencil_mdf/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "5313300f09bb96d340216826a5030d645154636e",
+      "original_sha256": "b623aac93d191f4b3ad636c683b64c866871f002de6e62e7e447353860de9bfe",
+      "size_bytes": 32859,
+      "current_sha256": "b623aac93d191f4b3ad636c683b64c866871f002de6e62e7e447353860de9bfe",
+      "byte_identical": true,
+      "current_size_bytes": 32859
+    },
+    {
+      "old_path": "docs/audit_m17835/AUDIT_m17835.md",
+      "new_path": "development/audit/m17876/AUDIT_m17835.md",
+      "git_mode": "100644",
+      "original_git_blob": "fb723dd737d08a2f77323668b37c81d9aa8a087d",
+      "original_sha256": "e37ae8e6c33e45873978e6e962d153303429e759b2e1d91ec9b1e74cae40ddd3",
+      "size_bytes": 15136,
+      "current_sha256": "e37ae8e6c33e45873978e6e962d153303429e759b2e1d91ec9b1e74cae40ddd3",
+      "byte_identical": true,
+      "current_size_bytes": 15136
+    },
+    {
+      "old_path": "docs/audit_m17835/collect_evidence.py",
+      "new_path": "development/audit/m17876/collect_evidence.py",
+      "git_mode": "100644",
+      "original_git_blob": "d55ad5dd2838c1c81794b6b97c072575058e487e",
+      "original_sha256": "ecf96970b2b878eee219ad47e0963872f37be8ab2c9de1ef2d591d3d269f6a89",
+      "size_bytes": 9399,
+      "current_sha256": "ecf96970b2b878eee219ad47e0963872f37be8ab2c9de1ef2d591d3d269f6a89",
+      "byte_identical": true,
+      "current_size_bytes": 9399
+    },
+    {
+      "old_path": "docs/audit_m17835/fig_m17835_evidence.png",
+      "new_path": "development/audit/m17876/fig_m17835_evidence.png",
+      "git_mode": "100644",
+      "original_git_blob": "02313389b3f0803fc03090fdb99185bfb7c1783c",
+      "original_sha256": "546c52df9e7131ab02c04b4d7fbc0a16a6fb4d588c52294f36c0664eb8ed8098",
+      "size_bytes": 130548,
+      "current_sha256": "546c52df9e7131ab02c04b4d7fbc0a16a6fb4d588c52294f36c0664eb8ed8098",
+      "byte_identical": true,
+      "current_size_bytes": 130548
+    },
+    {
+      "old_path": "docs/audit_m17835/make_verdict_sql.py",
+      "new_path": "development/audit/m17876/make_verdict_sql.py",
+      "git_mode": "100644",
+      "original_git_blob": "3adf59825c19034ac9e31081b6bb29bbdca30cc4",
+      "original_sha256": "ee06bcffe8ecc43f0edf014277ab1dfcc7cda794bd0b80417a0b44659bc13765",
+      "size_bytes": 9952,
+      "current_sha256": "ee06bcffe8ecc43f0edf014277ab1dfcc7cda794bd0b80417a0b44659bc13765",
+      "byte_identical": true,
+      "current_size_bytes": 9952
+    },
+    {
+      "old_path": "docs/audit_m17835/publish_report.py",
+      "new_path": "development/audit/m17876/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "ff460caf08bb7c40e5cc9de9adc54e5dbd452b25",
+      "original_sha256": "4252fd7121e214458f76dbd0e7dca529c635841b9ff9c94426ff19b2b0f3a684",
+      "size_bytes": 2758,
+      "current_sha256": "4252fd7121e214458f76dbd0e7dca529c635841b9ff9c94426ff19b2b0f3a684",
+      "byte_identical": true,
+      "current_size_bytes": 2758
+    }
+  ],
+  "compatibility_edits": [
+    {
+      "path": "tests/test_xval_peskin_tensor_product_stencil_mdf.py",
+      "original_sha256": "b9f916dd133507c1d7f545b96dad75f932be6d46d285aa6d6ed520e71ad50cab",
+      "current_sha256": "398966b88bebc2df18df4d03ac7577b65a1227706dc4010cba16d91cdeb96223"
+    },
+    {
+      "path": "tools/check_repository_layout.py",
+      "original_sha256": "c8bc46f7059a90624e563a205fc3e86994ad17ce788f9160f46a61bc9bcc07d9",
+      "current_sha256": "0497609776cb0eaa03fe63183bbeb057b9a0d823882313701e1336df94e2d666"
+    },
+    {
+      "path": "docs/architecture/target_repository_layout.md",
+      "original_sha256": "0fac48baf14f5b5e25521ffeed1eb43db69ca0c9ac89a00b587f630968b9f195",
+      "current_sha256": "9de013d6e8d05fdfe041c46a054bd958c6b0cadacc400c1880049c1010aa6ffa"
+    }
+  ],
+  "prior_verdict": {
+    "path": "development/audit/m17835/verdict_m17835.sql",
+    "original_sha256": "0c106f316e1153ae9fdabc2c157397ccaca0a4631f20079b0f8530475ee4217c",
+    "size_bytes": 8663
+  },
+  "case_ownership": {
+    "peskin": "benchmarks/cross_validation/peskin_tensor_product_stencil_mdf",
+    "convolution": "benchmarks/xval_conv_as_streaming"
+  },
+  "historical_gaps": {
+    "peskin": "Native JAX not executed; original adapted NumPy reference preserved. Tracked round-1 report/results and round-2 partial screen preserved; original figure files and full ladder not found by inspected tracked history. Neither round establishes new physical acceptance.",
+    "convolution": "Historical m17876 report documents untracked mission outputs, missing machine referee rows, and absent upstream binary execution; audit-specific JSON and original worktree unavailable in tracked main. Later 3-D result is distinct."
+  },
+  "reference_scan": "Scanned tracked paths, source, tests, CI, published reports and organization-indexed references. Original historic report commands retain previous paths; no external bookmark coverage claim. Historical vendor bytes and provenance unchanged. The only active test lookup changed, and R2 runner root-depth adjusted by one path parent; report publishers not executed.",
+  "science": {
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false,
+    "remaining_xval_candidates": {
+      "XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED and related R2": "Actual main tests/test_xval_mpi_ghost_fused.py, tests/test_xval_mpi_ghost_fused_tgv_reference.py, tests/test_xval_tgv3d_anchor.py: 17 passed, 4 failed (TGV decay API), 1 skipped. Keep original roots until independently resolved.",
+      "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY": "Actual main tests/test_xval_no_mcmp_two_phase_only.py and tests/test_xval_no_mcmp_two_phase_only_evolving.py: 23 passed, 1 failed (test_results_json_shape_and_thresholds). Keep original path.",
+      "XVAL-LBM-PRESSURE-TENSOR-EQUILIBRIUM-TRANSPLANT": "12 passed actual main focused tests, but prior explicit missing historical raw result/predeclared artifact recovery remains unresolved; renderer compatibility cannot be verified on original raw results. Keep old root pending recovery, no mock substitution.",
+      "XVAL-LBM-SINGLE-COMPONENT-POISEUILLE-FORCE-ANCHOR": "Prior baseline reference helper failure remains; no change."
+    }
+  },
+  "previous_main_recheck": {
+    "merged_prs": [
+      3067,
+      3068,
+      3069,
+      3070
+    ],
+    "tree": "634ee72fcfb0225e8c693201c4ccb7b1b8d73e4f",
+    "matches_prior_tested_integration_tree": true,
+    "actual_main_local_governance_tests_passed": 116,
+    "remote_exact_pr_head_checks": "Each 15 successful non-native jobs; test and platform-test still queued at observation. Merge occurred independently; none of these queued checks is counted as passing."
+  },
+  "verification": [
+    "All 22 original objects mapped, 21 byte-identical relocations and one reversible root-depth-only edit. Original Git mode and SHA-256 checked; previous archived verdict untouched. All five vendor provenance SHA-256 values matched. All moved assets linked to case registry entries.",
+    "Before and after: both relocated drivers --help with installed real dependencies succeeded, help text byte-identical. Focused pytest tests/test_xval_peskin_tensor_product_stencil_mdf.py tests/test_ibm3d_mdf_stencil_identities.py: 18 passed both before and after; existing six warnings (including adapted NumPy sqrt warning). No new mocks. The vendored NumPy adapter is not native JAX, and this is not a full science replay.",
+    "Local candidate governance 117 tests passed (20+61+7+3+26), registry 249, manuals 35 (33 PDF and 33 Word), zero hard and 15 existing soft findings; generated status artifacts current, machine pass/fail/unknown 1/19/44 unchanged. Source-authority 33 disclosed active historical references. Ruff 0.15.0: 3021/3023 lint, 2195/2195 format, no syntax errors.",
+    "No production source file touched; no algorithm or test acceptance criterion changed. Historical audit tools not invoked. Searched named missing raw/figure/ladder paths in fetched Git history; none found. Indexed organization search for original paths found only TensorLBM references; cannot guarantee external bookmarks."
+  ]
+}

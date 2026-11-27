@@ -49,6 +49,62 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.ledger = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
 
+    def test_peskin_and_convolution_archive_preserves_original_evidence(self):
+        path = LEDGER_PATH.parent / "peskin-and-conv-audit-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(rows, {r["old_path"]: r["new_path"] for r in ledger["entries"]})
+        self.assertEqual(len(rows), 22)
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        for row in ledger["entries"]:
+            destination = REPO / row["new_path"]
+            self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+            mode, blob = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
+            ).split()[:2]
+            self.assertEqual(mode, row["git_mode"])
+            if row["byte_identical"]:
+                self.assertEqual(blob, row["original_git_blob"])
+                self.assertEqual(row["current_sha256"], row["original_sha256"])
+            else:
+                edit = row["path_only_edit"]
+                original = destination.read_bytes().replace(edit["new"].encode(), edit["old"].encode())
+                self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+        self.assertEqual(sum(row["byte_identical"] for row in ledger["entries"]), 21)
+        old_verdict = ledger["prior_verdict"]
+        self.assert_fingerprint(REPO / old_verdict["path"], old_verdict["original_sha256"], old_verdict["size_bytes"])
+        root = REPO / "development/verification/peskin_tensor_product_stencil_mdf"
+        prov = json.loads((root / "oss_ref/PROVENANCE.json").read_text())
+        for name, item in prov["files"].items():
+            self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), item["sha256_vendored"])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        for key, owner in ledger["case_ownership"].items():
+            raw = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", owner],
+                cwd=REPO, text=True,
+            )
+            (record,) = json.loads(raw)["cases"]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            (variant,) = record["variants"]
+            registered = set(variant["source"] + variant["config"] + variant["documentation"] +
+                             variant["reference_files"] + variant["results"] + variant["evidence"])
+            prefix = "development/verification/peskin_tensor_product_stencil_mdf/" if key == "peskin" else "development/audit/m17876/"
+            self.assertTrue({row["new_path"] for row in ledger["entries"] if row["new_path"].startswith(prefix)} <= registered)
+            if key == "peskin":
+                self.assertEqual(record["id"], "xval:peskin_tensor_product_stencil_mdf")
+                self.assertEqual(record["cross_validation"]["criteria"], json.loads((root / "predeclared.json").read_text())["predeclared_thresholds"])
+                self.assertEqual(len(variant["results"]), 2)
+            else:
+                self.assertEqual(record["id"], "campaign:xval_conv_as_streaming")
+                self.assertEqual(variant["results"], [f"{owner}/artifacts_3d/result.json"])
+            for rel in (f"{prefix}README.md", f"{owner}/README.md"):
+                doc = REPO / rel
+                for link in re.findall(r"\]\(([^)]+)\)", doc.read_text()):
+                    self.assertTrue((doc.parent / link).is_file(), link)
+
     def test_four_audit_doc_archives_keep_original_objects_and_case_navigation(self):
         path = LEDGER_PATH.parent / "amr-survey-les-audit-docs-2026-11-27.json"
         ledger = json.loads(path.read_text())

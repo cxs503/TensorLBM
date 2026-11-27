@@ -1,0 +1,46 @@
+{
+  "scope": "Archive and discovery entry for existing convolution-as-streaming campaign directory. Historical m17876 audit of m17835 was L2 and FAIL. Related later round-4 3-D result is separate, no fresh run or scientific acceptance.",
+  "criteria": {
+    "historical_audit_owner_tolerance_pct": 15,
+    "protocols": [
+      "benchmarks/xval_conv_as_streaming/predeclared.json",
+      "benchmarks/xval_conv_as_streaming/predeclared_3d.json"
+    ],
+    "note": "Original protocol criteria retained; not a current gate."
+  },
+  "source": [
+    "benchmarks/xval_conv_as_streaming/run_xval.py",
+    "benchmarks/xval_conv_as_streaming/run_3d_physics.py"
+  ],
+  "config": [
+    "benchmarks/xval_conv_as_streaming/predeclared.json",
+    "benchmarks/xval_conv_as_streaming/predeclared_3d.json"
+  ],
+  "documentation": [
+    "benchmarks/xval_conv_as_streaming/README.md",
+    "development/audit/m17876/AUDIT_m17835.md",
+    "docs/XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL.md",
+    "docs/XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL_R2.md",
+    "docs/XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL_R3.md",
+    "docs/XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL_R4_3D.md",
+    "docs/AUDIT_m17748_XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL.md"
+  ],
+  "reference_files": [
+    "benchmarks/xval_conv_as_streaming/oss_ref/D2Q9.json",
+    "benchmarks/xval_conv_as_streaming/oss_ref/D3Q15.json",
+    "benchmarks/xval_conv_as_streaming/oss_ref/D3Q19.json",
+    "benchmarks/xval_conv_as_streaming/oss_ref/provenance.json"
+  ],
+  "results": [
+    "benchmarks/xval_conv_as_streaming/artifacts_3d/result.json"
+  ],
+  "evidence": [
+    "development/audit/m17876/README.md",
+    "development/audit/m17876/fig_m17835_evidence.png",
+    "development/audit/m17835/verdict_m17835.sql",
+    "docs/architecture/migrations/peskin-and-conv-audit-2026-11-27.json",
+    "development/audit/m17876/collect_evidence.py",
+    "development/audit/m17876/make_verdict_sql.py",
+    "development/audit/m17876/publish_report.py"
+  ]
+}
