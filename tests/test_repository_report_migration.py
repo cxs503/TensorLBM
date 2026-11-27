@@ -49,6 +49,49 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.ledger = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
 
+    def test_four_audit_doc_archives_keep_original_objects_and_case_navigation(self):
+        path = LEDGER_PATH.parent / "amr-survey-les-audit-docs-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(rows, {r["old_path"]: r["new_path"] for r in ledger["entries"]})
+        self.assertEqual(len(rows), 12)
+        self.assertEqual(len(ledger["retired_second_level_directories"]), 4)
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        for row in ledger["entries"] + ledger["unchanged_prior_archive"]:
+            destination = row.get("new_path", row.get("path"))
+            self.assert_fingerprint(REPO / destination, row["original_sha256"], row["size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", destination], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[:2], [row["git_mode"], row["original_git_blob"]])
+        self.assertFalse(ledger["scientific_scope"]["full_scientific_replay_performed"])
+        for mission, owner in ledger["case_ownership"].items():
+            archive = f"development/audit/{mission}/README.md"
+            raw = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", owner],
+                cwd=REPO, text=True,
+            )
+            (record,) = json.loads(raw)["cases"]
+            (variant,) = record["variants"]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            self.assertIn(archive, variant["evidence"])
+            for relpath in (archive, f"{owner}/README.md"):
+                document = REPO / relpath
+                for link in re.findall(r"\]\(([^)]+)\)", document.read_text()):
+                    self.assertTrue((document.parent / link).is_file(), link)
+            if mission in {"m17631", "m18149"}:
+                self.assertEqual(variant["results"], [f"development/audit/{mission}/audit.json"])
+            if mission == "m17636":
+                (result,) = variant["results"]
+                archived = json.loads((REPO / result).read_text())
+                self.assertFalse(archived["comparison"]["pass_criterion_15pct"])
+            if mission == "m17888":
+                self.assertEqual(record["id"], owner)
+                self.assertIn("development/audit/m17888/AUDIT_m17888.md", variant["documentation"])
+
     def test_model_unit_matrix_supports_legacy_roots_and_both_dialects(self):
         command = [sys.executable, "-m", "tensorlbm.model_units"]
         env = {**os.environ, "PYTHONPATH": str(REPO / "src")}

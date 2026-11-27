@@ -20,3 +20,5 @@ mkdir -p outputs/oscillatory-inertia-survey
 python benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey.py --out-dir outputs/oscillatory-inertia-survey
 python tools/benchmark_registry.py --case benchmarks/case_pool/oscillatory_cylinder_inertia
 ```
+
+The [earlier independent m17888 audit](../../../development/audit/m17888/README.md) records the original m17844 delivery limits and historical failed comparison. It does not change the current acceptance.

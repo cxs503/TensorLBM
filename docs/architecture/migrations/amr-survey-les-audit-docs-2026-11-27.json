@@ -1,0 +1,267 @@
+{
+  "scope": "Archive four complete historical audit document directories into the actual auditing mission directories; preserve original objects and existing published case URLs.",
+  "source_commit": "2bc878c2c03e46692e9edaf07a8490bae6010a51",
+  "candidate_base_commit": "c757c21612daffe6f44031c117914752f494ad67",
+  "prerequisite": "#3069 exact head based on #3067; #3068 independent and not yet merged",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 81,
+    "xval_second_level_count": 17
+  },
+  "candidate_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 80,
+    "xval_second_level_count": 17
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 76,
+    "xval_second_level_count": 17
+  },
+  "retired_second_level_directories": [
+    "docs/audit_m17592",
+    "docs/audit_m17636",
+    "docs/audit_m17888",
+    "docs/audit_m18096"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/audit_m17592/AUDIT_m17592.md",
+      "new_path": "development/audit/m17631/AUDIT_m17592.md",
+      "git_mode": "100644",
+      "original_git_blob": "995df7ba4ef5e51dc9b4354aaf47a60f67c96250",
+      "original_sha256": "e53b3db74af49cc716a97ec499241681ef169ac9bd0f103d7803b420f804bece",
+      "size_bytes": 4141,
+      "current_sha256": "e53b3db74af49cc716a97ec499241681ef169ac9bd0f103d7803b420f804bece",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17592/audit.json",
+      "new_path": "development/audit/m17631/audit.json",
+      "git_mode": "100644",
+      "original_git_blob": "2e58506223400376bbfe19231fcfddb4d7068199",
+      "original_sha256": "eeafaee2d4ebd4b52f8123617e1304b3e17f00fb37da1528eb63d49ad9e5e9fa",
+      "size_bytes": 9135,
+      "current_sha256": "eeafaee2d4ebd4b52f8123617e1304b3e17f00fb37da1528eb63d49ad9e5e9fa",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17636/AUDIT_m17636.md",
+      "new_path": "development/audit/m17636/AUDIT_m17636.md",
+      "git_mode": "100644",
+      "original_git_blob": "2cbe28025c06bb702a15314f316f046d6709dd8b",
+      "original_sha256": "b736d56fe91a098a74b8e648daf677631b6a4676e004b90bb73f3cce0279f98e",
+      "size_bytes": 7718,
+      "current_sha256": "b736d56fe91a098a74b8e648daf677631b6a4676e004b90bb73f3cce0279f98e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17636/fig_m17636_evidence.png",
+      "new_path": "development/audit/m17636/fig_m17636_evidence.png",
+      "git_mode": "100644",
+      "original_git_blob": "d196e6589e19e8bd57715d8c1904b5b432699515",
+      "original_sha256": "55eacc84a92d06e05bc6b268ce4b3855a6eaa0642fd5810e206b2ed6af083bc5",
+      "size_bytes": 75767,
+      "current_sha256": "55eacc84a92d06e05bc6b268ce4b3855a6eaa0642fd5810e206b2ed6af083bc5",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17888/AUDIT_m17888.md",
+      "new_path": "development/audit/m17888/AUDIT_m17888.md",
+      "git_mode": "100644",
+      "original_git_blob": "a7302db808ef7f36b154828f19a3a05c270338a8",
+      "original_sha256": "ff1e3dc6e7a5a1642e1676afde2b1a7302d68ad69f3bc7619907d91e2af91d6a",
+      "size_bytes": 10799,
+      "current_sha256": "ff1e3dc6e7a5a1642e1676afde2b1a7302d68ad69f3bc7619907d91e2af91d6a",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18096/AUDIT_m18096_XVAL_LES_SCALAR_Q_ABS_CC_PROXY.md",
+      "new_path": "development/audit/m18149/AUDIT_m18096_XVAL_LES_SCALAR_Q_ABS_CC_PROXY.md",
+      "git_mode": "100644",
+      "original_git_blob": "5526ea54799f69b2310269c4961f62899be63068",
+      "original_sha256": "4f12e787b8d55e95c35c7c1645daa5351a3356e9643b0db8c7db573ce06cb77f",
+      "size_bytes": 8121,
+      "current_sha256": "4f12e787b8d55e95c35c7c1645daa5351a3356e9643b0db8c7db573ce06cb77f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18096/audit.json",
+      "new_path": "development/audit/m18149/audit.json",
+      "git_mode": "100644",
+      "original_git_blob": "dec37d1fddff356f7607283546b59df7aa00def6",
+      "original_sha256": "0563c299717437c0fa5406332ae718bff4bad3714498a8ec07d64fe89d8421df",
+      "size_bytes": 10696,
+      "current_sha256": "0563c299717437c0fa5406332ae718bff4bad3714498a8ec07d64fe89d8421df",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18096/fig_audit_m18096.png",
+      "new_path": "development/audit/m18149/fig_audit_m18096.png",
+      "git_mode": "100644",
+      "original_git_blob": "9a5e5ef06f1a0b056ba4d07a08dd312d9fd1bb77",
+      "original_sha256": "34a16bbbf2e126a9811bae1568289f91bf0eec4ddb1db460d8d13b68963913a4",
+      "size_bytes": 105470,
+      "current_sha256": "34a16bbbf2e126a9811bae1568289f91bf0eec4ddb1db460d8d13b68963913a4",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18096/independent_check.py",
+      "new_path": "development/audit/m18149/independent_check.py",
+      "git_mode": "100644",
+      "original_git_blob": "ba1e3ee328dae14cdd1f5ec90077e415e8093283",
+      "original_sha256": "78015ba12ac3955593ebbfd3e7c3ae4c44f206c30e2de45a243e281aeaa5b45a",
+      "size_bytes": 2480,
+      "current_sha256": "78015ba12ac3955593ebbfd3e7c3ae4c44f206c30e2de45a243e281aeaa5b45a",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18096/make_figure.py",
+      "new_path": "development/audit/m18149/make_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "be1e3fd0c6eac68ef4b4c1bec380099b043393bd",
+      "original_sha256": "74500c033c81e8447db30c3cb444f800889e07c96cf26fe27d678deda464f58e",
+      "size_bytes": 3637,
+      "current_sha256": "74500c033c81e8447db30c3cb444f800889e07c96cf26fe27d678deda464f58e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18096/verdict_m18096.sql",
+      "new_path": "development/audit/m18149/verdict_m18096.sql",
+      "git_mode": "100644",
+      "original_git_blob": "07a93ea9ab05191728fcee697893b33ff5b23f75",
+      "original_sha256": "63fa6c1cfa31cc8abbc4c832c32392072836cbf09c848b51eee383943d424a3d",
+      "size_bytes": 5002,
+      "current_sha256": "63fa6c1cfa31cc8abbc4c832c32392072836cbf09c848b51eee383943d424a3d",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18096/verdict_m18096_update.sql",
+      "new_path": "development/audit/m18149/verdict_m18096_update.sql",
+      "git_mode": "100644",
+      "original_git_blob": "85cc29d581ab7a9b456b85cfff3c2f7c09e8b6d3",
+      "original_sha256": "e79f0538ebc0f0ca2e07c0963f9a30c3b66e0477a49e97fb47c6fb0f2997c934",
+      "size_bytes": 7267,
+      "current_sha256": "e79f0538ebc0f0ca2e07c0963f9a30c3b66e0477a49e97fb47c6fb0f2997c934",
+      "byte_identical": true
+    }
+  ],
+  "unchanged_prior_archive": [
+    {
+      "path": "development/audit/m17631/verdict_m17631.sql",
+      "git_mode": "100644",
+      "original_git_blob": "f96264d7e2a5886384a99316fa684ce8cb83b77f",
+      "original_sha256": "eb9dea8701f341b818c429dad530c79a253a2c41962ea2bf95c3eec45a66edd7",
+      "size_bytes": 5425
+    },
+    {
+      "path": "development/audit/m17636/tools/m17636_xval_buffer_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "76d55af6219ef0657a418a7f240d4d9aa40d291b",
+      "original_sha256": "996587f3a5b09bf3347c171fb70f12d379a85517855f9955e52072e1be61d4bf",
+      "size_bytes": 12545
+    },
+    {
+      "path": "development/audit/m17636/verdict_m17636.sql",
+      "git_mode": "100644",
+      "original_git_blob": "159af44a5ed6c409e8385e8c8ad3b33986422768",
+      "original_sha256": "a963fafaeca30864c6e540f5e84c7203aaba791f84dc89ac9ab27032d22b4902",
+      "size_bytes": 6610
+    }
+  ],
+  "case_ownership": {
+    "m17631": "benchmarks/xval_block_amr_stream_correction",
+    "m17636": "benchmarks/xval_buffer_layer_2to1",
+    "m17888": "benchmarks/case_pool/oscillatory_cylinder_inertia",
+    "m18149": "benchmarks/xval_les_scalar_proxy"
+  },
+  "compatibility_edits": [
+    {
+      "path": "benchmarks/case_pool/oscillatory_cylinder_inertia/README.md",
+      "original_sha256": "1b866fee9b8b73cb686d4331dc4c3583d7dc6b68d42857f29b7935f543fe36cc",
+      "current_sha256": "bdea4c932e4013e780d67276a285c864e4e9eac2db86b7e377a1901f24c49956"
+    },
+    {
+      "path": "benchmarks/case_pool/oscillatory_cylinder_inertia/benchmark_case.json",
+      "original_sha256": "3018c48ba25f8c227ea889e41ab30daf10602880b197a1e095b148a3de51f1cf",
+      "current_sha256": "c30aed59feef034e7156cfdb3d9846adac246bf96d29277de6a2936f60c94398"
+    },
+    {
+      "path": "tools/check_repository_layout.py",
+      "original_sha256": "264aa0383e30f662360269f07b67ea1cb941f4a8672c1de842b614112ae8cd77",
+      "current_sha256": "a6378c0613e1f17f5b0824b71239c6ac6e5acf5edc77027dedd5b46968731d49"
+    },
+    {
+      "path": "docs/architecture/target_repository_layout.md",
+      "original_sha256": "e8c84bd46771ffcea17baf2b4ca019c259067bf97f591a571f40b93d40a0c1a7",
+      "current_sha256": "0fac48baf14f5b5e25521ffeed1eb43db69ca0c9ac89a00b587f630968b9f195"
+    }
+  ],
+  "reference_scan": "Literal paths scanned across tracked main including source, tests, CI and historical files. Indexed organization search found only TensorLBM original reports/SQL, no cross-repository hits. Historical in-report and SQL strings intentionally unchanged; no exhaustive external bookmark coverage claim.",
+  "evidence_gaps": {
+    "m17631": "Original worktree six output artifacts not committed in the audited delivery; no machine referee then. Distinct equal-level study remains untouched.",
+    "m17636": "Original audit primary JSON and mission worktree not in current tracked case; retain original failed result and later separate audit.",
+    "m17888": "Original audited branch and incomplete original audit raw output/scripts; retained original survey history is not a fresh rerun.",
+    "m18149": "Missing kpi_flow.json, kpi_cavity.json, /tmp/xval_flow.log; field_identity KPI producer and exact audited branch not verified; renderer requires unavailable original input."
+  },
+  "scientific_scope": {
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false,
+    "historical_scope": {
+      "m17631": "Independent audit of m17592. The report records missing machine referee registration and untracked mission-run outputs. The audited mission was not an accepted scientific rerun. The separately existing equal-level campaign is not conflated with this mission.",
+      "m17636": "Independent audit of m17599. The original report documents L1, a false-positive scientific claim, and missing primary audit JSON. The original tracked case result remains unchanged, including its failed 15% flag. The historical audit utility needs the original worktree and platform database; do not run it for current acceptance.",
+      "m17888": "Independent audit of m17844, recorded L2 and honest FAIL, not L3/L4/L5. The original report says its audited branch was not in main at audit time; the currently preserved case history is a separate tracked asset. Original audit calculation scripts and mission-specific raw audit outputs are not all recoverable in the tracked tree.",
+      "m18149": "Independent audit of m18096 recorded L2 with incomplete physical comparison, unresolved field-identity provenance and missing raw outputs. The existing solver-local LES proxy campaign is a related current tree entry, not a verified copy of the audited branch. Archived tools reference original mission worktrees; no DB, publishing, or science replay performed."
+    },
+    "remaining_xval_blockers": {
+      "XVAL-LBM-SINGLE-COMPONENT-POISEUILLE-FORCE-ANCHOR": "Exact combined prior candidate local baseline: tests/test_xval_poiseuille_force_anchor.py 3 passed / 1 failed (test_reference_profile_is_symmetric_about_midplane, current helper differs); directory unchanged.",
+      "XVAL-LBM-PLUGGABLE-PSEUDOPOTENTIAL-GUO-FORCING and XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE": "Previous documented exact base had 8 failures, 18 passes; not migrated, no solver edits."
+    }
+  },
+  "verification": [
+    "All 12 relocated files and three pre-existing archive files were checked byte-for-byte against original Git objects, SHA-256, mode and size; registry links and both old and new case index IDs checked by dedicated migration test.",
+    "Searched fetched path history for named raw audit artifacts (no matches for the searched paths); missing original mission assets not fabricated.",
+    "Standalone local candidate governance 115 tests passed (20+59+7+3+26); registry 247 cases; 35 manual cases, 33 PDF, 33 Word; 33 existing active source authority references; machine verdict pass/fail/unknown 1/19/44 unchanged, zero hard violations and 15 existing soft violations; generated views current.",
+    "Ruff 0.15.0 ratchet passed: 3021/3023 lint, 2195/2195 format, zero invalid syntax.",
+    "No solver, case driver, numerical test threshold, historic result or published manual changed. No full scientific replay."
+  ]
+}

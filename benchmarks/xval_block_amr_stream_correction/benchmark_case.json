@@ -1,0 +1,26 @@
+{
+  "scope": "Independent audit of m17592. The report records missing machine referee registration and untracked mission-run outputs. The audited mission was not an accepted scientific rerun. The separately existing equal-level campaign is not conflated with this mission. Archive-only registry entry: the JSON in results is the audit record, not the raw numerical run.",
+  "criteria": {
+    "source": "development/audit/m17631/audit.json",
+    "notes": "Original mission thresholds 1e-10, 1e-3 and 15% are recorded in the archived audit; original case has no registered machine referee at audit time. Not a current gate."
+  },
+  "source": [
+    "benchmarks/xval_block_amr_stream_correction/run_xval.py",
+    "benchmarks/xval_block_amr_stream_correction/gen_figures.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/xval_block_amr_stream_correction/README.md",
+    "benchmarks/xval_block_amr_stream_correction/XVAL_REPORT.md",
+    "development/audit/m17631/AUDIT_m17592.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "development/audit/m17631/audit.json"
+  ],
+  "evidence": [
+    "development/audit/m17631/README.md",
+    "development/audit/m17631/verdict_m17631.sql",
+    "docs/architecture/migrations/amr-survey-les-audit-docs-2026-11-27.json"
+  ]
+}

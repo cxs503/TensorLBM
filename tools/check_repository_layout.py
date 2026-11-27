@@ -56,6 +56,10 @@ RETIRED_FILES = {
     "src/tensorlbm/dg_verification.py",
 }
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
+    ("docs", "audit_m17592"),
+    ("docs", "audit_m17636"),
+    ("docs", "audit_m17888"),
+    ("docs", "audit_m18096"),
     ("xval", "XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM"),
     ("xval", "XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK"),
     ("xval", "XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT"),

@@ -1,0 +1,30 @@
+{
+  "scope": "Independent audit of m17599. The original report documents L1, a false-positive scientific claim, and missing primary audit JSON. The original tracked case result remains unchanged, including its failed 15% flag. The historical audit utility needs the original worktree and platform database; do not run it for current acceptance.",
+  "criteria": {
+    "acceptance_pct": 15,
+    "source": "benchmarks/xval_buffer_layer_2to1/REPORT.md",
+    "notes": "Historical comparison; original result fails. No new acceptance."
+  },
+  "source": [
+    "benchmarks/xval_buffer_layer_2to1/run_xval.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/xval_buffer_layer_2to1/README.md",
+    "benchmarks/xval_buffer_layer_2to1/REPORT.md",
+    "development/audit/m17636/AUDIT_m17636.md",
+    "docs/board_audit/m17738/AUDIT_REPORT.md"
+  ],
+  "reference_files": [
+    "docs/board_audit/m17738/refs/benchmarks/xval_buffer_layer_2to1/oss_ref/PROVENANCE.json"
+  ],
+  "results": [
+    "benchmarks/xval_buffer_layer_2to1/artifacts/xval_buffer_layer_2to1.json"
+  ],
+  "evidence": [
+    "development/audit/m17636/README.md",
+    "development/audit/m17636/fig_m17636_evidence.png",
+    "development/audit/m17636/verdict_m17636.sql",
+    "docs/architecture/migrations/amr-survey-les-audit-docs-2026-11-27.json"
+  ]
+}
