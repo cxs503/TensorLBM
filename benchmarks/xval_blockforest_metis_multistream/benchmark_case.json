@@ -1,0 +1,33 @@
+{
+  "scope": "Historical L2 audit of mission m17596 (10d568a6); PARTIAL, D2 failed, L3/L4 not established. The raw campaign artifact directory is not tracked here. Archive registration only; no current science result.",
+  "criteria": {
+    "historical_gates": "D1a/b/c cut relative error <=15%; D2 imbalance <=5%; D3 population difference <=1e-12; D4 shear decay error <=15%; D5 hidden fraction >=85% with stated timing caveat",
+    "historical_outcome": "PARTIAL; D2 failed; E1 discrepancy, no production caller; campaign raw result absent from tracked tree",
+    "source": "development/audit/m17665/AUDIT_m17596.md"
+  },
+  "source": [
+    "benchmarks/xval_blockforest_metis_multistream/run_xval.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/xval_blockforest_metis_multistream/README.md",
+    "docs/XVAL_BLOCKFOREST_METIS_MULTISTREAM.md",
+    "development/audit/m17665/README.md",
+    "development/audit/m17665/AUDIT_m17596.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "development/audit/m17665/imbalance_floor.json",
+    "development/audit/m17665/repro_diff_m17596.json"
+  ],
+  "evidence": [
+    "development/audit/m17665/AUDIT_m17596.md",
+    "development/audit/m17665/fig_audit_m17596.png",
+    "development/audit/m17665/imbalance_floor.json",
+    "development/audit/m17665/independent_check.py",
+    "development/audit/m17665/make_report.py",
+    "development/audit/m17665/repro_diff_m17596.json",
+    "development/audit/m17665/verdict_m17596.sql",
+    "development/audit/m17665/verdict_m17596_addendum.sql"
+  ]
+}

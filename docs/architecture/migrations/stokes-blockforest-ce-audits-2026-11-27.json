@@ -1,0 +1,387 @@
+{
+  "scope": "Retire three internal audit folders, preserve 25 original tracked files and two prior verdicts; retain public documentation and canonical solver source.",
+  "source_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "candidate_base_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 72
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 69
+  },
+  "retired_second_level_directories": [
+    "docs/audit_m16237",
+    "docs/audit_m17596",
+    "docs/audit_m17741"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/audit_m16237/AUDIT_m16237.md",
+      "new_path": "development/audit/m16256/AUDIT_m16237.md",
+      "git_mode": "100644",
+      "original_git_blob": "ccd1300f3b60876444b4468502f804441e0a24a4",
+      "original_sha256": "3c4d15da6ab90fee02100c0451bdd75e186ea89f4d55e3a8fafde3cd532afaec",
+      "size_bytes": 12376,
+      "current_sha256": "3c4d15da6ab90fee02100c0451bdd75e186ea89f4d55e3a8fafde3cd532afaec",
+      "current_size_bytes": 12376,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/fig_audit_profile_error.png",
+      "new_path": "development/audit/m16256/fig_audit_profile_error.png",
+      "git_mode": "100644",
+      "original_git_blob": "c3d0f04f011f56f3c65a91bf943f9b14effe7e9e",
+      "original_sha256": "92d1f16ad3c131882d1c16083e84cec464f3abb89580915a94ee4c6c226e2d56",
+      "size_bytes": 180448,
+      "current_sha256": "92d1f16ad3c131882d1c16083e84cec464f3abb89580915a94ee4c6c226e2d56",
+      "current_size_bytes": 180448,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/gen_fig.py",
+      "new_path": "development/audit/m16256/gen_fig.py",
+      "git_mode": "100644",
+      "original_git_blob": "883ca78e0685e7b01ba56c5e898285038f7a503b",
+      "original_sha256": "ac729d1a2077a2c09d3bc7b4f933d5359568491b8b20e1a5cf410b4384ef7a0d",
+      "size_bytes": 3245,
+      "current_sha256": "ac729d1a2077a2c09d3bc7b4f933d5359568491b8b20e1a5cf410b4384ef7a0d",
+      "current_size_bytes": 3245,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/gen_report.py",
+      "new_path": "development/audit/m16256/gen_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "783b6e526e23ce38992c1809ff082b6d11ea8e55",
+      "original_sha256": "9259a09f70a1e98d222e1fdbb761ed8a650f79b86c4e716610ccb221d90c3be7",
+      "size_bytes": 8260,
+      "current_sha256": "9259a09f70a1e98d222e1fdbb761ed8a650f79b86c4e716610ccb221d90c3be7",
+      "current_size_bytes": 8260,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/report15335.md",
+      "new_path": "development/audit/m16256/report15335.md",
+      "git_mode": "100644",
+      "original_git_blob": "2d7e24d3522a61f1304438ca049d056b82af2953",
+      "original_sha256": "a941379a923720da2f3e8b221dfd2118a2e3026c781a5a437cdee0428285712e",
+      "size_bytes": 7256,
+      "current_sha256": "a941379a923720da2f3e8b221dfd2118a2e3026c781a5a437cdee0428285712e",
+      "current_size_bytes": 7256,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/repro_compare.txt",
+      "new_path": "development/audit/m16256/repro_compare.txt",
+      "git_mode": "100644",
+      "original_git_blob": "374a43bba44b2861f211dfd72e7c77284161e3e7",
+      "original_sha256": "cf9eba5945b37b7fca167615408851b74cc68ecb23dde46778f6cc6e0adf1a00",
+      "size_bytes": 923,
+      "current_sha256": "cf9eba5945b37b7fca167615408851b74cc68ecb23dde46778f6cc6e0adf1a00",
+      "current_size_bytes": 923,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/repro_fine_dref50.json",
+      "new_path": "development/audit/m16256/repro_fine_dref50.json",
+      "git_mode": "100644",
+      "original_git_blob": "1e57f2f67c7c10d7e4966ccaf355732af2fb89b5",
+      "original_sha256": "c26b1bb9ddf955341f7329ebc40dcee7335d939997ad4bdf159b20b023bcdad9",
+      "size_bytes": 14840,
+      "current_sha256": "c26b1bb9ddf955341f7329ebc40dcee7335d939997ad4bdf159b20b023bcdad9",
+      "current_size_bytes": 14840,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/repro_main.json",
+      "new_path": "development/audit/m16256/repro_main.json",
+      "git_mode": "100644",
+      "original_git_blob": "cd19e3b7ce2f2ec61d4756db04ecd1fef6157659",
+      "original_sha256": "61afe7ddad7aca2d54e85c34f4700c2cdd61fac42407dc26d2ffe82b752e5807",
+      "size_bytes": 9253,
+      "current_sha256": "61afe7ddad7aca2d54e85c34f4700c2cdd61fac42407dc26d2ffe82b752e5807",
+      "current_size_bytes": 9253,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/summary.json",
+      "new_path": "development/audit/m16256/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "41be3d0ed021a91efc7a6764953d6817aab5c369",
+      "original_sha256": "cc4764d6c1c810fefe632483f9b33735ad87886c129fd9de05f6eb19063756c1",
+      "size_bytes": 4760,
+      "current_sha256": "cc4764d6c1c810fefe632483f9b33735ad87886c129fd9de05f6eb19063756c1",
+      "current_size_bytes": 4760,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m16237/table.csv",
+      "new_path": "development/audit/m16256/table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "5d1c61152663aa0c6b6718691de4b7268b0c4390",
+      "original_sha256": "9cd444663a6df7cebbaba963f870aa735f7e2ec56471c4b8a1885edd8ebf29fe",
+      "size_bytes": 1633,
+      "current_sha256": "9cd444663a6df7cebbaba963f870aa735f7e2ec56471c4b8a1885edd8ebf29fe",
+      "current_size_bytes": 1633,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/AUDIT_m17596.md",
+      "new_path": "development/audit/m17665/AUDIT_m17596.md",
+      "git_mode": "100644",
+      "original_git_blob": "73c21576bcfe7dccb5427d414cf023b52b988999",
+      "original_sha256": "ce596499568c4c6bba48d5b972837f14a094802b271624a9c4cde1114cd35f15",
+      "size_bytes": 20579,
+      "current_sha256": "ce596499568c4c6bba48d5b972837f14a094802b271624a9c4cde1114cd35f15",
+      "current_size_bytes": 20579,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/fig_audit_m17596.png",
+      "new_path": "development/audit/m17665/fig_audit_m17596.png",
+      "git_mode": "100644",
+      "original_git_blob": "14607399c96bc363926f3b2cc8480c9b268bd04c",
+      "original_sha256": "faed6ae322c09cc3ae2ba20e9cc19ae789ba5ff4b818ff92256bcb67b1880b44",
+      "size_bytes": 83522,
+      "current_sha256": "faed6ae322c09cc3ae2ba20e9cc19ae789ba5ff4b818ff92256bcb67b1880b44",
+      "current_size_bytes": 83522,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/imbalance_floor.json",
+      "new_path": "development/audit/m17665/imbalance_floor.json",
+      "git_mode": "100644",
+      "original_git_blob": "9808c2f14985ada15b47c3cfb801e5533d75aacc",
+      "original_sha256": "96e4c95c6d54f1fe1f68253d8c8a91ca05351df9842239a662fedeaec85583b9",
+      "size_bytes": 4086,
+      "current_sha256": "96e4c95c6d54f1fe1f68253d8c8a91ca05351df9842239a662fedeaec85583b9",
+      "current_size_bytes": 4086,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/independent_check.py",
+      "new_path": "development/audit/m17665/independent_check.py",
+      "git_mode": "100644",
+      "original_git_blob": "cfb07605bdea04d049b652e28865204c249d0e0e",
+      "original_sha256": "1243d70e3ad99c6acfb64672f95ead24847796d87ef8730513b8ba3c4c53655d",
+      "size_bytes": 10534,
+      "current_sha256": "1243d70e3ad99c6acfb64672f95ead24847796d87ef8730513b8ba3c4c53655d",
+      "current_size_bytes": 10534,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/make_report.py",
+      "new_path": "development/audit/m17665/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "47995bd91dbf8e762c03a6466e3743e5a485cb43",
+      "original_sha256": "2c85923250e4eae7c38a093ee6feab64a94a47c4251bfa5a4d03fa81320c37d0",
+      "size_bytes": 18852,
+      "current_sha256": "2c85923250e4eae7c38a093ee6feab64a94a47c4251bfa5a4d03fa81320c37d0",
+      "current_size_bytes": 18852,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/repro_diff_m17596.json",
+      "new_path": "development/audit/m17665/repro_diff_m17596.json",
+      "git_mode": "100644",
+      "original_git_blob": "cb952d9f01f57e12384b6e227c8ea5bb348fc07d",
+      "original_sha256": "128e72cdf45ee1bebe1883a132b4258486f84c70272b9a7e8f62597f77a1d8e8",
+      "size_bytes": 1666,
+      "current_sha256": "128e72cdf45ee1bebe1883a132b4258486f84c70272b9a7e8f62597f77a1d8e8",
+      "current_size_bytes": 1666,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/verdict_m17596.sql",
+      "new_path": "development/audit/m17665/verdict_m17596.sql",
+      "git_mode": "100644",
+      "original_git_blob": "ece85f61352697a2595fa5d7c428885a8a5408c0",
+      "original_sha256": "926f2ebe8b0f59473ab4d27c4c72526ce5aaf24819ad20d46799151e6a631938",
+      "size_bytes": 11469,
+      "current_sha256": "926f2ebe8b0f59473ab4d27c4c72526ce5aaf24819ad20d46799151e6a631938",
+      "current_size_bytes": 11469,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17596/verdict_m17596_addendum.sql",
+      "new_path": "development/audit/m17665/verdict_m17596_addendum.sql",
+      "git_mode": "100644",
+      "original_git_blob": "75df0a13a67a9820b3320e604c2127d50f163606",
+      "original_sha256": "3b38ae50aa3c96ef98f08ae8491c6cff01205415807fb1b98f3992c2d4e5535d",
+      "size_bytes": 2291,
+      "current_sha256": "3b38ae50aa3c96ef98f08ae8491c6cff01205415807fb1b98f3992c2d4e5535d",
+      "current_size_bytes": 2291,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17741/AUDIT.md",
+      "new_path": "development/audit/m17741/AUDIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "107ca260747a3c78d9f4c96b12c5afd489ddf152",
+      "original_sha256": "fdf56660dd533f6278ad73d7cf69448901bf26ade907c520cb81ebb7d8072a2d",
+      "size_bytes": 12531,
+      "current_sha256": "fdf56660dd533f6278ad73d7cf69448901bf26ade907c520cb81ebb7d8072a2d",
+      "current_size_bytes": 12531,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17741/audit_m17741.png",
+      "new_path": "development/audit/m17741/audit_m17741.png",
+      "git_mode": "100644",
+      "original_git_blob": "fbc6456f8bd89f7ec031846a4f0ba40b6f5aab25",
+      "original_sha256": "eb3665c0b58d944047131dd78b0f1ca58a7d70f2d3184a7e4aed569b305fc381",
+      "size_bytes": 214785,
+      "current_sha256": "eb3665c0b58d944047131dd78b0f1ca58a7d70f2d3184a7e4aed569b305fc381",
+      "current_size_bytes": 214785,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17741/audit_stats.json",
+      "new_path": "development/audit/m17741/audit_stats.json",
+      "git_mode": "100644",
+      "original_git_blob": "8248fb8c701722c6a84faf26175c36ebcf438bdc",
+      "original_sha256": "c98881b9ace4fc1187d4ebbeb3bf4fdb6381e6281ab0fde3f2946b4ebd1515f7",
+      "size_bytes": 555,
+      "current_sha256": "c98881b9ace4fc1187d4ebbeb3bf4fdb6381e6281ab0fde3f2946b4ebd1515f7",
+      "current_size_bytes": 555,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17741/fresh_rerun_result.json",
+      "new_path": "development/audit/m17741/fresh_rerun_result.json",
+      "git_mode": "100644",
+      "original_git_blob": "e0361e8f0156806e7bd89cd3c5dd143dd916e1a0",
+      "original_sha256": "db9f0567f54e806bd1fc11a3208d9d67b799b6fb44bb1048164ceb72fe3312e8",
+      "size_bytes": 48944,
+      "current_sha256": "db9f0567f54e806bd1fc11a3208d9d67b799b6fb44bb1048164ceb72fe3312e8",
+      "current_size_bytes": 48944,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17741/make_audit_figure.py",
+      "new_path": "development/audit/m17741/make_audit_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "2e89a5ac17e6e91c40c3cd2267aeffabb9551ab5",
+      "original_sha256": "7cb1ed93de396953b0b57efdbc8dc9ee191770d7f0f4f517a92942539e32b85f",
+      "size_bytes": 5753,
+      "current_sha256": "7cb1ed93de396953b0b57efdbc8dc9ee191770d7f0f4f517a92942539e32b85f",
+      "current_size_bytes": 5753,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17741/probe_m17741.json",
+      "new_path": "development/audit/m17741/probe_m17741.json",
+      "git_mode": "100644",
+      "original_git_blob": "8b7aa79d1de3d8422d9970759018c0861ecdfc54",
+      "original_sha256": "d7adddd1cf8aba5d2e483656be5ca4f43dc5f24839a31cfa9206e14ab081a062",
+      "size_bytes": 1902,
+      "current_sha256": "d7adddd1cf8aba5d2e483656be5ca4f43dc5f24839a31cfa9206e14ab081a062",
+      "current_size_bytes": 1902,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17741/probe_m17741.py",
+      "new_path": "development/audit/m17741/probe_m17741.py",
+      "git_mode": "100644",
+      "original_git_blob": "2404a0cdbcec545b7d742cb316ed71841f12b596",
+      "original_sha256": "1b0941e9e85eb3840858c4e4782e068f31e3d727db2931d903e8fb8b90525f2c",
+      "size_bytes": 5216,
+      "current_sha256": "1b0941e9e85eb3840858c4e4782e068f31e3d727db2931d903e8fb8b90525f2c",
+      "current_size_bytes": 5216,
+      "byte_identical": true
+    }
+  ],
+  "prior_archived_evidence": [
+    {
+      "old_path": "development/audit/m16256/verdict_m16256.sql",
+      "new_path": "development/audit/m16256/verdict_m16256.sql",
+      "git_mode": "100644",
+      "original_git_blob": "7357df1c4b254dfea2005a87191f2e69c906373b",
+      "original_sha256": "fc8dbb12e1b6b1e9089708fe5d4efbf38b4cf0cbc7e81c1faea0de22fa60af6d",
+      "size_bytes": 8611,
+      "current_sha256": "fc8dbb12e1b6b1e9089708fe5d4efbf38b4cf0cbc7e81c1faea0de22fa60af6d",
+      "current_size_bytes": 8611,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m17741/verdict_m17741.sql",
+      "new_path": "development/audit/m17741/verdict_m17741.sql",
+      "git_mode": "100644",
+      "original_git_blob": "3cbba927e65545c9fa884bb192badfaebbfd5d80",
+      "original_sha256": "1fa36fee947e2d530ebce99552cc78aa368dfc7d7396f8a6e2aa25c40773753f",
+      "size_bytes": 10570,
+      "current_sha256": "1fa36fee947e2d530ebce99552cc78aa368dfc7d7396f8a6e2aa25c40773753f",
+      "current_size_bytes": 10570,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact path and mission filename scans in main found historical SQL references only; archived literals preserved. Indexed searches for each audit folder in TensorKnowledge, TensorPhysics, TensorPlatform and TensorBench had zero hits; external URL coverage not exhaustive. Stable published case reports and manuals unchanged.",
+    "dependencies": "Historical generators and probes may require original audited worktree, ignored original run artifacts and author environment. Archive-only, no execution or SQL publishing. Blockforest raw campaign result not tracked; audit JSONs are independent records, not a replacement for raw campaign output.",
+    "case_ownership": {
+      "m16256": {
+        "id": "stokes_first",
+        "path": "benchmarks/verified/stokes_first_problem",
+        "audit_index": "development/audit/m16256/README.md",
+        "pointer": "benchmarks/verified/stokes_first_problem/evidence/m16256/README.md"
+      },
+      "m17665": {
+        "id": "campaign:xval_blockforest_metis_multistream",
+        "path": "benchmarks/xval_blockforest_metis_multistream",
+        "audit_index": "development/audit/m17665/README.md",
+        "manifest": "benchmarks/xval_blockforest_metis_multistream/benchmark_case.json"
+      },
+      "m17741": {
+        "id": "campaign:xval_chapman_enskog_auto",
+        "path": "benchmarks/xval_chapman_enskog_auto",
+        "audit_index": "development/audit/m17741/README.md",
+        "manifest": "benchmarks/xval_chapman_enskog_auto/benchmark_case.json"
+      }
+    },
+    "navigation_indexes": [
+      "development/audit/m16256/README.md",
+      "benchmarks/verified/stokes_first_problem/evidence/m16256/README.md",
+      "development/audit/m17665/README.md",
+      "benchmarks/xval_blockforest_metis_multistream/README.md",
+      "development/audit/m17741/README.md",
+      "benchmarks/xval_chapman_enskog_auto/README.md"
+    ],
+    "published_paths": [
+      "docs/benchmarks/tutorials/stokes_first.md",
+      "docs/XVAL_BLOCKFOREST_METIS_MULTISTREAM.md",
+      "docs/XVAL-LBM-CHAPMAN-ENSKOG-AUTO.md"
+    ]
+  },
+  "science": {
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated",
+    "algorithm_changed": false
+  }
+}
