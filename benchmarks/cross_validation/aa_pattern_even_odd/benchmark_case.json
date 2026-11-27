@@ -1,0 +1,53 @@
+{
+  "scope": "Historical L2 audit of m17514 (uncommitted original delivery), AA even/odd Taylor–Green parity study; L3/L4 not established, no independent upstream source comparison. Current runner retained at existing path. Archive-only evidence registration; current acceptance not evaluated.",
+  "criteria": {
+    "historical_gates": "AA/AB bitwise equality; Taylor–Green energy decay error <15%; parity detection controls",
+    "historical_verdict": "L2 confirmed; no L3/L4; frozen snapshot distinct from current runner",
+    "source": "development/audit/m17572/AUDIT_m17514.md"
+  },
+  "source": [
+    "benchmarks/xval_aa_pattern_even_odd.py",
+    "src/tensorlbm/aa_pattern.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/cross_validation/aa_pattern_even_odd/README.md",
+    "docs/XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER.md",
+    "development/audit/m17572/README.md",
+    "development/audit/m17572/AUDIT_m17514.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "development/audit/m17572/evidence_snapshot/result.json",
+    "development/audit/m17572/audit.json"
+  ],
+  "evidence": [
+    "development/audit/m17514/verdict_m17514.sql",
+    "development/audit/m17572/AUDIT_m17514.md",
+    "development/audit/m17572/audit.json",
+    "development/audit/m17572/evidence_snapshot/SHA256SUMS.txt",
+    "development/audit/m17572/evidence_snapshot/XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER.md",
+    "development/audit/m17572/evidence_snapshot/aa_pattern.py",
+    "development/audit/m17572/evidence_snapshot/k_history_aa_parity_blind_tg_n32_re100.csv",
+    "development/audit/m17572/evidence_snapshot/k_history_aa_parity_blind_tg_n48_re100.csv",
+    "development/audit/m17572/evidence_snapshot/k_history_aa_tg_n32_re100.csv",
+    "development/audit/m17572/evidence_snapshot/k_history_aa_tg_n48_re100.csv",
+    "development/audit/m17572/evidence_snapshot/k_history_ab_tg_n32_re100.csv",
+    "development/audit/m17572/evidence_snapshot/k_history_ab_tg_n48_re100.csv",
+    "development/audit/m17572/evidence_snapshot/parity_hazard.png",
+    "development/audit/m17572/evidence_snapshot/result.json",
+    "development/audit/m17572/evidence_snapshot/test_aa_pattern_parity.py",
+    "development/audit/m17572/evidence_snapshot/tg_decay_aa_vs_ab_vs_exact.png",
+    "development/audit/m17572/evidence_snapshot/tg_field_aa_vs_exact.png",
+    "development/audit/m17572/evidence_snapshot/xval_aa_pattern_even_odd.py",
+    "development/audit/m17572/fig1_gammaK_aa_vs_ab_vs_exact.png",
+    "development/audit/m17572/fig2_field_aa_vs_exact_independent.png",
+    "development/audit/m17572/fig3_parity_hazard.png",
+    "development/audit/m17572/figures.json",
+    "development/audit/m17572/full_config_probe.py",
+    "development/audit/m17572/gen_figs_audit.py",
+    "development/audit/m17572/independent_audit.py",
+    "development/audit/m17572/make_verdict_sql.py",
+    "development/audit/m17572/publish_report.py"
+  ]
+}

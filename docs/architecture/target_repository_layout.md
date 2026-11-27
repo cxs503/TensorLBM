@@ -133,6 +133,8 @@ The [IBM force campaign ledger](migrations/ibm-force-campaign-tools-2026-11-24.j
 locates the archived sphere and curved-boundary force runners beside their
 verification index and keeps the published report paths stable.
 
+The [KPI, AA pattern and sparse permeability audit ledger](migrations/kpi-aa-sparse-audit-docs-2026-11-27.json) archives three historical audit folders, links the two identifiable cases and records missing original artifacts without changing numerical acceptance.
+
 The [Blasius development-runner ledger](migrations/blasius-dev-runner-retirement-2026-11-22.json)
 retires `benchmarks/blasius_flat_plate_dev/` in favour of the canonical
 `benchmarks/pending/blasius_flat_plate/` case. The earlier B25 runner remains

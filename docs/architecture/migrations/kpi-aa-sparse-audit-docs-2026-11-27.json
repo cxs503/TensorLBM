@@ -1,0 +1,871 @@
+{
+  "scope": "Retire all tracked files in three internal audit folders. Keep original evidence bytes and case IDs, published reports, numerical algorithms and criteria unchanged.",
+  "source_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "candidate_base_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 72
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 69
+  },
+  "retired_second_level_directories": [
+    "docs/audit_m17013",
+    "docs/audit_m17514",
+    "docs/audit_m18098"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/audit_m17013/AUDIT_m17013.md",
+      "new_path": "development/audit/m17085/AUDIT_m17013.md",
+      "git_mode": "100644",
+      "original_git_blob": "d775ad8a4f15c1f5ea69b4d3fbe12458dc66a041",
+      "original_sha256": "af111ee39652c1e7a6c8f0951cbf0d7d8f757041a2d3805bdf454ffb9c2533b2",
+      "size_bytes": 13673,
+      "current_sha256": "af111ee39652c1e7a6c8f0951cbf0d7d8f757041a2d3805bdf454ffb9c2533b2",
+      "current_size_bytes": 13673,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17013/audit.json",
+      "new_path": "development/audit/m17085/audit.json",
+      "git_mode": "100644",
+      "original_git_blob": "42951e9167a4931bc52f4587aa45debb721fff99",
+      "original_sha256": "7e09c8a599b62b0fc096d42d590d2b321b07ec15b1a04e1d8f1d2bfa0335c8d5",
+      "size_bytes": 7041,
+      "current_sha256": "7e09c8a599b62b0fc096d42d590d2b321b07ec15b1a04e1d8f1d2bfa0335c8d5",
+      "current_size_bytes": 7041,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17013/fig_audit_m17013.png",
+      "new_path": "development/audit/m17085/fig_audit_m17013.png",
+      "git_mode": "100644",
+      "original_git_blob": "be5a8ad575deab6262bda4b0764744f19b83b1a7",
+      "original_sha256": "565ef75665bedf589e6343319e21ca30f1b814901033f3c2677b12f5e10a1399",
+      "size_bytes": 228035,
+      "current_sha256": "565ef75665bedf589e6343319e21ca30f1b814901033f3c2677b12f5e10a1399",
+      "current_size_bytes": 228035,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17013/gen_figure.py",
+      "new_path": "development/audit/m17085/gen_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "a695e5d0644958527a4a889e45a00b032de51266",
+      "original_sha256": "4e5ef99cbb18221a495996ab163312cf6a429109086cff48ef73ae56740f9ba3",
+      "size_bytes": 5997,
+      "current_sha256": "4e5ef99cbb18221a495996ab163312cf6a429109086cff48ef73ae56740f9ba3",
+      "current_size_bytes": 5997,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17013/gen_report.py",
+      "new_path": "development/audit/m17085/gen_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "61e84d574a2abc6d3ed0956232ffd3c8e6d4dbbe",
+      "original_sha256": "5f4eab8c61051b2eb4d3d3dbd558a4f1f97d81922eaec7b9e0055c74fbb1fa85",
+      "size_bytes": 14303,
+      "current_sha256": "5f4eab8c61051b2eb4d3d3dbd558a4f1f97d81922eaec7b9e0055c74fbb1fa85",
+      "current_size_bytes": 14303,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17013/gen_report_json.py",
+      "new_path": "development/audit/m17085/gen_report_json.py",
+      "git_mode": "100644",
+      "original_git_blob": "d3dfc2f2597801a0e38e1c6887d3491fb21f964f",
+      "original_sha256": "c459c3c29e7171d233b6eaf40e9d01a3bbf2c1e4ea892956ec80f10d8f194a05",
+      "size_bytes": 7331,
+      "current_sha256": "c459c3c29e7171d233b6eaf40e9d01a3bbf2c1e4ea892956ec80f10d8f194a05",
+      "current_size_bytes": 7331,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17013/independent_audit.py",
+      "new_path": "development/audit/m17085/independent_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "b6266d720b02fbc69c314d765844f5a2420609b2",
+      "original_sha256": "3b892b4a9653e8d0bdce543d8807fab2c50bce9e136379a0dfa94ee112191b0c",
+      "size_bytes": 11887,
+      "current_sha256": "3b892b4a9653e8d0bdce543d8807fab2c50bce9e136379a0dfa94ee112191b0c",
+      "current_size_bytes": 11887,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/AUDIT_m17514.md",
+      "new_path": "development/audit/m17572/AUDIT_m17514.md",
+      "git_mode": "100644",
+      "original_git_blob": "bbdd5c8bd56ec93ab652a6095a3aab7da219f097",
+      "original_sha256": "3ceb12ad4d207ae83d87c12047fab1a4631f21f5d1ba5f9faca14c21a0d961bd",
+      "size_bytes": 16672,
+      "current_sha256": "3ceb12ad4d207ae83d87c12047fab1a4631f21f5d1ba5f9faca14c21a0d961bd",
+      "current_size_bytes": 16672,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/audit.json",
+      "new_path": "development/audit/m17572/audit.json",
+      "git_mode": "100644",
+      "original_git_blob": "b051e4bf695b8e3e82d367e80c2379595e933d32",
+      "original_sha256": "e21b1df39e5a7278ad71d173577c3cb17671e1e0ccf43dec6dd070c60b2a627e",
+      "size_bytes": 4826,
+      "current_sha256": "e21b1df39e5a7278ad71d173577c3cb17671e1e0ccf43dec6dd070c60b2a627e",
+      "current_size_bytes": 4826,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/SHA256SUMS.txt",
+      "new_path": "development/audit/m17572/evidence_snapshot/SHA256SUMS.txt",
+      "git_mode": "100644",
+      "original_git_blob": "e4c82a79bcffda50008485f9c4ef4b7f7779f2ff",
+      "original_sha256": "c70c353258a2302c215e1bc8bb1419578e5fbb97c50a76c494ac265e1c12ce2e",
+      "size_bytes": 1837,
+      "current_sha256": "c70c353258a2302c215e1bc8bb1419578e5fbb97c50a76c494ac265e1c12ce2e",
+      "current_size_bytes": 1837,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER.md",
+      "new_path": "development/audit/m17572/evidence_snapshot/XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER.md",
+      "git_mode": "100644",
+      "original_git_blob": "7df657de4e53b9c0aac16d9da31abbe25379c9f2",
+      "original_sha256": "572ea6a4a7187e885f009da58acd35110b493c1a8e5c7563ab299b9a18a91073",
+      "size_bytes": 10969,
+      "current_sha256": "572ea6a4a7187e885f009da58acd35110b493c1a8e5c7563ab299b9a18a91073",
+      "current_size_bytes": 10969,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/aa_pattern.py",
+      "new_path": "development/audit/m17572/evidence_snapshot/aa_pattern.py",
+      "git_mode": "100644",
+      "original_git_blob": "0479a199ec1b0defae62b2408237b908bb5747bf",
+      "original_sha256": "ae82b0fffdf8168f5bfae746a5bc2f4e75307dcfd256a039b005413ef2f41dce",
+      "size_bytes": 15752,
+      "current_sha256": "ae82b0fffdf8168f5bfae746a5bc2f4e75307dcfd256a039b005413ef2f41dce",
+      "current_size_bytes": 15752,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_parity_blind_tg_n32_re100.csv",
+      "new_path": "development/audit/m17572/evidence_snapshot/k_history_aa_parity_blind_tg_n32_re100.csv",
+      "git_mode": "100644",
+      "original_git_blob": "b731bbd7d3b617f3ec109e069ddafd391e568c0a",
+      "original_sha256": "20ef7f376ff483388b398d4011d491faa22b7e2b2db1cc78a82b45201616c518",
+      "size_bytes": 1151,
+      "current_sha256": "20ef7f376ff483388b398d4011d491faa22b7e2b2db1cc78a82b45201616c518",
+      "current_size_bytes": 1151,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_parity_blind_tg_n48_re100.csv",
+      "new_path": "development/audit/m17572/evidence_snapshot/k_history_aa_parity_blind_tg_n48_re100.csv",
+      "git_mode": "100644",
+      "original_git_blob": "75a1ef3f4e82689d19da99e5ae89edf20ee69375",
+      "original_sha256": "8fbd90e16ec934d3cca68a110874bf7d27b402acaa301aac102ced4369baad89",
+      "size_bytes": 1146,
+      "current_sha256": "8fbd90e16ec934d3cca68a110874bf7d27b402acaa301aac102ced4369baad89",
+      "current_size_bytes": 1146,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_tg_n32_re100.csv",
+      "new_path": "development/audit/m17572/evidence_snapshot/k_history_aa_tg_n32_re100.csv",
+      "git_mode": "100644",
+      "original_git_blob": "940bc4bf4cf917b4bb63099e018c311ae0c6e151",
+      "original_sha256": "34592e8fd0f370fb19afdfad6a0e763279b4875097cb67c7e7bc718ae1ac58d2",
+      "size_bytes": 1137,
+      "current_sha256": "34592e8fd0f370fb19afdfad6a0e763279b4875097cb67c7e7bc718ae1ac58d2",
+      "current_size_bytes": 1137,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_tg_n48_re100.csv",
+      "new_path": "development/audit/m17572/evidence_snapshot/k_history_aa_tg_n48_re100.csv",
+      "git_mode": "100644",
+      "original_git_blob": "ea99abea9bdddc05bd7d515de0ad75cea833ef1e",
+      "original_sha256": "849e1126fe10505f08ecb17f3962a7874db96a4f7d9f614065eaaffd8459941f",
+      "size_bytes": 1134,
+      "current_sha256": "849e1126fe10505f08ecb17f3962a7874db96a4f7d9f614065eaaffd8459941f",
+      "current_size_bytes": 1134,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/k_history_ab_tg_n32_re100.csv",
+      "new_path": "development/audit/m17572/evidence_snapshot/k_history_ab_tg_n32_re100.csv",
+      "git_mode": "100644",
+      "original_git_blob": "940bc4bf4cf917b4bb63099e018c311ae0c6e151",
+      "original_sha256": "34592e8fd0f370fb19afdfad6a0e763279b4875097cb67c7e7bc718ae1ac58d2",
+      "size_bytes": 1137,
+      "current_sha256": "34592e8fd0f370fb19afdfad6a0e763279b4875097cb67c7e7bc718ae1ac58d2",
+      "current_size_bytes": 1137,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/k_history_ab_tg_n48_re100.csv",
+      "new_path": "development/audit/m17572/evidence_snapshot/k_history_ab_tg_n48_re100.csv",
+      "git_mode": "100644",
+      "original_git_blob": "ea99abea9bdddc05bd7d515de0ad75cea833ef1e",
+      "original_sha256": "849e1126fe10505f08ecb17f3962a7874db96a4f7d9f614065eaaffd8459941f",
+      "size_bytes": 1134,
+      "current_sha256": "849e1126fe10505f08ecb17f3962a7874db96a4f7d9f614065eaaffd8459941f",
+      "current_size_bytes": 1134,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/parity_hazard.png",
+      "new_path": "development/audit/m17572/evidence_snapshot/parity_hazard.png",
+      "git_mode": "100644",
+      "original_git_blob": "8c2d309da6f7c9dfdc2cbf5618cbd765bcdb11db",
+      "original_sha256": "cf8e2be732249d4163322fdfd182a12d39db30dbffb3a18a290375777a1152e0",
+      "size_bytes": 36645,
+      "current_sha256": "cf8e2be732249d4163322fdfd182a12d39db30dbffb3a18a290375777a1152e0",
+      "current_size_bytes": 36645,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/result.json",
+      "new_path": "development/audit/m17572/evidence_snapshot/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "2adb5739ee809678f3991479c1175c0fbf277ad3",
+      "original_sha256": "1d9e2a568b042513f69b0d12fa8bad4af178c413d592a92b6ed9f743452f73c5",
+      "size_bytes": 12909,
+      "current_sha256": "1d9e2a568b042513f69b0d12fa8bad4af178c413d592a92b6ed9f743452f73c5",
+      "current_size_bytes": 12909,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/test_aa_pattern_parity.py",
+      "new_path": "development/audit/m17572/evidence_snapshot/test_aa_pattern_parity.py",
+      "git_mode": "100644",
+      "original_git_blob": "fef165964258d47a153cb59f8e893aea5017b595",
+      "original_sha256": "cf5dbf961336664ec1dea71d8156745351a7b08bbed61cdf9453dbb78db46633",
+      "size_bytes": 9381,
+      "current_sha256": "cf5dbf961336664ec1dea71d8156745351a7b08bbed61cdf9453dbb78db46633",
+      "current_size_bytes": 9381,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/tg_decay_aa_vs_ab_vs_exact.png",
+      "new_path": "development/audit/m17572/evidence_snapshot/tg_decay_aa_vs_ab_vs_exact.png",
+      "git_mode": "100644",
+      "original_git_blob": "dc3777d860947ea178914001c9d1c6b0c86fd6c3",
+      "original_sha256": "a8faaea06fa050ff3d904a8a3971f62ec8ebf981a225de36ad7ac9b5934261d8",
+      "size_bytes": 97847,
+      "current_sha256": "a8faaea06fa050ff3d904a8a3971f62ec8ebf981a225de36ad7ac9b5934261d8",
+      "current_size_bytes": 97847,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/tg_field_aa_vs_exact.png",
+      "new_path": "development/audit/m17572/evidence_snapshot/tg_field_aa_vs_exact.png",
+      "git_mode": "100644",
+      "original_git_blob": "a32020a61b4f4130cb1c7bd5ae724a0d0ad551f3",
+      "original_sha256": "c26258a729176904f974417fb1b38542c49f8c10a5e3e862c5ef6586e85fb572",
+      "size_bytes": 68322,
+      "current_sha256": "c26258a729176904f974417fb1b38542c49f8c10a5e3e862c5ef6586e85fb572",
+      "current_size_bytes": 68322,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/evidence_snapshot/xval_aa_pattern_even_odd.py",
+      "new_path": "development/audit/m17572/evidence_snapshot/xval_aa_pattern_even_odd.py",
+      "git_mode": "100644",
+      "original_git_blob": "a27420888aa641ca4c06d1ae9e3865ab997bf8ab",
+      "original_sha256": "af85d1379a5a6fb72cb281a8f77af8225f7d56c419a8a3a91290b77b2695bd0a",
+      "size_bytes": 38716,
+      "current_sha256": "af85d1379a5a6fb72cb281a8f77af8225f7d56c419a8a3a91290b77b2695bd0a",
+      "current_size_bytes": 38716,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/fig1_gammaK_aa_vs_ab_vs_exact.png",
+      "new_path": "development/audit/m17572/fig1_gammaK_aa_vs_ab_vs_exact.png",
+      "git_mode": "100644",
+      "original_git_blob": "120a2f83a3964b213f4c0255ca3c7db6258a7ade",
+      "original_sha256": "5dc647d4362785cbf292e8f8e944d665763854105093e65236f3764e5b94bdcd",
+      "size_bytes": 89611,
+      "current_sha256": "5dc647d4362785cbf292e8f8e944d665763854105093e65236f3764e5b94bdcd",
+      "current_size_bytes": 89611,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/fig2_field_aa_vs_exact_independent.png",
+      "new_path": "development/audit/m17572/fig2_field_aa_vs_exact_independent.png",
+      "git_mode": "100644",
+      "original_git_blob": "c2bad2d1fe64927d9721aefaa30ee553690c51f2",
+      "original_sha256": "e50f0ac7c78405554cf1b6b4f1cf8591f9ad225fda50cdca1f85913f9b8438d9",
+      "size_bytes": 65337,
+      "current_sha256": "e50f0ac7c78405554cf1b6b4f1cf8591f9ad225fda50cdca1f85913f9b8438d9",
+      "current_size_bytes": 65337,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/fig3_parity_hazard.png",
+      "new_path": "development/audit/m17572/fig3_parity_hazard.png",
+      "git_mode": "100644",
+      "original_git_blob": "db67c0800faffad9be78829728fe6812c8794b86",
+      "original_sha256": "d2b68af8b380b3e09dc32d4d7f208edc221378236122390ac7de971144022e55",
+      "size_bytes": 41929,
+      "current_sha256": "d2b68af8b380b3e09dc32d4d7f208edc221378236122390ac7de971144022e55",
+      "current_size_bytes": 41929,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/figures.json",
+      "new_path": "development/audit/m17572/figures.json",
+      "git_mode": "100644",
+      "original_git_blob": "87749634eac219d96fdefb23930ca52e270f5c21",
+      "original_sha256": "35205e98e2ce6e07b4ec2018eb2c73243d3b65930fb1600c479c261232caa522",
+      "size_bytes": 621,
+      "current_sha256": "35205e98e2ce6e07b4ec2018eb2c73243d3b65930fb1600c479c261232caa522",
+      "current_size_bytes": 621,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/full_config_probe.py",
+      "new_path": "development/audit/m17572/full_config_probe.py",
+      "git_mode": "100644",
+      "original_git_blob": "27fcf69ea2e7180db17d3852f0fb19ea49bb18ad",
+      "original_sha256": "544095f6a89e6cdd04c18418b551941191272876748514465781b9e65ddb55c4",
+      "size_bytes": 2563,
+      "current_sha256": "544095f6a89e6cdd04c18418b551941191272876748514465781b9e65ddb55c4",
+      "current_size_bytes": 2563,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/gen_figs_audit.py",
+      "new_path": "development/audit/m17572/gen_figs_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "e8b303c30a8eb3391a9b6730c7af3475c233fde5",
+      "original_sha256": "a5f5e26150cd34b268879a7f41988fadedaab06e80895583a805b447d13ebacc",
+      "size_bytes": 5858,
+      "current_sha256": "a5f5e26150cd34b268879a7f41988fadedaab06e80895583a805b447d13ebacc",
+      "current_size_bytes": 5858,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/independent_audit.py",
+      "new_path": "development/audit/m17572/independent_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "c320ceda9c7fdea2c1ae0d6e43bf73428fad2162",
+      "original_sha256": "4ecbe1d2de10da7afa1bd631a2e09854312cb48f6b82f9fcea62391094675a9c",
+      "size_bytes": 12314,
+      "current_sha256": "4ecbe1d2de10da7afa1bd631a2e09854312cb48f6b82f9fcea62391094675a9c",
+      "current_size_bytes": 12314,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/make_verdict_sql.py",
+      "new_path": "development/audit/m17572/make_verdict_sql.py",
+      "git_mode": "100644",
+      "original_git_blob": "b7a41085c7e861c363db22eca2897e3c81af47a5",
+      "original_sha256": "183382ccb834103f961f3b555c0c9566720ef0f933c99b6c7faad3fc61105492",
+      "size_bytes": 13203,
+      "current_sha256": "183382ccb834103f961f3b555c0c9566720ef0f933c99b6c7faad3fc61105492",
+      "current_size_bytes": 13203,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17514/publish_report.py",
+      "new_path": "development/audit/m17572/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "53a46ea58f89a0509b52c2f8834f6f1e0903f009",
+      "original_sha256": "b7ca5d63d837ac69b68ede88d45b0167f35a3c425c38744b5a14be1056d7148a",
+      "size_bytes": 909,
+      "current_sha256": "b7ca5d63d837ac69b68ede88d45b0167f35a3c425c38744b5a14be1056d7148a",
+      "current_size_bytes": 909,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/AUDIT_M17955.md",
+      "new_path": "development/audit/m18098/AUDIT_M17955.md",
+      "git_mode": "100644",
+      "original_git_blob": "ffd7f5e54dee0a93e4d2ddb08cc024916a87ea24",
+      "original_sha256": "4490721dd5e9a3cc7e119c9ba1ac07fcbcf0e7149542ac73ef2500859f22b530",
+      "size_bytes": 9212,
+      "current_sha256": "4490721dd5e9a3cc7e119c9ba1ac07fcbcf0e7149542ac73ef2500859f22b530",
+      "current_size_bytes": 9212,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/SHA256SUMS.txt",
+      "new_path": "development/audit/m18098/evidence_snapshot/SHA256SUMS.txt",
+      "git_mode": "100644",
+      "original_git_blob": "93d68e9d75fe36b09659519435c5fd411e247643",
+      "original_sha256": "0eff956caf3060eb747bdb07e725f928d474ee0a56f693e0c966fc29093c7732",
+      "size_bytes": 1206,
+      "current_sha256": "0eff956caf3060eb747bdb07e725f928d474ee0a56f693e0c966fc29093c7732",
+      "current_size_bytes": 1206,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY.md",
+      "new_path": "development/audit/m18098/evidence_snapshot/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY.md",
+      "git_mode": "100644",
+      "original_git_blob": "3c4808df90b41aeeca41412cb4cf8475e3cd84d5",
+      "original_sha256": "70006568a05ebd632b504d1e42f17168809be1d1314270ccde2ebdd80d1b72bb",
+      "size_bytes": 11063,
+      "current_sha256": "70006568a05ebd632b504d1e42f17168809be1d1314270ccde2ebdd80d1b72bb",
+      "current_size_bytes": 11063,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/__init__.py",
+      "new_path": "development/audit/m18098/evidence_snapshot/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "d8706e173aa6eca219e4a6ec9d9944a72cd1e3b7",
+      "original_sha256": "b5621740710c25626a67da388c74a0d176941daf18db46eebf63d2a52f52edfc",
+      "size_bytes": 2037,
+      "current_sha256": "b5621740710c25626a67da388c74a0d176941daf18db46eebf63d2a52f52edfc",
+      "current_size_bytes": 2037,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/kpi.csv",
+      "new_path": "development/audit/m18098/evidence_snapshot/kpi.csv",
+      "git_mode": "100644",
+      "original_git_blob": "bb86cbb0536de96efee0b5d1b22c98f3d80258a2",
+      "original_sha256": "5a6d3e0ddff89d104265261b1e6c8d90da2cb4d92e3d66a56c250e2497fc19ca",
+      "size_bytes": 1297,
+      "current_sha256": "5a6d3e0ddff89d104265261b1e6c8d90da2cb4d92e3d66a56c250e2497fc19ca",
+      "current_size_bytes": 1297,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/make_report.py",
+      "new_path": "development/audit/m18098/evidence_snapshot/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "8fefad6ab7dbde9188d015c199ac096f4de3cfec",
+      "original_sha256": "7bca73fb116ea6c9cc68d1f1f5cf33a29e7d4ba775241970df4d4802ffe84942",
+      "size_bytes": 25110,
+      "current_sha256": "7bca73fb116ea6c9cc68d1f1f5cf33a29e7d4ba775241970df4d4802ffe84942",
+      "current_size_bytes": 25110,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/oss_ref.py",
+      "new_path": "development/audit/m18098/evidence_snapshot/oss_ref.py",
+      "git_mode": "100644",
+      "original_git_blob": "b60542943b0d550c60b1860b86b414f1ac7b3d69",
+      "original_sha256": "9876ba56bdad9ab9a733de9f8c3b8acfcae51290598187e12e7ccfb33e61e654",
+      "size_bytes": 13724,
+      "current_sha256": "9876ba56bdad9ab9a733de9f8c3b8acfcae51290598187e12e7ccfb33e61e654",
+      "current_size_bytes": 13724,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/results.json",
+      "new_path": "development/audit/m18098/evidence_snapshot/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "670d52f211a173e34acbeaa94c146c20d93e5e9a",
+      "original_sha256": "e3a907ad987f50d5b9894cb396ec004686800f1bfb3925b7384126175069dbc5",
+      "size_bytes": 44140,
+      "current_sha256": "e3a907ad987f50d5b9894cb396ec004686800f1bfb3925b7384126175069dbc5",
+      "current_size_bytes": 44140,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/run_xval.py",
+      "new_path": "development/audit/m18098/evidence_snapshot/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "dd37e56eb743b6a23d86148f647006df8e44164f",
+      "original_sha256": "7f9734543fba489bb019b6348b19bc731612d8b6359cd6903458b8a3a0f77c79",
+      "size_bytes": 15249,
+      "current_sha256": "7f9734543fba489bb019b6348b19bc731612d8b6359cd6903458b8a3a0f77c79",
+      "current_size_bytes": 15249,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/evidence_snapshot/sparse_index_lbm.py",
+      "new_path": "development/audit/m18098/evidence_snapshot/sparse_index_lbm.py",
+      "git_mode": "100644",
+      "original_git_blob": "45253305c1f2a01d11eb1083bee6f03c7819a27e",
+      "original_sha256": "6ae9f64b99b451388bc49ed49fdf8fd2f4e57b4d3707fe0c1a5a03429f9c863b",
+      "size_bytes": 11834,
+      "current_sha256": "6ae9f64b99b451388bc49ed49fdf8fd2f4e57b4d3707fe0c1a5a03429f9c863b",
+      "current_size_bytes": 11834,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/fig_audit_m17955.png",
+      "new_path": "development/audit/m18098/fig_audit_m17955.png",
+      "git_mode": "100644",
+      "original_git_blob": "94f38222d830986249046830542b0d577a4271b1",
+      "original_sha256": "5c794171eb81d13bd29346f75cd39e87ebfc6be474cba27f73167695c45fe746",
+      "size_bytes": 135755,
+      "current_sha256": "5c794171eb81d13bd29346f75cd39e87ebfc6be474cba27f73167695c45fe746",
+      "current_size_bytes": 135755,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/make_verdict_sql.py",
+      "new_path": "development/audit/m18098/make_verdict_sql.py",
+      "git_mode": "100644",
+      "original_git_blob": "6cc026df8631c6f12c6d34c2ef3e9b05428d0f57",
+      "original_sha256": "ab8429268d76443cc97bc87cf7c48cc22728e0f0b22b010df57461d6cdff3dc1",
+      "size_bytes": 13351,
+      "current_sha256": "ab8429268d76443cc97bc87cf7c48cc22728e0f0b22b010df57461d6cdff3dc1",
+      "current_size_bytes": 13351,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/publish_report.py",
+      "new_path": "development/audit/m18098/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "32b40098ae89c1d8f7c63fadf03ac1b62b013e57",
+      "original_sha256": "525362e6c8606c66ba9e8fb51f01e8a746f80452ff4b87e061654b22f1abb857",
+      "size_bytes": 9107,
+      "current_sha256": "525362e6c8606c66ba9e8fb51f01e8a746f80452ff4b87e061654b22f1abb857",
+      "current_size_bytes": 9107,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/snapshot_and_figure.py",
+      "new_path": "development/audit/m18098/snapshot_and_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "0d80c1035f9ea9d6bafc0c578a52a78866897496",
+      "original_sha256": "7b6744500b09a6b6bf648c44dfbf3e297947437aec92c94e80775b37b47b018b",
+      "size_bytes": 3845,
+      "current_sha256": "7b6744500b09a6b6bf648c44dfbf3e297947437aec92c94e80775b37b47b018b",
+      "current_size_bytes": 3845,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/verify_case1_oss.json",
+      "new_path": "development/audit/m18098/verify_case1_oss.json",
+      "git_mode": "100644",
+      "original_git_blob": "ad62903bc150aa2bbd67a166c17d4072e3c9c954",
+      "original_sha256": "942a50fc19373b0cf22442b3a06e076ef96a895286b35e27f474bbccc1896e31",
+      "size_bytes": 460,
+      "current_sha256": "942a50fc19373b0cf22442b3a06e076ef96a895286b35e27f474bbccc1896e31",
+      "current_size_bytes": 460,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/verify_case1_oss.py",
+      "new_path": "development/audit/m18098/verify_case1_oss.py",
+      "git_mode": "100644",
+      "original_git_blob": "1829b44f18f77c93ea002b0cd12d3a49b7ad2678",
+      "original_sha256": "d09bb337ccf94c7914772184956463d57c9b5d19ddf1e93be9437cc48ca9ebdd",
+      "size_bytes": 2006,
+      "current_sha256": "d09bb337ccf94c7914772184956463d57c9b5d19ddf1e93be9437cc48ca9ebdd",
+      "current_size_bytes": 2006,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/verify_m17955.json",
+      "new_path": "development/audit/m18098/verify_m17955.json",
+      "git_mode": "100644",
+      "original_git_blob": "b5666507b4afc34fa9868c4faf1c67b638795e75",
+      "original_sha256": "666fb81881ff22d0699b6e3e80198e535154ce6f35434b178e8ae1348428e3bc",
+      "size_bytes": 1485,
+      "current_sha256": "666fb81881ff22d0699b6e3e80198e535154ce6f35434b178e8ae1348428e3bc",
+      "current_size_bytes": 1485,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/verify_m17955.py",
+      "new_path": "development/audit/m18098/verify_m17955.py",
+      "git_mode": "100644",
+      "original_git_blob": "05820a691227080c77947b7ce06ddccabcc28299",
+      "original_sha256": "34fe12581d8b7dd65800b7d91f222595853e5df6b2d20a05170487706558c0f1",
+      "size_bytes": 3084,
+      "current_sha256": "34fe12581d8b7dd65800b7d91f222595853e5df6b2d20a05170487706558c0f1",
+      "current_size_bytes": 3084,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/verify_perc_oss.json",
+      "new_path": "development/audit/m18098/verify_perc_oss.json",
+      "git_mode": "100644",
+      "original_git_blob": "b43f43246d9dda25d4da37dc09f9c5da69689962",
+      "original_sha256": "f88e0da06195c80bda840f833468dc1c83b811d1cd447ecb22d97d748344efd7",
+      "size_bytes": 418,
+      "current_sha256": "f88e0da06195c80bda840f833468dc1c83b811d1cd447ecb22d97d748344efd7",
+      "current_size_bytes": 418,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18098/verify_perc_oss.py",
+      "new_path": "development/audit/m18098/verify_perc_oss.py",
+      "git_mode": "100644",
+      "original_git_blob": "97b564d51b11f256f6a10cbb9ee8042d9e32ba97",
+      "original_sha256": "836a49e5ed4b3a636c3cb3d3b9d519461a8e1f6f8f44298669cffcb981c7d6fb",
+      "size_bytes": 2144,
+      "current_sha256": "836a49e5ed4b3a636c3cb3d3b9d519461a8e1f6f8f44298669cffcb981c7d6fb",
+      "current_size_bytes": 2144,
+      "byte_identical": true
+    }
+  ],
+  "prior_archived_evidence": [
+    {
+      "old_path": "development/audit/m17085/verdict_m17085.sql",
+      "new_path": "development/audit/m17085/verdict_m17085.sql",
+      "git_mode": "100644",
+      "original_git_blob": "0856e9dbb71d6ae5ff4f514f230db96816a07a3b",
+      "original_sha256": "b3682d6bb6441b0731049291a6fde986344641bcc660fb179eea060f7c4b4310",
+      "size_bytes": 6866,
+      "current_sha256": "b3682d6bb6441b0731049291a6fde986344641bcc660fb179eea060f7c4b4310",
+      "current_size_bytes": 6866,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m17514/verdict_m17514.sql",
+      "new_path": "development/audit/m17514/verdict_m17514.sql",
+      "git_mode": "100644",
+      "original_git_blob": "f41387477b0325cc53b7af2a014cb5c04b827b59",
+      "original_sha256": "2d3833c37d3c66f7feeb5f09d51e2516dcd3efafcde62e2bb5d48ca14f7838f3",
+      "size_bytes": 10105,
+      "current_sha256": "2d3833c37d3c66f7feeb5f09d51e2516dcd3efafcde62e2bb5d48ca14f7838f3",
+      "current_size_bytes": 10105,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m18098/verdict_m18098.sql",
+      "new_path": "development/audit/m18098/verdict_m18098.sql",
+      "git_mode": "100644",
+      "original_git_blob": "d1098550c3c59e11a8e3ce129ca10d96d86e059e",
+      "original_sha256": "86a42aa6a27c5bb2d72b922326005bb8c839c7cd0783510497085d8ee8e6f615",
+      "size_bytes": 10414,
+      "current_sha256": "86a42aa6a27c5bb2d72b922326005bb8c839c7cd0783510497085d8ee8e6f615",
+      "current_size_bytes": 10414,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m18098/verdict_m18098_update.sql",
+      "new_path": "development/audit/m18098/verdict_m18098_update.sql",
+      "git_mode": "100644",
+      "original_git_blob": "9866bfb77181cb3c36cd643ab0e59b46bfbf65ca",
+      "original_sha256": "6b13c571c172cfa394cffd82759c1f6b501b465af3a914e367b096d71cfafb32",
+      "size_bytes": 9922,
+      "current_sha256": "6b13c571c172cfa394cffd82759c1f6b501b465af3a914e367b096d71cfafb32",
+      "current_size_bytes": 9922,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "tests/test_audit_m17013_kpi_verified_caps.py",
+      "new_path": "tests/test_audit_m17013_kpi_verified_caps.py",
+      "git_mode": "100644",
+      "original_git_blob": "233e47a7e329fc8b9b00825685188d835f43d4ce",
+      "original_sha256": "060454b9f90fbcd75d742d6fe2efaefbfd9167f1ef5e6b5f6143cd5367b050cd",
+      "size_bytes": 4295,
+      "current_sha256": "355bac504c452b11779e65b7982b2286aabe797c8db1d5c4e02fd560496bad0b",
+      "current_size_bytes": 4302,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "docs/audit_m17013/AUDIT_m17013.md",
+        "new": "development/audit/m17085/AUDIT_m17013.md"
+      }
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact paths scanned in main; retained historical verdict SQL references, update one current test docstring only. Indexed external searches across TensorKnowledge, TensorPhysics, TensorPlatform, TensorBench had no hits, not exhaustive external URL coverage. Existing AA runner and published report paths unchanged.",
+    "dependencies": "Original worktrees absent and certain original ignored outputs not tracked; historical publisher and verdict builders not executed. No current canonical list-based sparse permeability case identified; archive is discoverable by tracked asset search and not assigned to a different case.",
+    "case_ownership": {
+      "m17085": {
+        "audit_index": "development/audit/m17085/README.md",
+        "archive_path": "development/audit/m17085",
+        "id": "benchmarks/verified/nwt_stokes2",
+        "path": "benchmarks/verified/nwt_stokes2",
+        "pointer": "benchmarks/verified/nwt_stokes2/evidence/m17085/README.md"
+      },
+      "m17572": {
+        "audit_index": "development/audit/m17572/README.md",
+        "archive_path": "development/audit/m17572",
+        "id": "xval:aa_pattern_even_odd",
+        "path": "benchmarks/cross_validation/aa_pattern_even_odd",
+        "manifest": "benchmarks/cross_validation/aa_pattern_even_odd/benchmark_case.json"
+      },
+      "m18098": {
+        "audit_index": "development/audit/m18098/README.md",
+        "archive_path": "development/audit/m18098",
+        "id": null,
+        "path": null,
+        "missing": "evidence_snapshot/run.log"
+      }
+    },
+    "navigation_indexes": [
+      "development/audit/m17085/README.md",
+      "benchmarks/verified/nwt_stokes2/evidence/m17085/README.md",
+      "development/audit/m17572/README.md",
+      "benchmarks/cross_validation/aa_pattern_even_odd/README.md",
+      "development/audit/m18098/README.md"
+    ],
+    "snapshot_verification": {
+      "m17572": {
+        "manifest": "development/audit/m17572/evidence_snapshot/SHA256SUMS.txt",
+        "checked": [
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER.md",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER.md",
+            "sha256": "572ea6a4a7187e885f009da58acd35110b493c1a8e5c7563ab299b9a18a91073"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/aa_pattern.py",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/aa_pattern.py",
+            "sha256": "ae82b0fffdf8168f5bfae746a5bc2f4e75307dcfd256a039b005413ef2f41dce"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_parity_blind_tg_n32_re100.csv",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/k_history_aa_parity_blind_tg_n32_re100.csv",
+            "sha256": "20ef7f376ff483388b398d4011d491faa22b7e2b2db1cc78a82b45201616c518"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_parity_blind_tg_n48_re100.csv",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/k_history_aa_parity_blind_tg_n48_re100.csv",
+            "sha256": "8fbd90e16ec934d3cca68a110874bf7d27b402acaa301aac102ced4369baad89"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_tg_n32_re100.csv",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/k_history_aa_tg_n32_re100.csv",
+            "sha256": "34592e8fd0f370fb19afdfad6a0e763279b4875097cb67c7e7bc718ae1ac58d2"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/k_history_aa_tg_n48_re100.csv",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/k_history_aa_tg_n48_re100.csv",
+            "sha256": "849e1126fe10505f08ecb17f3962a7874db96a4f7d9f614065eaaffd8459941f"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/k_history_ab_tg_n32_re100.csv",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/k_history_ab_tg_n32_re100.csv",
+            "sha256": "34592e8fd0f370fb19afdfad6a0e763279b4875097cb67c7e7bc718ae1ac58d2"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/k_history_ab_tg_n48_re100.csv",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/k_history_ab_tg_n48_re100.csv",
+            "sha256": "849e1126fe10505f08ecb17f3962a7874db96a4f7d9f614065eaaffd8459941f"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/parity_hazard.png",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/parity_hazard.png",
+            "sha256": "cf8e2be732249d4163322fdfd182a12d39db30dbffb3a18a290375777a1152e0"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/result.json",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/result.json",
+            "sha256": "1d9e2a568b042513f69b0d12fa8bad4af178c413d592a92b6ed9f743452f73c5"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/test_aa_pattern_parity.py",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/test_aa_pattern_parity.py",
+            "sha256": "cf5dbf961336664ec1dea71d8156745351a7b08bbed61cdf9453dbb78db46633"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/tg_decay_aa_vs_ab_vs_exact.png",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/tg_decay_aa_vs_ab_vs_exact.png",
+            "sha256": "a8faaea06fa050ff3d904a8a3971f62ec8ebf981a225de36ad7ac9b5934261d8"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/tg_field_aa_vs_exact.png",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/tg_field_aa_vs_exact.png",
+            "sha256": "c26258a729176904f974417fb1b38542c49f8c10a5e3e862c5ef6586e85fb572"
+          },
+          {
+            "historical_path": "docs/audit_m17514/evidence_snapshot/xval_aa_pattern_even_odd.py",
+            "candidate_path": "development/audit/m17572/evidence_snapshot/xval_aa_pattern_even_odd.py",
+            "sha256": "af85d1379a5a6fb72cb281a8f77af8225f7d56c419a8a3a91290b77b2695bd0a"
+          }
+        ],
+        "missing_preexisting": []
+      },
+      "m18098": {
+        "manifest": "development/audit/m18098/evidence_snapshot/SHA256SUMS.txt",
+        "checked": [
+          {
+            "historical_path": "xval/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY/run_xval.py",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/run_xval.py",
+            "sha256": "7f9734543fba489bb019b6348b19bc731612d8b6359cd6903458b8a3a0f77c79",
+            "size_bytes": 15249
+          },
+          {
+            "historical_path": "xval/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY/oss_ref.py",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/oss_ref.py",
+            "sha256": "9876ba56bdad9ab9a733de9f8c3b8acfcae51290598187e12e7ccfb33e61e654",
+            "size_bytes": 13724
+          },
+          {
+            "historical_path": "xval/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY/make_report.py",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/make_report.py",
+            "sha256": "7bca73fb116ea6c9cc68d1f1f5cf33a29e7d4ba775241970df4d4802ffe84942",
+            "size_bytes": 25110
+          },
+          {
+            "historical_path": "xval/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY/results.json",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/results.json",
+            "sha256": "e3a907ad987f50d5b9894cb396ec004686800f1bfb3925b7384126175069dbc5",
+            "size_bytes": 44140
+          },
+          {
+            "historical_path": "xval/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY/kpi.csv",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/kpi.csv",
+            "sha256": "5a6d3e0ddff89d104265261b1e6c8d90da2cb4d92e3d66a56c250e2497fc19ca",
+            "size_bytes": 1297
+          },
+          {
+            "historical_path": "src/tensorlbm/porous/sparse_index_lbm.py",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/sparse_index_lbm.py",
+            "sha256": "6ae9f64b99b451388bc49ed49fdf8fd2f4e57b4d3707fe0c1a5a03429f9c863b",
+            "size_bytes": 11834
+          },
+          {
+            "historical_path": "src/tensorlbm/porous/__init__.py",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/__init__.py",
+            "sha256": "b5621740710c25626a67da388c74a0d176941daf18db46eebf63d2a52f52edfc",
+            "size_bytes": 2037
+          },
+          {
+            "historical_path": "docs/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY.md",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY.md",
+            "sha256": "70006568a05ebd632b504d1e42f17168809be1d1314270ccde2ebdd80d1b72bb",
+            "size_bytes": 11063
+          }
+        ],
+        "missing_preexisting": [
+          {
+            "historical_path": "xval/XVAL-LBM-LIST-BASED-SPARSE-LBM-PLUS-PERMEABILITY/run.log",
+            "candidate_path": "development/audit/m18098/evidence_snapshot/run.log",
+            "sha256": "60eea3280881b6790c81accca45cd17d0bc02460d310e3e93976ecedebc9aac5",
+            "size_bytes": 1187
+          }
+        ]
+      }
+    }
+  },
+  "science": {
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated",
+    "algorithm_changed": false,
+    "historical_scope": "m17085 L1 gate does not establish solver integration, m17572 L2 confirms historical parity study only, m18098 L2 with contradictory historical results and missing run.log. No current acceptance."
+  }
+}
