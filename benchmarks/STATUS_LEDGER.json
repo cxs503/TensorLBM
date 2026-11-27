@@ -152,7 +152,7 @@
    "machine": "fail",
    "machine_key": "status",
    "machine_source": "benchmarks/pending/cylinder_re100_dfg/validation_status.json",
-   "readme": false,
+   "readme": true,
    "result_json": false,
    "validation_status_json": true
   },
@@ -777,7 +777,7 @@
   "pending_machine_fail": 19,
   "pending_machine_pass": 1,
   "pending_machine_unknown": 44,
-  "pending_with_readme": 50,
+  "pending_with_readme": 51,
   "pending_with_result_json": 31,
   "status_md_verified_rows": 36,
   "verified_dirs": 91

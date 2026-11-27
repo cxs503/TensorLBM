@@ -13,7 +13,7 @@ import json
 import pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 
 
 def f(x, nd=3, sign=True):

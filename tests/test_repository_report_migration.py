@@ -2054,6 +2054,52 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for published in ledger["compatibility"]["published_paths"]:
             self.assertTrue((REPO / published).is_file(), published)
 
+    def test_dfg_cartesian_mpi_archive_preserves_originals_and_pending_case(self):
+        path = LEDGER_PATH.parent / "dfg-and-cartesian-mpi-audits-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(rows, {r["old_path"]: r["new_path"] for r in ledger["entries"]})
+        self.assertEqual(len(rows), 13)
+        self.assertEqual(len(set(rows.values())), 13)
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        for row in ledger["entries"] + ledger["consumer_edits"] + ledger["unchanged_prior_archive"]:
+            destination = REPO / row["new_path"]
+            self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+            mode, blob = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
+            ).split()[:2]
+            self.assertEqual(mode, row["git_mode"])
+            original = destination.read_bytes()
+            if row["byte_identical"]:
+                self.assertEqual(blob, row["original_git_blob"])
+            else:
+                replacement = row["path_only_edit"]
+                self.assertEqual(original.count(replacement["new"].encode()), 1)
+                original = original.replace(replacement["new"].encode(), replacement["old"].encode())
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(len(original), row["size_bytes"])
+            self.assertEqual(hashlib.sha1(f"blob {len(original)}\0".encode() + original).hexdigest(),
+                             row["original_git_blob"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / target).is_file(), target)
+        registry = json.loads(subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--json"], cwd=REPO,
+        ))["cases"]
+        case = next(entry for entry in registry if entry["id"] == "benchmarks/pending/cylinder_re100_dfg")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        self.assertEqual(case["variants"][0]["archive_bucket"], "pending")
+        self.assertIn("development/audit/m23014/REPORT.md", case["variants"][0]["documentation"])
+        self.assertIn("development/audit/m23014/analysis.json", case["variants"][0]["results"])
+        self.assertIn("benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.series.npz",
+                      case["variants"][0]["evidence"])
+        self.assertTrue(any(entry["id"] == "matrix:cylinder_re100_dfg" for entry in registry))
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

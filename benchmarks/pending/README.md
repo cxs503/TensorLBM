@@ -440,7 +440,7 @@ pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器
 | `channel_turb_re180` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
 | `collision_kernels_3d_tg` | yes | yes | unknown | 1 | closed |
 | `couette_3d` | yes | **no** | unknown | 1 | pass_candidate |
-| `cylinder_re100_dfg` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
+| `cylinder_re100_dfg` | yes | **no** | fail (`status`) | 0 | **unregistered** |
 | `cylinder_re40_st` | yes | yes | fail (`verified`) | 1 | pass_candidate |
 | `dam_break_2d_multimodel` | yes | **no** | unknown | 0 | **unregistered** |
 | `dam_break_3d_mm` | yes | yes | fail (`verified`) | 1 | fail |

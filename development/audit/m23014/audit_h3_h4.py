@@ -23,7 +23,7 @@ import numpy as np
 import torch
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.validation import cylinder_dfg as cdfg  # noqa: E402
