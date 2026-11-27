@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "base_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 53,
+  "docs_second_level_after": 53,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 581,
+  "entries": [
+    {
+      "old_path": "scripts/publish_couette_2d_r2_report.py",
+      "new_path": "development/audit/m18637/publish_couette_2d_r2_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "8b2dd7c59c79fb36c0356254e06c95c9cdb3ef86",
+      "original_sha256": "528e37cc3d34f1d6ac88047ce7a4ea3d7ab964b1a1025d522d54ef0283defcb4",
+      "size_bytes": 13467,
+      "current_sha256": "7830dd69317c1b51e43cd3677b2481fe879ea5d42270ff788aace1ca6c1ed502",
+      "current_size_bytes": 13467,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "ROOT = Path(__file__).resolve().parents[1]",
+        "new": "ROOT = Path(__file__).resolve().parents[3]"
+      }
+    },
+    {
+      "old_path": "scripts/publish_thermal_report.py",
+      "new_path": "development/audit/m16100/publish_thermal_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "7eca35bab13a929080bb6865a677f89b6ca6b5cf",
+      "original_sha256": "7bcaf1c32f6cc5ae28ab06c27a75651cb536c7bf5a1148d0db428bde9619ef70",
+      "size_bytes": 4955,
+      "current_sha256": "7bcaf1c32f6cc5ae28ab06c27a75651cb536c7bf5a1148d0db428bde9619ef70",
+      "current_size_bytes": 4955,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/cht_publish_report.py",
+      "new_path": "development/audit/m5759/cht_publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "564437b442a766dcdf8394576f15d8b7b468643d",
+      "original_sha256": "e73b0e2bd3a1093ac041ece9b0e093b09fa69290a4622bac3b273ad7e3eff4e2",
+      "size_bytes": 15256,
+      "current_sha256": "e73b0e2bd3a1093ac041ece9b0e093b09fa69290a4622bac3b273ad7e3eff4e2",
+      "current_size_bytes": 15256,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/de_a4_publish_report.py",
+      "new_path": "development/audit/drop_entry/design/lessons-a4/de_a4_publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "780f9eadb0abb8042664ace844ed329d59b8d28c",
+      "original_sha256": "e133888c9400d556b4cca76aa493e59da48c9deafc3f9c424da437a311e009a5",
+      "size_bytes": 3892,
+      "current_sha256": "e133888c9400d556b4cca76aa493e59da48c9deafc3f9c424da437a311e009a5",
+      "current_size_bytes": 3892,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/build_mission_report.py",
+      "new_path": "development/audit/m16237/build_mission_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "89e8cc9298676dc7714a5aad100de48134222ecf",
+      "original_sha256": "a789186366f47b3e3198fa2a736cdf2c3d2f21cd07cbc6fee0c5976249070055",
+      "size_bytes": 9161,
+      "current_sha256": "a789186366f47b3e3198fa2a736cdf2c3d2f21cd07cbc6fee0c5976249070055",
+      "current_size_bytes": 9161,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/couette_2d_round2_20261113.md",
+      "new_path": "docs/couette_2d_round2_20261113.md",
+      "git_mode": "100644",
+      "original_git_blob": "d8eadb3874071c11bf292d118af60fca16468699",
+      "original_sha256": "ed6baaef0029ba034a0c34675316d42c8ab1ade3d66e9286aba00cfb948ad97b",
+      "size_bytes": 3843,
+      "current_sha256": "ab15f7757994f52fb7433cbe3cbda5e13b97b43302a9b3764baa57f82d6af4c3",
+      "current_size_bytes": 4073,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "# CASE-COUETTE-2D 第2轮·调研结合 — 交付总结（m18637）\n",
+        "new": "# CASE-COUETTE-2D 第2轮·调研结合 — 交付总结（m18637）\n\n> Repository layout note (2026-11-28): [current historical report helper and input limitations](../development/audit/m18637/README.md). The original report below is retained. No fresh scientific acceptance or remote publication.\n"
+      }
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "docs/THERMAL_D12_DEBT_CLOSURE.md",
+      "new_path": "docs/THERMAL_D12_DEBT_CLOSURE.md",
+      "git_mode": "100644",
+      "original_git_blob": "cacff8308428b9228f9fb4717f2c0c0301aded65",
+      "original_sha256": "93e82ecf29c83288d43214d04b2e17741e4c86b3416645ca453421e6bb7477c9",
+      "size_bytes": 11312,
+      "current_sha256": "93e82ecf29c83288d43214d04b2e17741e4c86b3416645ca453421e6bb7477c9",
+      "current_size_bytes": 11312,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/CHT_VERIFICATION_LADDER.md",
+      "new_path": "docs/CHT_VERIFICATION_LADDER.md",
+      "git_mode": "100644",
+      "original_git_blob": "a012b68e1112715698f93580e39584f889958e24",
+      "original_sha256": "03a989acbb482e9d3e8de5568684bdace6e307e936d19efbcbf54e411d6ca552",
+      "size_bytes": 16941,
+      "current_sha256": "03a989acbb482e9d3e8de5568684bdace6e307e936d19efbcbf54e411d6ca552",
+      "current_size_bytes": 16941,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/drop_entry_bb/DE_A4_LESSONS_COMPACT.md",
+      "new_path": "docs/drop_entry_bb/DE_A4_LESSONS_COMPACT.md",
+      "git_mode": "100644",
+      "original_git_blob": "391468bde0284fd1595e3e37d9a040b6a3542bd4",
+      "original_sha256": "092c7da0e23ced93fabefca7af84617ff16c923a2413713b258135c6287100e8",
+      "size_bytes": 5271,
+      "current_sha256": "092c7da0e23ced93fabefca7af84617ff16c923a2413713b258135c6287100e8",
+      "current_size_bytes": 5271,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/stokes_first_problem_tstar1_20261112.md",
+      "new_path": "docs/stokes_first_problem_tstar1_20261112.md",
+      "git_mode": "100644",
+      "original_git_blob": "46ea1ada491844dad75a05959fa74d713be6afcb",
+      "original_sha256": "bc1d0a7ea6ef029769cff4f1984654fa4b213ee0639cc0d117860dfc0e6b0c4b",
+      "size_bytes": 13461,
+      "current_sha256": "bc1d0a7ea6ef029769cff4f1984654fa4b213ee0639cc0d117860dfc0e6b0c4b",
+      "current_size_bytes": 13461,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/couette_2d/artifacts/summary.json",
+      "new_path": "benchmarks/case_pool/couette_2d/artifacts/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "101f76f11ca6517c77908ccbe35ebc30d734fe8b",
+      "original_sha256": "5f1b8fa7df925a814e5099f7a44996b59fc24e8f62169257f7297b473d88042c",
+      "size_bytes": 42048,
+      "current_sha256": "5f1b8fa7df925a814e5099f7a44996b59fc24e8f62169257f7297b473d88042c",
+      "current_size_bytes": 42048,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/couette_2d/README.md",
+      "new_path": "benchmarks/case_pool/couette_2d/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "db03f32d72fe2060c70cfef24bebb6710be46af4",
+      "original_sha256": "adad05e438fc9bdd125b5ad0ed67d25682a9ca5bdfe7bc42632363e71449a55d",
+      "size_bytes": 18050,
+      "current_sha256": "adad05e438fc9bdd125b5ad0ed67d25682a9ca5bdfe7bc42632363e71449a55d",
+      "current_size_bytes": 18050,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/stokes_first_problem/scan_tstar1/summary.json",
+      "new_path": "benchmarks/verified/stokes_first_problem/scan_tstar1/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "41be3d0ed021a91efc7a6764953d6817aab5c369",
+      "original_sha256": "cc4764d6c1c810fefe632483f9b33735ad87886c129fd9de05f6eb19063756c1",
+      "size_bytes": 4760,
+      "current_sha256": "cc4764d6c1c810fefe632483f9b33735ad87886c129fd9de05f6eb19063756c1",
+      "current_size_bytes": 4760,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/stokes_first_problem/scan_tstar1/dtype_sensitivity.json",
+      "new_path": "benchmarks/verified/stokes_first_problem/scan_tstar1/dtype_sensitivity.json",
+      "git_mode": "100644",
+      "original_git_blob": "877d0c63a400b68ead18f11d0b777b9deccd9ba2",
+      "original_sha256": "52dbed2b57568c5e8cf66869e86d62acabcf8be834a9f8fe4a5a4d37af99091c",
+      "size_bytes": 370,
+      "current_sha256": "52dbed2b57568c5e8cf66869e86d62acabcf8be834a9f8fe4a5a4d37af99091c",
+      "current_size_bytes": 370,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/stokes_first_problem/scan_tstar1/U1e-3_H200_bgk.json",
+      "new_path": "benchmarks/verified/stokes_first_problem/scan_tstar1/U1e-3_H200_bgk.json",
+      "git_mode": "100644",
+      "original_git_blob": "07e8581a85f114896309ac2f81b5aa8dee24e446",
+      "original_sha256": "bb01c4972f8fe2d6a81658aeb7b3684f55dc3aa0800209d1e700894a8e56d4bb",
+      "size_bytes": 9280,
+      "current_sha256": "bb01c4972f8fe2d6a81658aeb7b3684f55dc3aa0800209d1e700894a8e56d4bb",
+      "current_size_bytes": 9280,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact old paths and basenames searched on actual main; only Couette report retained a historical reference. All five indexed exact cross-repository searches in TensorKnowledge/TensorPhysics/TensorPlatform/TensorBench returned no hits, not exhaustive public bookmark coverage. Stable report URLs preserved; no external publication.",
+    "navigation_indexes": [
+      "development/audit/m18637/README.md",
+      "benchmarks/case_pool/couette_2d/evidence/m18637/README.md",
+      "development/audit/m16100/README.md",
+      "development/audit/m5759/README.md",
+      "development/audit/drop_entry/design/lessons-a4/README.md",
+      "development/audit/m16237/README.md",
+      "benchmarks/verified/stokes_first_problem/evidence/m16237/README.md"
+    ],
+    "existing_case_links": {
+      "m18637": "benchmarks/case_pool/couette_2d",
+      "m16237": "benchmarks/verified/stokes_first_problem"
+    },
+    "case_registry_new_ids": 0,
+    "offline_payload_parity": {
+      "script": "development/audit/m18637/publish_couette_2d_r2_report.py",
+      "input": "benchmarks/case_pool/couette_2d/artifacts/summary.json",
+      "before_after_byte_identical": true,
+      "sha256": "0e108e9359ea0b91eb93c76037307c7a105709c0c3dccc005092f1e6a95b850d",
+      "size_bytes": 10068,
+      "markdown_characters": 5986,
+      "figures_present": 0,
+      "missing_original_figures": [
+        "fig1_couette_profile.png",
+        "fig2_couette_errors.png"
+      ],
+      "status": "build() only, no publication, not a scientific replay; no payload replacement committed"
+    },
+    "cht_cli_help": {
+      "before_after_byte_identical": true,
+      "sha256": "218746362362b84c5d1306109c5e87f2a7d09fea43803181dbb871ef6a2e028f",
+      "size_bytes": 253,
+      "scope": "--help only; no publication or computation"
+    },
+    "historical_dependencies": [
+      {
+        "mission": "m18637",
+        "limitation": "Couette round-2 local payload is compatible; remote publication was not performed. Original referenced figure pair is not tracked."
+      },
+      {
+        "mission": "m16100",
+        "limitation": "Historical external publication helper with import-time external side effects and untracked original thermal_d12 figure; archive-only, do not execute."
+      },
+      {
+        "mission": "m5759",
+        "limitation": "Historical CHT campaign publication helper. CLI help is compatible; original artifacts/cht input bundle is not present in tracked main. No invocation of publication or scientific computation."
+      },
+      {
+        "mission": "DE-A4",
+        "limitation": "Historical lesson-card publication helper; original external report/session state and old worktree path are not supplied. Archive-only."
+      },
+      {
+        "mission": "m16237",
+        "limitation": "Historical local payload builder, not a current benchmark runner. Original scan figure images fig_profile.png, fig_spacetime.png, fig_error.png, fig_convergence.png are absent from the tracked scan directory. Do not substitute later tutorial images; archive-only."
+      }
+    ]
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

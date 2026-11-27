@@ -1,5 +1,7 @@
 # CASE-COUETTE-2D 第2轮·调研结合 — 交付总结（m18637）
 
+> Repository layout note (2026-11-28): [current historical report helper and input limitations](../development/audit/m18637/README.md). The original report below is retained. No fresh scientific acceptance or remote publication.
+
 > 锚点=CASE-COUETTE-2D；第2轮（调研结合）；前轮 m18528 honest-FAIL（fail_stage 未标、failure_reason 未留）。
 > 本单先调研成熟方法（开源横向 + 方法谱系），再结合推进；选型沉淀落 oss_solutions（feature_slug='CASE-COUETTE-2D'）。
 
