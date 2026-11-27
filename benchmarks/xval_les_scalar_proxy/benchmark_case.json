@@ -1,0 +1,37 @@
+{
+  "scope": "Independent audit of m18096 recorded L2 with incomplete physical comparison, unresolved field-identity provenance and missing raw outputs. The existing solver-local LES proxy campaign is a related current tree entry, not a verified copy of the audited branch. Archived tools reference original mission worktrees; no DB, publishing, or science replay performed. Results list contains the historical independent audit JSON only, not current computed results.",
+  "criteria": {
+    "current_campaign_protocol": "benchmarks/xval_les_scalar_proxy/predeclared.json",
+    "historical_audit": "development/audit/m18149/audit.json",
+    "notes": "These are distinct records, no new scientific gate evaluated."
+  },
+  "source": [
+    "benchmarks/xval_les_scalar_proxy/run_xval.py",
+    "benchmarks/xval_les_scalar_proxy/oss_port.py",
+    "benchmarks/xval_les_scalar_proxy/report.py"
+  ],
+  "config": [
+    "benchmarks/xval_les_scalar_proxy/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/xval_les_scalar_proxy/README.md",
+    "docs/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY.md",
+    "development/audit/m18149/AUDIT_m18096_XVAL_LES_SCALAR_Q_ABS_CC_PROXY.md"
+  ],
+  "reference_files": [
+    "benchmarks/xval_les_scalar_proxy/oss_ref/oss_lattice.json",
+    "benchmarks/xval_les_scalar_proxy/oss_ref/provenance.json"
+  ],
+  "results": [
+    "development/audit/m18149/audit.json"
+  ],
+  "evidence": [
+    "development/audit/m18149/README.md",
+    "development/audit/m18149/fig_audit_m18096.png",
+    "development/audit/m18149/independent_check.py",
+    "development/audit/m18149/make_figure.py",
+    "development/audit/m18149/verdict_m18096.sql",
+    "development/audit/m18149/verdict_m18096_update.sql",
+    "docs/architecture/migrations/amr-survey-les-audit-docs-2026-11-27.json"
+  ]
+}

@@ -13,7 +13,8 @@
   "documentation": [
     "benchmarks/case_pool/oscillatory_cylinder_inertia/README.md",
     "docs/XVAL_LBM_HORIZONTAL_SURVEY_EMPTY.md",
-    "docs/board_audit/m18089/AUDIT_m17981.md"
+    "docs/board_audit/m18089/AUDIT_m17981.md",
+    "development/audit/m17888/AUDIT_m17888.md"
   ],
   "reference_files": [
     "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/predeclared.json",
@@ -40,6 +41,8 @@
     "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey_table.csv"
   ],
   "evidence": [
-    "docs/architecture/migrations/oscillatory-inertia-survey-xval-2026-11-25.json"
+    "docs/architecture/migrations/oscillatory-inertia-survey-xval-2026-11-25.json",
+    "development/audit/m17888/README.md",
+    "docs/architecture/migrations/amr-survey-les-audit-docs-2026-11-27.json"
   ]
 }
