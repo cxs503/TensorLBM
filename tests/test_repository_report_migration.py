@@ -1582,6 +1582,61 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 report = (REPO / item["published_report"]).read_text(encoding="utf-8")
                 self.assertIn(f"](../{item['new_path']})", report)
 
+    def test_addedmass_kc_archive_preserves_inputs_and_historical_failure(self):
+        path = LEDGER_PATH.parent / "addedmass-kc-xval-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(len(rows), 29)
+        self.assertEqual(rows, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        self.assertEqual(sum(not item["byte_identical"] for item in ledger["entries"]), 2)
+        for entry in ledger["entries"] + ledger["consumer_edits"]:
+            raw = (REPO / entry["new_path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), entry["current_sha256"])
+            self.assertEqual(len(raw), entry["current_size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[0], entry["git_mode"])
+            if entry["byte_identical"]:
+                self.assertEqual(index[1], entry["original_git_blob"])
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), entry["original_sha256"])
+            else:
+                edit = entry["path_only_edit"]
+                self.assertEqual(raw.count(edit["new"].encode()), 1)
+                original = raw.replace(edit["new"].encode(), edit["old"].encode())
+                self.assertEqual(len(original), entry["size_bytes"])
+                self.assertEqual(hashlib.sha256(original).hexdigest(), entry["original_sha256"])
+                self.assertEqual(hashlib.sha1(
+                    f"blob {len(original)}\0".encode() + original,
+                ).hexdigest(), entry["original_git_blob"])
+        compat = ledger["compatibility"]
+        raw = subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--case", compat["case_id"]], cwd=REPO, text=True,
+        )
+        (record,) = json.loads(raw)["cases"]
+        self.assertEqual(record["current_acceptance"], "not_evaluated")
+        (variant,) = record["variants"]
+        self.assertEqual(variant["path"], compat["case_path"])
+        for entry in ledger["entries"]:
+            self.assertIn(entry["new_path"], variant["evidence"])
+        historic = json.loads((REPO / compat["archive_path"] / "results.json").read_text())
+        self.assertEqual(historic["verdict"]["verdict"], "HONEST_FAIL")
+        self.assertEqual(historic["verdict"]["passing_arms"], [])
+        self.assertEqual(ledger["science"]["original_verdict"], "HONEST_FAIL")
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        verify = ledger["verification"]
+        self.assertEqual(verify["baseline_render_hashes"], verify["candidate_render_hashes"])
+        self.assertEqual(verify["baseline_targeted_tests"], verify["candidate_targeted_tests"])
+        self.assertEqual(verify["candidate_targeted_tests"], 4)
+        index = REPO / compat["readme"]
+        for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+            self.assertTrue((index.parent / link).is_file(), link)
+
     def test_phasefield_case_relocation_preserves_original_figures_and_provenance(self):
         import base64
 

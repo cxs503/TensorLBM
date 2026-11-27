@@ -81,6 +81,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "xval_lbm_periodic_dpdx"),
     ("xval", "XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON"),
     ("xval", "XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64"),
+    ("xval", "XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE"),
     ("scripts", "verification"),
     ("scripts", "audit_m18430"),
     ("scripts", "w26_ghia"),

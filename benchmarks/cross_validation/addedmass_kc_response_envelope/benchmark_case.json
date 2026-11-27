@@ -1,0 +1,74 @@
+{
+  "scope": "Historical added-mass KC response study of a generic oscillating circular cylinder; original verdict HONEST_FAIL; current acceptance not evaluated. The six absolute-path diagnostic probes are historical only.",
+  "criteria": {
+    "protocol": "development/verification/addedmass_kc_response_envelope/predeclared.json",
+    "historical_rule": "pass iff some arm has (H1: |drift|<1 deg/per and resid<0.05) and C_I inside the 15% band of the concentric-container bracket [annulus_areaeq, annulus_inscribed]",
+    "historical_verdict": "HONEST_FAIL"
+  },
+  "source": [
+    "development/verification/addedmass_kc_response_envelope/run_xval.py",
+    "development/verification/addedmass_kc_response_envelope/xval_envelope.py",
+    "development/verification/addedmass_kc_response_envelope/reference.py"
+  ],
+  "config": [
+    "development/verification/addedmass_kc_response_envelope/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/addedmass_kc_response_envelope/README.md",
+    "development/verification/addedmass_kc_response_envelope/REPORT.md"
+  ],
+  "reference_files": [
+    "development/verification/addedmass_kc_response_envelope/reference.py",
+    "development/verification/addedmass_kc_response_envelope/refs.json"
+  ],
+  "results": [
+    "development/verification/addedmass_kc_response_envelope/results.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00025.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00050.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00100.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00200.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00400.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.05.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.10.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.20.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.40.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc1.00.json",
+    "development/verification/addedmass_kc_response_envelope/runs/shipped_kc10.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin01.5.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin05.0.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin10.0.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin20.0.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin30.0.json"
+  ],
+  "evidence": [
+    "development/verification/addedmass_kc_response_envelope/REPORT.md",
+    "development/verification/addedmass_kc_response_envelope/diag_acoustic.py",
+    "development/verification/addedmass_kc_response_envelope/diag_beta.py",
+    "development/verification/addedmass_kc_response_envelope/diag_cheap_acoustic.py",
+    "development/verification/addedmass_kc_response_envelope/diag_phase.py",
+    "development/verification/addedmass_kc_response_envelope/diag_spinup.py",
+    "development/verification/addedmass_kc_response_envelope/diag_windows.py",
+    "development/verification/addedmass_kc_response_envelope/predeclared.json",
+    "development/verification/addedmass_kc_response_envelope/reference.py",
+    "development/verification/addedmass_kc_response_envelope/refs.json",
+    "development/verification/addedmass_kc_response_envelope/results.json",
+    "development/verification/addedmass_kc_response_envelope/run_xval.py",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00025.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00050.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00100.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00200.json",
+    "development/verification/addedmass_kc_response_envelope/runs/beta00400.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.05.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.10.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.20.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc0.40.json",
+    "development/verification/addedmass_kc_response_envelope/runs/kc1.00.json",
+    "development/verification/addedmass_kc_response_envelope/runs/shipped_kc10.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin01.5.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin05.0.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin10.0.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin20.0.json",
+    "development/verification/addedmass_kc_response_envelope/runs/spin30.0.json",
+    "development/verification/addedmass_kc_response_envelope/xval_envelope.py"
+  ]
+}
