@@ -1,0 +1,100 @@
+{
+  "scope": "Existing confined DFG 2D-2 Re=100 pending matrix case; m23014 historical hypothesis audit and frozen inputs. No new acceptance.",
+  "criteria": {
+    "matrix_id": "cylinder_re100_dfg",
+    "matrix_definition": "benchmarks/validation_matrix/BENCHMARK_REF_VS_GOT.json",
+    "historical_gate": "See original preregistration and deviations; archived results only, current acceptance not evaluated."
+  },
+  "source": [
+    "benchmarks/verified/cylinder/re100_dfg/run.py",
+    "benchmarks/verified/cylinder/re100_dfg/make_report.py",
+    "development/audit/m23014/analyse_m23014.py",
+    "development/audit/m23014/audit_h3_h4.py",
+    "development/audit/m23014/make_doc.py"
+  ],
+  "config": [
+    "development/audit/m23014/PREREG.json",
+    "development/audit/m23014/DEVIATIONS.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/benchmark.json"
+  ],
+  "documentation": [
+    "benchmarks/pending/cylinder_re100_dfg/README.md",
+    "benchmarks/verified/cylinder/re100_dfg/evidence/m23014/README.md",
+    "development/audit/m23014/README.md",
+    "development/audit/m23014/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/pending/cylinder_re100_dfg/validation_status.json",
+      "field": "references",
+      "value": [
+        {
+          "id": "cylinder_dfg2d2_cd_re100",
+          "quantity": "mean drag coefficient of the DFG 2D-2 channel cylinder, Re=100",
+          "value": 3.23,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "C_D = 3.2200 - 3.2400 (mid 3.2300)"
+        },
+        {
+          "id": "cylinder_dfg2d2_clamp_re100",
+          "quantity": "lift coefficient amplitude of the DFG 2D-2 channel cylinder, Re=100",
+          "value": 1.0,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "C_L amplitude = 0.9900 - 1.0100 (mid 1.0000)"
+        },
+        {
+          "id": "cylinder_dfg2d2_st_re100",
+          "quantity": "Strouhal number of the DFG 2D-2 channel cylinder, Re=100",
+          "value": 0.3,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "St = 0.2950 - 0.3050 (mid 0.3000)"
+        },
+        {
+          "id": "cylinder_dfg2d2_dp_re100",
+          "quantity": "pressure difference p(0.15,0.2)-p(0.25,0.2), DFG 2D-2, Re=100 (raw, rho=1,U=1)",
+          "value": 2.48,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "Δp = 2.4600 - 2.5000 (mid 2.4800)"
+        }
+      ]
+    }
+  ],
+  "results": [
+    "benchmarks/pending/cylinder_re100_dfg/validation_status.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
+    "development/audit/m23014/analysis.json",
+    "development/audit/m23014/h3_h4_audit.json"
+  ],
+  "evidence": [
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/benchmark.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0600.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0600.series.npz",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0833.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0833.series.npz",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D28_u0833.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D28_u0833.series.npz",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.series.npz",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/rejudge_cl_amp.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/report_payload.json",
+    "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
+    "benchmarks/verified/cylinder/re100_dfg/repro.sh",
+    "docs/figures/m23014_cl_series.png",
+    "docs/figures/m23014_dfg_hypotheses.png"
+  ]
+}

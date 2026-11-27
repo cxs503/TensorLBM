@@ -27,7 +27,7 @@ import torch
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "docs/m23014"))
+sys.path.insert(0, str(REPO / "development/audit/m23014"))
 
 from tensorlbm.validation import cylinder_dfg as cdfg  # noqa: E402
 from tensorlbm.boundary.boundaries import cylinder_mask  # noqa: E402
