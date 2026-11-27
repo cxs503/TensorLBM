@@ -241,7 +241,7 @@ def equilibrium_scalar_d2q5(
 
     i.e. the textbook form used by ``lbm-principles-practice/code``
     (``chapter8/gaussian_1d_magic6.cpp:96``, ``chapter8/gaussian_2d_trt.cpp:118``);
-    cross-validated in ``xval/XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN``, where it
+    cross-validated in ``development/verification/trt_lambda_magic``, where it
     reproduces the reference binary bit-for-bit at u = 0.5 and lowers the
     analytic-solution error by a factor 1.23 there.  The default (``False``)
     keeps the historical linear-in-u equilibrium, so existing callers are

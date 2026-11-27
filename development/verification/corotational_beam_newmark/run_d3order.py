@@ -39,7 +39,7 @@ Measured here (all numbers are written to ``d3order.csv`` /
   only ever measured for the linearised arms in round 2);
 * TL-vs-LIFE trajectory parity in the nonlinear regime.
 
-Run:  python xval/corotational_beam_newmark/run_d3order.py
+Run:  python development/verification/corotational_beam_newmark/run_d3order.py
 """
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 
 import numpy as np  # noqa: E402

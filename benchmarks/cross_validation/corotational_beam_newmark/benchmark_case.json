@@ -1,0 +1,61 @@
+{
+  "scope": "Historical generic beam-integrator verification, convergence records, and independent follow-up review. Retain the independent review and all originally recorded failures/limits.",
+  "criteria": {
+    "predeclared": {
+      "owner_acceptance_pct": 15.0,
+      "interpretation": "an error is |KPI - reference|/|reference|*100 and must be < 15% for H1 (arm vs arm) and H2 (arm vs external reference at the finest ladder point)",
+      "convergence_rule": {
+        "S2_S3": "a KPI is mesh-converged when |KPI(n=32) - KPI(n=16)| / |KPI(n=32)| < 1%",
+        "D1": "a frequency is mesh-converged when |w1(n=32)-w1(n=16)|/w1(n=32) < 0.5%",
+        "D2": "time-converged when halving dt changes the period error by a factor in [3.0, 5.0] (2nd order band)"
+      },
+      "stability_rule": "non-finite values, or |displacement| > 1e3 * L, or a Newton solve that fails to reach the residual tolerance after maxit=30 with load substepping -> the run is declared FAILED and reported, never tuned or silently replaced",
+      "energy_thresholds": {
+        "D3_drift_pct_max": 2.0,
+        "D2_amplitude_change_pct_max": 1.0
+      },
+      "element_consistency_threshold": {
+        "A_TL_max_rel_dev_from_gradU": 1e-06,
+        "A_LIFE_reported_not_thresholded": true
+      },
+      "newton_rate_threshold": {
+        "A_TL_min_rate": 1.8
+      }
+    },
+    "current_acceptance": "Not evaluated by path relocation."
+  },
+  "source": [
+    "development/verification/corotational_beam_newmark/elastica_reference.py",
+    "development/verification/corotational_beam_newmark/make_report.py",
+    "development/verification/corotational_beam_newmark/run_d3order.py",
+    "development/verification/corotational_beam_newmark/run_torder.py",
+    "development/verification/corotational_beam_newmark/run_xval.py",
+    "src/tensorlbm/corotational_beam.py",
+    "tests/test_corotational_beam_xval_harness.py"
+  ],
+  "config": [
+    "development/verification/corotational_beam_newmark/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/corotational_beam_newmark/README.md",
+    "development/verification/corotational_beam_newmark/README.md",
+    "docs/XVAL-LBM-COROTATIONAL-2NODE-BEAM-NEWMARK-NEWTON.md",
+    "docs/R3-REVIEW-XVAL-LBM-COROTATIONAL-2NODE-BEAM-NEWMARK-NEWTON.md"
+  ],
+  "reference_files": [
+    "development/verification/corotational_beam_newmark/elastica_reference.py",
+    "docs/XVAL-LBM-COROTATIONAL-2NODE-BEAM-NEWMARK-NEWTON.md",
+    "docs/R3-REVIEW-XVAL-LBM-COROTATIONAL-2NODE-BEAM-NEWMARK-NEWTON.md"
+  ],
+  "results": [
+    "development/verification/corotational_beam_newmark/d3order.csv",
+    "development/verification/corotational_beam_newmark/d3order_summary.json",
+    "development/verification/corotational_beam_newmark/summary.json",
+    "development/verification/corotational_beam_newmark/table.csv",
+    "development/verification/corotational_beam_newmark/torder.csv",
+    "development/verification/corotational_beam_newmark/torder_summary.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/trt-beam-xval-2026-11-26.json"
+  ]
+}

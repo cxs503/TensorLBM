@@ -2,7 +2,7 @@
 
 **Role:** verifier seat (`deepseek-v4-flash` pinned), mission 22901, repo `TensorLBM`.
 **Object of review:** the merged evidence bundle of mission 17723 — `docs/XVAL-LBM-COROTATIONAL-2NODE-BEAM-NEWMARK-NEWTON.md`
-(rounds 1+2), `xval/corotational_beam_newmark/{table.csv,summary.json,torder.csv,torder_summary.json}`,
+(rounds 1+2), `development/verification/corotational_beam_newmark/{table.csv,summary.json,torder.csv,torder_summary.json}`,
 `src/tensorlbm/corotational_beam.py`, `tests/test_corotational_beam.py` — all at the reviewer's base
 commit (branch `agent/m22901`, parent `b021537dd`).
 **Independence limitations (declared):** the reviewer did *not* re-clone `joconnor22/LIFE`; the
@@ -27,7 +27,7 @@ of the transplant to `LIFE/src/FEMElement.cpp` is taken from the round-1 file:li
 
 | id | severity | finding | evidence | reproduction |
 |---|---|---|---|---|
-| **F10** | **blocking (claim falsified)** | The merged D3 number (*"energy drift 0.0045 %, non-dissipative"*) is **not reproducible with the current code**. With the round-2 fix (consistent initial acceleration, `qddot = M⁻¹(f−g)`) the λ=5 release case **diverges** at the predeclared step `dt = T1/200`: TL `max|q| = 4.96e7 L`, 56/200 steps at `maxit`; LIFE `max|q| = 2.91e7 L`, 190/200 steps at `maxit`. The merged numbers were produced by the **pre-fix** code, whose zero initial acceleration incidentally damps the startup. Round-2 §R2.5 asserted that a re-run *"can only change the drift at the floor level"* — **that expectation is falsified**: the point does not converge at all. | `xval/corotational_beam_newmark/d3order_summary.json` → `arms.*.ladder`; `d3order.csv` rows `status=FAILED`; new test `test_underresolved_d3_point_is_reported_not_dropped` | `python -c "import run_d3order as m; m.FRACS=(200,400); m.main()"` (58 s) |
+| **F10** | **blocking (claim falsified)** | The merged D3 number (*"energy drift 0.0045 %, non-dissipative"*) is **not reproducible with the current code**. With the round-2 fix (consistent initial acceleration, `qddot = M⁻¹(f−g)`) the λ=5 release case **diverges** at the predeclared step `dt = T1/200`: TL `max|q| = 4.96e7 L`, 56/200 steps at `maxit`; LIFE `max|q| = 2.91e7 L`, 190/200 steps at `maxit`. The merged numbers were produced by the **pre-fix** code, whose zero initial acceleration incidentally damps the startup. Round-2 §R2.5 asserted that a re-run *"can only change the drift at the floor level"* — **that expectation is falsified**: the point does not converge at all. | `development/verification/corotational_beam_newmark/d3order_summary.json` → `arms.*.ladder`; `d3order.csv` rows `status=FAILED`; new test `test_underresolved_d3_point_is_reported_not_dropped` | `python -c "import run_d3order as m; m.FRACS=(200,400); m.main()"` (58 s) |
 | **F7** | **blocking (reporting defect)** | **Silent censorship of failed predeclared points.** `case_d3` appended a KPI row only when `converged` was true, and `assemble()` never checked that every predeclared point produced a row. Four D3 points were predeclared; `table.csv` contains **three**; `summary.json` reads `D3_NONLINEAR_ENERGY: {n: 3, n_fail: 0}` and `n_fail15 = 0`, i.e. a divergence was reported as a clean pass. The missing row is exactly `TL @ dt=T1/200`, the point that diverges (F10). | merged `table.csv` (66 rows) vs `predeclared.json` §cases.D3_NONLINEAR_ENERGY | `git show HEAD:xval/.../table.csv \| grep D3` → 3 rows |
 | **F8** | **major (interpretation)** | **Step adequacy of the dynamic stages was never stated.** The ladder is quoted as `dt = T1/200`, but the stiffest *discrete* mode is not the fundamental: at n=16, `ω_max = 39.14 s⁻¹` (`T_min = 0.1605 s`) versus `ω1 = 0.01015 s⁻¹` (`T1 = 619 s`), a ratio **3857**. So `dt = T1/200 = 3.10 s` is **19.3 × T_min** (`ω_max·dt = 121`); even the finest merged point `T1/1000` sits at `ω_max·dt = 24`. Nothing in the merged report states this, so "converged at T1/200" cannot be read as "the nonlinear integrator is validated at that step". Measured here per ladder point (`d3order.csv`, KPI `omega_max_dt`). | `d3order_summary.json` → `step_adequacy` | `omega_max` from the generalised eigenproblem of `K_T(0)`, `M` on the free DOFs |
 | **F9** | **major (metric validity)** | The D3 "energy" is `KE + strain_energy` of the **consistent** family. `strain_energy` is not a potential of the LIFE force vector, so for the LIFE arm the number measures the **formulation mismatch**, not energy conservation; the merged report quotes it as an energy drift. Measured: at resolved steps the LIFE "drift" is **dt-independent** (2.64e-5 % → 3.04e-5 % when dt is halved), while TL decreases (8.06e-6 % → 3.84e-6 %), i.e. the LIFE floor is model-inconsistency, not discretisation. Row notes in `d3order.csv` carry the caveat. | `d3order_summary.json` → `resolved_window` | `python -c "import run_d3order as m; m.FRACS=(); m.RESOLVED_DTS=(0.04,0.02); m.main()"` (48 s) |
@@ -39,7 +39,7 @@ unsupported or mis-scoped, numbers usable with a caveat; *minor* = bookkeeping/p
 
 ## 3. Remediation applied in this round (code, in the worktree)
 
-1. `xval/corotational_beam_newmark/run_xval.py`
+1. `development/verification/corotational_beam_newmark/run_xval.py`
    * new `record_fail(...)` → a failed point is a row with `status="FAILED"`, `pass15=False`,
      `got=NaN` (no fabricated number);
    * `case_d3` now emits a FAILED row for a diverged/non-converged Newton solve instead of
@@ -48,7 +48,7 @@ unsupported or mis-scoped, numbers usable with a caveat; *minor* = bookkeeping/p
      absent ("silent censorship guard F7");
    * `summary.json` gains `n_failed_points`, `failed_points`, per-case `failed` lists, and a NaN-safe
      `max_abs_err_pct`; `status` is a column of `table.csv`.
-2. `xval/corotational_beam_newmark/run_d3order.py` (new): the step-adequacy diagnostic
+2. `development/verification/corotational_beam_newmark/run_d3order.py` (new): the step-adequacy diagnostic
    (`ω_max` from the discrete spectrum), the predeclared D3 ladder re-run with explicit
    PASS/FAILED status, and a **resolved-step** sub-study D3R (fixed 20 s window,
    `dt ∈ {0.04, 0.02, 0.01, 0.005} s`, i.e. `ω_max·dt ≤ 1.6`) with the drift order in dt and
@@ -121,3 +121,5 @@ Checks **not run** (declared, not passed):
 ω_max·dt ≤ 0.8, drift over 20 s < 0.1 % for both arms and TL drift monotone decreasing in dt over
 ≥3 refinements (order ≥ 1.5 measured above the round-off floor, Newton tol ≤ 1e-12); explicit
 FAILED rows for every non-converged predeclared point"*, domain: LBM-FSI structural sub-solver.
+
+Repository relocation: [canonical case index and historical evidence](../benchmarks/cross_validation/corotational_beam_newmark/README.md). The independent review and its limitations remain unchanged.

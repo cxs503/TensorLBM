@@ -1,0 +1,146 @@
+{
+  "scope": "Historical scalar transport/diffusion comparison with committed reference fields and a documented follow-up. Historical results do not constitute current scientific acceptance.",
+  "criteria": {
+    "R1": {
+      "K1": {
+        "definition": "Lambda inversion identity: repo omega(Lambda, omega) vs the three OSS writings over omega in [0.51,1.99] x Lambda in {1/12,1/6,3/16,1/4,3/8}",
+        "threshold": 1e-15
+      },
+      "K2": {
+        "definition": "discrete tables (weights / complement maps) identical (1 = same, 0 = different)",
+        "threshold": 1.0
+      },
+      "K3": {
+        "definition": "field identity on the shared case, repo vs OSS binary",
+        "threshold": 1e-13
+      },
+      "K4": {
+        "definition": "relative L2 vs the analytic solution, max over t",
+        "threshold": 0.15
+      },
+      "K5": {
+        "definition": "Lambda sensitivity (field relL2 + 5x5 eigen-spectrum branch deviation)",
+        "threshold": "report only"
+      },
+      "K6": {
+        "definition": "refinement observed order p",
+        "threshold": "report only"
+      },
+      "K7": {
+        "definition": "effect of the OSS second-order (u^2) equilibrium term",
+        "threshold": 0.15
+      }
+    },
+    "R2": {
+      "H1_magic_is_flat": "at Lambda=3/16, P2 <= 1/5 * P2(Lambda=1/4) AND max_tau |delta_eff| <= 0.03 cell (flag: pass/fail)",
+      "H2_deviation_costs": "monotone growth of |delta_eff| with |Lambda - 3/16| at fixed tau=0.80 (LOWEST |Lambda-3/16| -> smallest |delta_eff|), checked over the 5 tabulated Lambdas",
+      "H3_bgk_identity": "P4 <= 1e-13 (machine-precision identity: TRT with Lambda=(tau-1/2)^2 IS BGK)",
+      "H4_optimal_Lambda": "argmin over the scanned Lambda grid of |delta_eff| at tau=0.80 equals 3/16",
+      "H5_accuracy_band": "profile L2 (P3) <= 3% for all scanned (Lambda, tau) (tighter than the owner 15% band; declared before the run)"
+    },
+    "current_acceptance": "Not evaluated by path relocation."
+  },
+  "source": [
+    "development/verification/trt_lambda_magic/diagnostics_u_regime.py",
+    "development/verification/trt_lambda_magic/xval_trt_lambda.py",
+    "development/verification/trt_lambda_magic/xval_trt_wall_lambda.py",
+    "src/tensorlbm/scalar_transport.py",
+    "tests/test_xval_trt_lambda_magic_table_driven.py"
+  ],
+  "config": [
+    "development/verification/trt_lambda_magic/predeclared.json",
+    "development/verification/trt_lambda_magic/predeclared_r2.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/trt_lambda_magic/README.md",
+    "development/verification/trt_lambda_magic/README.md",
+    "docs/TRT_MAGIC_LAMBDA_WALL_POSITION_TABLE_R2.md",
+    "development/verification/trt_lambda_magic/REPORT_XVAL_LBM_TRT_LAMBDA_MAGIC_TABLE_DRIVEN.md"
+  ],
+  "reference_files": [
+    "development/verification/trt_lambda_magic/fields.npz",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000000.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000001.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000002.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000003.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000004.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000005.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000006.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000007.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000008.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000009.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000010.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000011.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000012.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000013.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000014.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000015.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000016.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000017.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000018.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000019.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12/gaussian_1d_magic12000020.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000000.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000001.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000002.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000003.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000004.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000005.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000006.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000007.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000008.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000009.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000010.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000011.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000012.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000013.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000014.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000015.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000016.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000017.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000018.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000019.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic12_hi/gaussian_1d_magic12000020.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000000.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000001.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000002.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000003.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000004.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000005.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000006.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000007.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000008.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000009.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000010.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000011.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000012.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000013.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000014.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000015.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000016.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000017.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000018.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000019.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6/gaussian_1d_magic6000020.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000000.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000001.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000002.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000003.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000004.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000005.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000006.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000007.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000008.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000009.dat",
+    "development/verification/trt_lambda_magic/gaussian_1d_magic6_hi/gaussian_1d_magic6000010.dat",
+    "development/verification/trt_lambda_magic/REPORT_XVAL_LBM_TRT_LAMBDA_MAGIC_TABLE_DRIVEN.md"
+  ],
+  "results": [
+    "development/verification/trt_lambda_magic/diagnostics.json",
+    "development/verification/trt_lambda_magic/results.json",
+    "development/verification/trt_lambda_magic/results_wall_lambda.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/trt-beam-xval-2026-11-26.json"
+  ]
+}

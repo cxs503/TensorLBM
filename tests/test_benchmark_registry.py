@@ -109,6 +109,25 @@ class BenchmarkRegistryTests(unittest.TestCase):
         key = "benchmarks/p161w2_n05_oscillating_foil/artifacts/results.json"
         self.assertEqual(assets[key]["declared_case_ids"], ["campaign:p161w2_n05_oscillating_foil"])
 
+    def test_trt_and_beam_archive_cases_preserve_reference_assets(self):
+        for name, ref, result in (
+            ("trt_lambda_magic", "fields.npz", "results_wall_lambda.json"),
+            ("corotational_beam_newmark", "elastica_reference.py", "d3order_summary.json"),
+        ):
+            with self.subTest(case=name):
+                (record,) = self.registry("--case", f"xval:{name}")
+                variant = record["variants"][0]
+                archive = f"development/verification/{name}"
+                self.assertIn(f"{archive}/{ref}", variant["reference_files"])
+                self.assertIn(f"{archive}/{result}", variant["results"])
+                self.assertIn(f"{archive}/README.md", variant["documentation"])
+                self.assertEqual(record["current_acceptance"], "not_evaluated")
+                if name == "trt_lambda_magic":
+                    reference_fields = [
+                        item for item in variant["reference_files"] if item.endswith(".dat")
+                    ]
+                    self.assertEqual(len(reference_fields), 74)
+
     def test_yaml_xml_pipeline_links_its_analytic_replay(self):
         directory = "benchmarks/xval_yml_xml_pipeline"
         report = "docs/xval/XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE.md"
