@@ -1,0 +1,38 @@
+{
+  "scope": "Historical two-distribution color-gradient comparison and evidence for the single-phase limit and capillary tests; retain all recorded limitations.",
+  "criteria": {
+    "historical_protocol": {
+      "relL2_two_layer_poiseuille": "< 0.15 (owner 15% band) on every g10 arm",
+      "mass_drift_per_step_per_species": "<= 1e-10",
+      "laplace_sigma_rel_dev_from_mean": "< 0.15 and fit R^2 >= 0.99",
+      "all_runs_nan_free": true
+    },
+    "current_acceptance": "Not evaluated by relocation."
+  },
+  "source": [
+    "development/verification/two_pdf_colorgradient/cg_reference.py",
+    "development/verification/two_pdf_colorgradient/run_xval.py",
+    "src/tensorlbm/color_gradient_two_pdf.py",
+    "tests/test_color_gradient_two_pdf.py"
+  ],
+  "config": [
+    "development/verification/two_pdf_colorgradient/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/two_pdf_colorgradient/README.md",
+    "development/verification/two_pdf_colorgradient/README.md",
+    "development/verification/two_pdf_colorgradient/REPORT.md"
+  ],
+  "reference_files": [
+    "development/verification/two_pdf_colorgradient/cg_reference.py",
+    "development/verification/two_pdf_colorgradient/oss_solutions.json"
+  ],
+  "results": [
+    "development/verification/two_pdf_colorgradient/artifacts/laplace_log.json",
+    "development/verification/two_pdf_colorgradient/artifacts/resolution_probe.json"
+  ],
+  "evidence": [
+    "development/verification/two_pdf_colorgradient/upsert_oss_solutions.sql",
+    "docs/architecture/migrations/young-laplace-two-pdf-xval-2026-11-26.json"
+  ]
+}

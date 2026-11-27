@@ -255,6 +255,22 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertTrue(summary["pass_15pct"])
         self.assertGreater(summary["worst_force_diff_rel"], 1.0)
 
+    def test_young_laplace_and_two_pdf_archives_are_searchable(self):
+        for name, result in (
+            ("young_laplace_analytic", "artifacts/summary.json"),
+            ("two_pdf_colorgradient", "artifacts/laplace_log.json"),
+        ):
+            with self.subTest(case=name):
+                (record,) = self.registry("--case", f"xval:{name}")
+                variant = record["variants"][0]
+                archive = f"development/verification/{name}"
+                self.assertIn(f"{archive}/{result}", variant["results"])
+                self.assertIn(f"{archive}/REPORT.md", variant["documentation"])
+                self.assertEqual(record["current_acceptance"], "not_evaluated")
+                if name == "young_laplace_analytic":
+                    for image in ("fig_hero.png", "fig_laplace.png", "fig_sensitivity.png"):
+                        self.assertIn(f"{archive}/artifacts/{image}", variant["evidence"])
+
     def test_alias_retains_all_variants(self):
         path = "benchmarks/verified/poiseuille_3d_duct/duct_ar05"
         (record,) = self.registry("--case", path)

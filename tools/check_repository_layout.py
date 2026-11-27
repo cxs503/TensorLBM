@@ -84,6 +84,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "data"),
     ("docs", "m23777"),
     ("docs", "m23124"),
+    ("xval", "XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI"),
+    ("xval", "XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT"),
     ("docs", "m23233"),
     ("docs", "m24569"),
     ("scripts", "physics_ai"),

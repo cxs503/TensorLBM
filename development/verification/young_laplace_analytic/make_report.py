@@ -4,7 +4,7 @@ Nothing here is hand-typed: every number printed in ``REPORT.md`` comes from
 ``artifacts/summary.json`` and every figure is regenerated from the same file, so
 a report can never drift from the run it describes.
 
-    python xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/make_report.py
+    python development/verification/young_laplace_analytic/make_report.py
 """
 
 from __future__ import annotations
@@ -263,8 +263,8 @@ def render_markdown(summary: dict) -> str:
     A("|---|---|---|")
     A("| 被测内核 | `src/tensorlbm/multiphase_soy_dropin.py::SOYFreeEnergyD2Q9` | `step()` / `init_droplet()` / 场 `psi,rho,u,p,grad_*` |")
     A("| 库驱动（冒烟用） | `src/tensorlbm/multiphase_static_droplet.py::soy_free_energy_droplet` | `dp`、`dp_analytical`、`sigma_from_capillary_energy` |")
-    A("| 解析/测量库 | `xval/.../xval_lib.py` | `soy_constants`、`analytic_sigma_*`、`pressure_jump`、`gradient_energy_sigma`、`leave_one_radius_out`、`planted_defects` |")
-    A("| 驱动 | `xval/.../run_xval.py` | 9 个算例、20 时间窗平均、`artifacts/summary.json` |")
+    A("| 解析/测量库 | `development/verification/young_laplace_analytic/xval_lib.py` | `soy_constants`、`analytic_sigma_*`、`pressure_jump`、`gradient_energy_sigma`、`leave_one_radius_out`、`planted_defects` |")
+    A("| 驱动 | `development/verification/young_laplace_analytic/run_xval.py` | 9 个算例、20 时间窗平均、`artifacts/summary.json` |")
     A("| 晶格/时间步 | — | D2Q9，`tau_g=1/(3-sqrt3)=0.7887`，`gamma=0.1`，`eta_n=1/6`（`tau_f=1`） |")
     A("")
 
@@ -361,8 +361,8 @@ def render_markdown(summary: dict) -> str:
     A("")
     A("```bash")
     A("# 全量（9 算例，9 核并行，约 %d s 单核串行等价）" % int(sum(c["wall_s"] for c in cases)))
-    A("python xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/run_xval.py --jobs 9")
-    A("python xval/XVAL-LBM-YOUNG-LAPLACE-ANALYTIC-PLUS-DROPLET-CALI/make_report.py")
+    A("python development/verification/young_laplace_analytic/run_xval.py --jobs 9")
+    A("python development/verification/young_laplace_analytic/make_report.py")
     A("python -m pytest tests/test_xval_young_laplace_analytic.py -q")
     A("```")
     A("")
