@@ -100,6 +100,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "edt_two_segment_geometry_tag_compression"),
     ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
+    ("xval", "XVAL-LBM-CAVITY"),
     ("xval", "fluctuating_lbm_ghost_modes"),
     ("scripts", "p387w2_n04_sphere_force"),
     ("xval", "XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT"),

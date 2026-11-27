@@ -46,7 +46,7 @@
 
 ```
 cd /srv/tensor/operator-a/cxs/TensorLBM
-PYTHONPATH=src python benchmarks/verified/cavity_re100/run.py --nx 128 192 --steps 100000
+PYTHONPATH=src python benchmarks/verified/cavity/re100/run.py --nx 128 192 --steps 100000
 # CPU 约 9 分钟（128²≈154s + 192²≈395s）；--device cuda:1 可选
 ```
 
@@ -62,3 +62,7 @@ PYTHONPATH=src python benchmarks/verified/cavity_re100/run.py --nx 128 192 --ste
 - 真实模拟（无外推），中线速度对 Ghia 表值最大偏差 ≤3% 且两档网格误差单调下降 →
   达标入库
 - 与 verified/cavity_re400 同口径（同一 V3 配方、同度量、同参考来源）
+
+## 历史三方横向对比（独立研究记录）
+
+[方腔三方比较档案](../../../cross_validation/cavity_three_way/README.md)保存原始报告、汇总与历史程序。该研究的工具间指标未达标，原始逐次运行数据与三幅原图未随仓库归档；不作为本案例当前科学验收。

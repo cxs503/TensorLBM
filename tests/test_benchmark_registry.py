@@ -199,5 +199,23 @@ class BenchmarkRegistryTests(unittest.TestCase):
                          {path, path.rsplit("/", 1)[0]})
 
 
+    def test_cavity_three_way_archive_keeps_formal_case_separate(self):
+        (case,) = self.registry("--case", "xval:cavity_three_way")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        archive = "development/verification/cavity_three_way"
+        variant, = case["variants"]
+        self.assertEqual(variant["results"], [f"{archive}/artifacts/comparison.json"])
+        self.assertIn(f"{archive}/REPORT.md", variant["documentation"])
+        self.assertIn(f"{archive}/mpi4py_shim/mpi4py/MPI.py", variant["evidence"])
+        self.assertNotIn(f"{archive}/mpi4py_shim/mpi4py/MPI.py", variant["source"])
+        original = json.loads((ROOT / variant["results"][0]).read_text())
+        completed, = [spec for spec in original["specs"] if spec["W"] == 64 and spec["re"] == 100]
+        self.assertFalse(completed["verdict"]["inter_tool_pass"])
+        self.assertEqual(sum(spec["verdict"]["inter_tool_pass"] is None for spec in original["specs"]), 3)
+        (formal,) = self.registry("--case", "benchmarks/verified/cavity/re100")
+        self.assertNotEqual(formal["id"], case["id"])
+        self.assertEqual(formal["current_acceptance"], "not_evaluated")
+
+
 if __name__ == "__main__":
     unittest.main()
