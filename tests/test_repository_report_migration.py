@@ -1355,6 +1355,40 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn('EVIDENCE_DIR / "tiers"', runner)
         self.assertIn('EVIDENCE_DIR / "logs" / "sweep.log"', runner)
 
+    def test_dfg_board_and_drop_design_records_preserve_originals(self):
+        path = LEDGER_PATH.parent / "dfg-board-and-drop-design-records-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 6)
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        for row in ledger["entries"] + ledger["unchanged_prior_archive"]:
+            self.assertTrue(row["byte_identical"])
+            destination = REPO / row["new_path"]
+            self.assert_fingerprint(destination, row["original_sha256"], row["size_bytes"])
+            mode, blob = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
+            ).split()[:2]
+            self.assertEqual(mode, row["git_mode"])
+            self.assertEqual(blob, row["original_git_blob"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / target).is_file(), target)
+        registry = json.loads(subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--json"], cwd=REPO,
+        ))["cases"]
+        case = next(row for row in registry if row["id"] == "benchmarks/pending/cylinder_re100_dfg")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        self.assertEqual(case["variants"][0]["archive_bucket"], "pending")
+        self.assertIn("benchmarks/pending/cylinder_re100_dfg/evidence/m15884/README.md",
+                      case["variants"][0]["evidence"])
+        self.assertTrue(any(row["id"] == "matrix:cylinder_re100_dfg" for row in registry))
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_drop_entry_indexes_keep_original_assets_and_case_navigation(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "drop-entry-indexes-2026-11-23.json").read_text(

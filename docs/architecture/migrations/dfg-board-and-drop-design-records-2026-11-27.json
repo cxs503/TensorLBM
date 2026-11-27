@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "base_main": "e0db47cd07b9952f290d41a6280df41e020e634e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 61,
+  "docs_second_level_after": 59,
+  "retired_second_level_directories": [
+    "docs/board-audit-m15884",
+    "docs/de_intel"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/board-audit-m15884/AUDIT_m15884_CASE-CYLINDER-DRAG-RE100.md",
+      "new_path": "development/audit/m15884/AUDIT_m15884_CASE-CYLINDER-DRAG-RE100.md",
+      "git_mode": "100644",
+      "original_git_blob": "c79d48aaa3eecf188b43e11fe4d1973454eaecef",
+      "original_sha256": "a954917bc0f2904ea75d121cf0a3a5ab20133f3bfc62d33e39260fa6a1fa1d52",
+      "size_bytes": 8670,
+      "current_sha256": "a954917bc0f2904ea75d121cf0a3a5ab20133f3bfc62d33e39260fa6a1fa1d52",
+      "current_size_bytes": 8670,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/de_intel/DE-NXT-INT-W1.draft.md",
+      "new_path": "development/audit/drop_entry/design/intelligence-wave1/DE-NXT-INT-W1.draft.md",
+      "git_mode": "100644",
+      "original_git_blob": "b30c87a992bbb4779adc22d1856ed347f358d551",
+      "original_sha256": "c2a5a4bdd2fece947f1c781b76fb8559ec2e172ee8f46a7bdb2bc25357327c9e",
+      "size_bytes": 3153,
+      "current_sha256": "c2a5a4bdd2fece947f1c781b76fb8559ec2e172ee8f46a7bdb2bc25357327c9e",
+      "current_size_bytes": 3153,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/de_intel/TRACK_INT_W1.md",
+      "new_path": "development/audit/drop_entry/design/intelligence-wave1/TRACK_INT_W1.md",
+      "git_mode": "100644",
+      "original_git_blob": "aead6058889a8676b3730aa28771b816e552d0b1",
+      "original_sha256": "52a51298673f326a543296543aa034f984bdf6312e2fa63fa685d79d3848531e",
+      "size_bytes": 2592,
+      "current_sha256": "52a51298673f326a543296543aa034f984bdf6312e2fa63fa685d79d3848531e",
+      "current_size_bytes": 2592,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/de_intel/check_report.py",
+      "new_path": "development/audit/drop_entry/design/intelligence-wave1/check_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "31001d94a18cfbc8291c8d657f8a50f8e3e228fa",
+      "original_sha256": "f643d02e7df3faf47f5cf2473a9f7b24dad99b6031bd87fce164b24c3c98f1d5",
+      "size_bytes": 1562,
+      "current_sha256": "f643d02e7df3faf47f5cf2473a9f7b24dad99b6031bd87fce164b24c3c98f1d5",
+      "current_size_bytes": 1562,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/de_intel/fig_seal_dim.png",
+      "new_path": "development/audit/drop_entry/design/intelligence-wave1/fig_seal_dim.png",
+      "git_mode": "100644",
+      "original_git_blob": "476e163920b30fdbafe1932bf6ca7b33582317e6",
+      "original_sha256": "c022856ea625bd0d9bb59fcff38c2e545f4f5e535545f778ff56a181e6fb2fe4",
+      "size_bytes": 77006,
+      "current_sha256": "c022856ea625bd0d9bb59fcff38c2e545f4f5e535545f778ff56a181e6fb2fe4",
+      "current_size_bytes": 77006,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/de_intel/publish_report.py",
+      "new_path": "development/audit/drop_entry/design/intelligence-wave1/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "c7ba791ba317d05f6d196162822bb333c7bc988d",
+      "original_sha256": "b0df3148631476f3121e51aa437186ffba919cca73e5b7919660791ca95646b4",
+      "size_bytes": 1563,
+      "current_sha256": "b0df3148631476f3121e51aa437186ffba919cca73e5b7919660791ca95646b4",
+      "current_size_bytes": 1563,
+      "byte_identical": true
+    }
+  ],
+  "unchanged_prior_archive": [
+    {
+      "old_path": "development/audit/m15884/verdict_m15884.sql",
+      "new_path": "development/audit/m15884/verdict_m15884.sql",
+      "git_mode": "100644",
+      "original_git_blob": "231b51567c328ca66a2db5b12007e32fd8b726fe",
+      "original_sha256": "030f2ef6b935db52094b9f985521dd5c5d73a1b97e03e70ef6396c126f005c76",
+      "size_bytes": 8052,
+      "current_sha256": "030f2ef6b935db52094b9f985521dd5c5d73a1b97e03e70ef6396c126f005c76",
+      "current_size_bytes": 8052,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Tracked exact paths and filenames checked; no active external repo-relative path consumers identified outside the moved folders. The child report mentions draft/card basenames as historical input; preserved unchanged. Indexed external code searches for both folders in TensorKnowledge/TensorPlatform/TensorPhysics/TensorBench returned no hits, not exhaustive public bookmark coverage. Frozen internal old paths and external mission locations remain verbatim.",
+    "navigation_indexes": [
+      "development/audit/m15884/README.md",
+      "development/audit/drop_entry/design/intelligence-wave1/README.md",
+      "benchmarks/pending/cylinder_re100_dfg/evidence/m15884/README.md",
+      "benchmarks/water_entry/single_drop/evidence/design-intelligence-wave1/README.md"
+    ],
+    "case_registry": {
+      "existing_dfg_case": "benchmarks/pending/cylinder_re100_dfg",
+      "existing_matrix_id": "matrix:cylinder_re100_dfg",
+      "drop_case_navigation": "benchmarks/water_entry/single_drop",
+      "new_case_ids": 0,
+      "current_acceptance": "not_evaluated"
+    },
+    "dependencies": "No publication/SQL scripts executed. External original m15884 raw audit inputs and external publication/session state are not supplied; no invented reconstruction. All existing published/reference files retained.",
+    "baseline_checksums_note": "Related active reference and navigation files are recorded as unchanged at this migration, not pinned against future authorized scientific updates."
+  },
+  "deferred": [
+    {
+      "directory": "xval/XVAL-LBM-NO-MASS-ANALOGUE-IN-OSS-INVENTORY",
+      "disposition": "retain entire directory; do not change analysis or synthesize missing raw evidence",
+      "baseline": "actual main; CPU torch 2.15.0; all three runner --help commands exit 0; 15 oscillatory-cylinder and spin-up regression tests passed; R1/R2/R3 offline plot commands run in disposable snapshot, R1/R2 reanalysis complete; R3 analysis fails before relocation",
+      "failed_entry": "r3/analyze_r3.py",
+      "error": "TypeError: unsupported format string passed to NoneType.__format__ at line 359 (fit['delta_for_3pct_cells'])",
+      "missing": "r3/runs/ raw results are not tracked; original reports also cite missing figures. No replacement derived plot or data committed. The earlier audit references a different untracked external worktree."
+    },
+    {
+      "directory": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+      "disposition": "retain; strict evidence and live platform compatibility not complete",
+      "baseline": "32 passed, 6 skipped, 2 xfailed on actual main, genuine CPU runtime; not a green scientific result",
+      "missing": "r6 campaign raw artifact, R7 unexecuted cells, historic transient raw files (dated replay only), original corepath PNG; one live-solve test disabled by existing opt-in. P1 and P4 historical strict expected failures retained."
+    },
+    {
+      "directory": "docs/de_gas_w1",
+      "disposition": "retain until resume workflow compatibility checked; draft self-identifies as resume-required"
+    },
+    {
+      "directory": "docs/relx_w2",
+      "disposition": "retain until resume workflow compatibility checked; draft self-identifies as resume-required"
+    }
+  ],
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  },
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "benchmarks/pending/cylinder_re100_dfg/validation_status.json",
+      "new_path": "benchmarks/pending/cylinder_re100_dfg/validation_status.json",
+      "git_mode": "100644",
+      "original_git_blob": "392d8f1a25d2ed6cbec89d281ec28ee490e26812",
+      "original_sha256": "df6c0711231fd16cd5e9773adfbbe9afe898b3fb15a5b7ed59bf01c31e4f1f9b",
+      "size_bytes": 9506,
+      "current_sha256": "df6c0711231fd16cd5e9773adfbbe9afe898b3fb15a5b7ed59bf01c31e4f1f9b",
+      "current_size_bytes": 9506,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "git_mode": "100644",
+      "original_git_blob": "a623d28a74c583166aa0fc7fa7d9625bbbdaa3fa",
+      "original_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+      "size_bytes": 3771,
+      "current_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+      "current_size_bytes": 3771,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/cylinder_convergence_m15943.md",
+      "new_path": "docs/cylinder_convergence_m15943.md",
+      "git_mode": "100644",
+      "original_git_blob": "882331a7ec42010c26043fcb0744d46b2bea816e",
+      "original_sha256": "429f7e1e563c80b2a7c3290a8daf5247363b6ba979df4143b2f26d6e8fd78c40",
+      "size_bytes": 7097,
+      "current_sha256": "429f7e1e563c80b2a7c3290a8daf5247363b6ba979df4143b2f26d6e8fd78c40",
+      "current_size_bytes": 7097,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/drop_entry_bb/X_INT1-FR-SEAL.md",
+      "new_path": "docs/drop_entry_bb/X_INT1-FR-SEAL.md",
+      "git_mode": "100644",
+      "original_git_blob": "7731949231be8b056cc5110b70530ca45b261183",
+      "original_sha256": "161f2a92802eef0a5b5078f08c5f646a9bd97522b66b4499c54dcc6e34790a83",
+      "size_bytes": 3409,
+      "current_sha256": "161f2a92802eef0a5b5078f08c5f646a9bd97522b66b4499c54dcc6e34790a83",
+      "current_size_bytes": 3409,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/water_entry/single_drop/fig5_experiment.csv",
+      "new_path": "benchmarks/water_entry/single_drop/fig5_experiment.csv",
+      "git_mode": "100644",
+      "original_git_blob": "0d340d6517dbfc5c7ecb177aa4a612ee74cb4168",
+      "original_sha256": "0acd1c6bf62c58e46530228b52dc59b32e177573b0a5fc7b96bfd2bc4c316cdc",
+      "size_bytes": 649,
+      "current_sha256": "0acd1c6bf62c58e46530228b52dc59b32e177573b0a5fc7b96bfd2bc4c316cdc",
+      "current_size_bytes": 649,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/water_entry/single_drop/protocol.json",
+      "new_path": "benchmarks/water_entry/single_drop/protocol.json",
+      "git_mode": "100644",
+      "original_git_blob": "9b5131ce413d148380201fc20af6ff5b07a410f8",
+      "original_sha256": "d82e9461759150e7c79f963e2f49a1a39c595384d56a866f41acfdba9232846f",
+      "size_bytes": 3192,
+      "current_sha256": "d82e9461759150e7c79f963e2f49a1a39c595384d56a866f41acfdba9232846f",
+      "current_size_bytes": 3192,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/water_entry/single_drop/README.md",
+      "new_path": "benchmarks/water_entry/single_drop/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "524714c0544b7f320a991878c459b9a32d2560d3",
+      "original_sha256": "af06f33f95e6a53cf8ef5d68452f960c1115e97f56bd94a3bd84a99ca7397445",
+      "size_bytes": 9684,
+      "current_sha256": "af06f33f95e6a53cf8ef5d68452f960c1115e97f56bd94a3bd84a99ca7397445",
+      "current_size_bytes": 9684,
+      "byte_identical": true
+    }
+  ]
+}
