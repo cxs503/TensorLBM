@@ -16,7 +16,9 @@
     "benchmarks/cross_validation/lbmconfig_poiseuille/evidence/run_main.json"
   ],
   "evidence": [
-    "benchmarks/cross_validation/lbmconfig_poiseuille/evidence/profiles.csv"
+    "benchmarks/cross_validation/lbmconfig_poiseuille/evidence/profiles.csv",
+    "development/verification/lbmconfig_poiseuille/m17952_legacy.py",
+    "docs/architecture/migrations/loose-xval-and-cupy-audit-2026-11-27.json"
   ],
   "scope": "Archived mission 22858 main stage for the D2Q9 force-driven plane Poiseuille channel. Separate convergence and parameter-sweep results are outside this artifact.",
   "criteria": {

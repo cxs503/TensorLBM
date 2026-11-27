@@ -113,7 +113,7 @@ dataclass，派生量全为 property），并用**力驱动平面 Poiseuille 槽
 ## 5. 注意点（坑 / 局限 / 适用范围）
 
 1. **`relaxation_rate` 语义**：本模块取 lbmpy 约定 `omega = 1/tau`。上一轮同锚工件
-   `xval/xval_lbmconfig_single_point_config.py`（m17952）把 `omega=0.10` 当"速度松弛"
+   [`m17952_legacy.py`](../development/verification/lbmconfig_poiseuille/m17952_legacy.py)（m17952）把 `omega=0.10` 当"速度松弛"
    用 `tau = 1/omega + 0.5 = 10.5`（`nu=3.3333`），而 lbmpy 侧
    `LBMConfig(relaxation_rate=0.1)` 对应 `tau=10`（`nu=3.1667`）——两臂粘度相差
    **5.26%**，交叉比较被污染（该脚本另硬编码 `/srv/tensor/agent/work/m17952/src`

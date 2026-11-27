@@ -1,0 +1,52 @@
+{
+  "scope": "Archive-only CuPy-dropin/SOY comparison records. The m17724 historical prototype and m17877 audit are distinct from the later archived backend-comparison campaign. Preserve original verdict and evidence scope separately; no current scientific acceptance or direct runtime replay. The earlier prototype source is frozen, not a second official source package.",
+  "criteria": {
+    "laplace_error_pct": 15.0,
+    "laplace_error_dir": "abs",
+    "backend_agreement_rel": 1e-06,
+    "oss_vs_tensorlbm_rel_pct": 15.0,
+    "notes": "15 % is the owner precision standard for cross-validation; the backend-agreement criterion is the drop-in-equivalence definition (same algorithm, different array namespace)."
+  },
+  "source": [
+    "development/verification/cupy_dropin_no_kernel_fusion/run_xval.py",
+    "development/verification/cupy_dropin_no_kernel_fusion/oss_adapter.py",
+    "src/tensorlbm/multiphase_soy_dropin.py"
+  ],
+  "config": [
+    "development/verification/cupy_dropin_no_kernel_fusion/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/cupy_dropin_no_kernel_fusion/README.md",
+    "development/verification/cupy_dropin_no_kernel_fusion/README.md",
+    "docs/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md",
+    "docs/AUDIT_m18084_XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION.md",
+    "development/audit/m17877/AUDIT_m17877.md"
+  ],
+  "reference_files": [
+    "development/audit/m17877/evidence_snapshot/xval_fingering_dynamics.py",
+    "development/audit/m17877/evidence_snapshot/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md"
+  ],
+  "results": [
+    "development/verification/cupy_dropin_no_kernel_fusion/artifacts/run_main.json",
+    "development/audit/m17877/evidence_snapshot/primary_results.json",
+    "development/audit/m17877/audit_rerun.json",
+    "development/audit/m17877/audit_probe2.json",
+    "development/audit/m17877/audit_summary.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/loose-xval-and-cupy-audit-2026-11-27.json",
+    "development/verification/cupy_dropin_no_kernel_fusion/EVIDENCE.json",
+    "development/verification/cupy_dropin_no_kernel_fusion/artifacts/dp_history.csv",
+    "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+    "development/audit/m17877/README.md",
+    "development/audit/m17877/evidence_snapshot/SHA256SUMS.txt",
+    "development/audit/m17877/evidence_snapshot/fig3_laplace_vs_radius.png",
+    "development/audit/m17877/fig_m17877_evidence.png",
+    "development/audit/m17877/verdict_m17877.sql",
+    "development/verification/cupy_dropin_no_kernel_fusion/figures/fig1_laplace_convergence.png",
+    "development/verification/cupy_dropin_no_kernel_fusion/figures/fig2_fields.png",
+    "development/verification/cupy_dropin_no_kernel_fusion/figures/fig3_error_vs_radius.png",
+    "development/verification/cupy_dropin_no_kernel_fusion/figures/fig4_sensitivity.png",
+    "development/verification/cupy_dropin_no_kernel_fusion/figures/fig5_cost.png"
+  ]
+}

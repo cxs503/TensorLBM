@@ -2,7 +2,7 @@
 
 Two-distribution Swift-Osborn-Yeomans model, same discrete kernels as the OSS reference
 ``ebinan92/Fingering_dynamics`` (``lattice_boltzmann/fingering.py``) as ported in
-``xval/xval_fingering_dynamics.py``:
+``development/audit/m17877/evidence_snapshot/xval_fingering_dynamics.py``:
 
 * chemical potential   ``mu = a psi (1 - psi^2) - kappa lap(psi)``,  ``a = -2 kappa / xi^2``,
   ``kappa = 3/4 sigma xi``

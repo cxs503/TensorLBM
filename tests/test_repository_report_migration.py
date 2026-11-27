@@ -229,6 +229,52 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     self.assertTrue(resolved.is_relative_to(REPO))
                     self.assertTrue(resolved.exists(), f"Missing link: {name} -> {target}")
 
+    def test_loose_xval_duplicate_and_cupy_audit_archive(self):
+        ledger_path = LEDGER_PATH.parent / "loose-xval-and-cupy-audit-2026-11-27.json"
+        ledger = json.loads(ledger_path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == ledger_path.relative_to(REPO).as_posix()}
+        self.assertEqual(rows, {entry["old_path"]: entry["new_path"] for entry in ledger["entries"]})
+        self.assertEqual(len(rows), 17)
+        self.assertFalse(subprocess.check_output(
+            ["git", "ls-files", "--", *ledger["retired_second_level_directories"], *ledger["retired_files"]],
+            cwd=REPO, text=True,
+        ))
+        for entry in ledger["entries"]:
+            self.assert_fingerprint(REPO / entry["new_path"], entry["original_sha256"], entry["size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[:2], [entry["git_mode"], entry["original_git_blob"]])
+        dup = ledger["compatibility"]["source_duplicate"]
+        self.assertTrue(all(rows[path] == dup["new_path"] for path in dup["old_paths"]))
+        snapshot = REPO / "development/audit/m17877/evidence_snapshot"
+        for name, fingerprint in ledger["compatibility"]["frozen_snapshot_checksums"].items():
+            self.assertEqual(hashlib.sha256((snapshot / name).read_bytes()).hexdigest(), fingerprint)
+        self.assertFalse(ledger["science"]["full_replay_performed"])
+        for case_id in ledger["compatibility"]["case_ids"]:
+            raw = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", case_id], cwd=REPO, text=True,
+            )
+            (case,) = json.loads(raw)["cases"]
+            self.assertEqual(case["current_acceptance"], "not_evaluated")
+            (variant,) = case["variants"]
+            if case_id == "xval:cupy_dropin_no_kernel_fusion":
+                self.assertIn(ledger["compatibility"]["prior_artifact_handoff"]["current_destination"],
+                              variant["results"])
+                self.assertIn("development/verification/cupy_dropin_no_kernel_fusion/artifacts/run_main.json",
+                              variant["results"])
+            else:
+                self.assertIn("development/verification/lbmconfig_poiseuille/m17952_legacy.py",
+                              variant["evidence"])
+        for name in ("development/audit/m17877/README.md",
+                     "benchmarks/cross_validation/cupy_dropin_no_kernel_fusion/README.md",
+                     "development/verification/lbmconfig_poiseuille/README.md"):
+            path = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", path.read_text()):
+                self.assertTrue((path.parent / target).is_file(), target)
+
     def test_cupy_archived_figures_match_original_payload_and_public_links(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "halo-cupy-archives-2026-11-26.json").read_text(encoding="utf-8")
@@ -452,11 +498,17 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             ["git", "ls-files", "--", ledger["retired_path"]], cwd=REPO, text=True,
         )
         self.assertEqual(tracked, "")
+        followup = json.loads(
+            (LEDGER_PATH.parent / "loose-xval-and-cupy-audit-2026-11-27.json").read_text()
+        )
+        handoff = followup["compatibility"]["prior_artifact_handoff"]
         for item in ledger["entries"]:
             with self.subTest(path=item["old_path"]):
-                self.assert_fingerprint(
-                    REPO / item["new_path"], item["original_sha256"], item["size_bytes"]
-                )
+                destination = item["new_path"]
+                if destination == handoff["prior_destination"]:
+                    self.assertEqual(item["original_sha256"], handoff["sha256"])
+                    destination = handoff["current_destination"]
+                self.assert_fingerprint(REPO / destination, item["original_sha256"], item["size_bytes"])
 
     def test_ci_and_contract_audit_scripts_retain_migration_provenance(self):
         ledger_path = LEDGER_PATH.parent / "ci-contract-evidence-2026-11-23.json"

@@ -47,6 +47,8 @@ RETIRED_ROOT_DIRECTORIES = {
 }
 RETIRED_FILES = {
     "xval/xval_phasefield_mcmp_poiseuille.py",
+    "xval/xval_fingering_dynamics.py",
+    "xval/xval_lbmconfig_single_point_config.py",
     "xval/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md",
     "scripts/xval_cudaphasefield_not_pseudopot.py",
     "scripts/audit_m17668_figure.py",
@@ -83,6 +85,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "audit_runtest_r6"),
     ("scripts", "xval_yml_xml_pipeline"),
     ("docs", "history"),
+    ("docs", "audit_m17877"),
     ("docs", "m23012"),
     ("docs", "m23170"),
     ("scripts", "data"),
