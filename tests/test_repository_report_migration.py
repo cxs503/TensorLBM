@@ -1402,6 +1402,32 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertTrue((doc.parent / target).is_dir())
 
 
+    def test_cac_gravity_mission_archive_keeps_original_objects(self):
+        ledger_path = LEDGER_PATH.parent / "cac-gravity-mission-archives-2026-11-27.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertEqual(len(ledger["entries"]), 5)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            manifest = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(manifest, {item["old_path"]: item["new_path"] for item in ledger["entries"]})
+        for directory in ledger["retired_second_level_directories"]:
+            self.assertFalse((REPO / directory).exists())
+        for item in ledger["entries"] + ledger["historical_source_snapshots"]:
+            with self.subTest(path=item["new_path"]):
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["original_sha256"], item["size_bytes"],
+                )
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]], cwd=REPO, text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["original_git_blob"]])
+        self.assertFalse(ledger["science"]["m23012_archived_verdict"]["overall_pass"])
+        self.assertFalse(ledger["science"]["rerun_performed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_experiment_archive_tree_and_navigation_survive_root_retirement(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "experiment-root-retirement-2026-11-21.json").read_text()

@@ -1,0 +1,32 @@
+{
+  "scope": "Archive-only history of the convective Allen-Cahn gravity and hydrostatic mass-conservation missions m23012 and m23170. The first recorded run failed. The later Phase A report asserts a pass without a separate machine-readable result in that mission directory. Source paths are frozen historical snapshots, not provenance of an independently reproduced run and not a supported runner.",
+  "criteria": {
+    "archived_preregistered_thresholds": {
+      "hydrostatic_pressure_error_pct": 1.0,
+      "mass_drift_rel_pct": 0.01,
+      "phase_integral_drift": 1e-10
+    },
+    "interpretation": "Historical thresholds only; no current scientific acceptance."
+  },
+  "source": [
+    "development/legacy/TensorLBM/src/tensorlbm/cac_lbm3d.py",
+    "development/legacy/TensorLBM/scripts/verify_cac_hydrostatic_mass.py"
+  ],
+  "config": [
+    "development/verification/cac_gravity/m23012/PREREG.json"
+  ],
+  "documentation": [
+    "development/verification/cac_gravity/README.md",
+    "development/verification/cac_gravity/m23012/REPORT.md",
+    "development/verification/cac_gravity/m23170/PHASE_A_REPORT.md"
+  ],
+  "reference_files": [
+    "development/verification/cac_gravity/m23170/PHASE_A_DERIVATION.md"
+  ],
+  "results": [
+    "development/verification/cac_gravity/m23012/results.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/cac-gravity-mission-archives-2026-11-27.json"
+  ]
+}
