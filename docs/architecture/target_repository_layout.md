@@ -120,6 +120,8 @@ existing 3D drop-entry registry entry alongside the formal comparison inputs.
 
 The [added-mass KC campaign ledger](migrations/addedmass-kc-xval-2026-11-27.json) archives one complete historical XVAL directory under development and links it from its distinct registered case and retains the original negative verdict.
 
+The [pointer-shift and board audit ledger](migrations/pointer-shift-and-board-audits-2026-11-27.json) archives four historical audit folders and preserves the original reference excerpt checksums and evidence navigation without scientific promotion.
+
 The [plotting and maintenance ledger](migrations/legacy-plotting-maintenance-2026-11-24.json)
 records the final two script subdirectories and the maintained channel plotting
 entry point. The legacy cleanup and synthetic fixture sources are archived.

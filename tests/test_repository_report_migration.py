@@ -1693,6 +1693,75 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertEqual(ledger["validation"]["current_scientific_acceptance"],
                          "not_evaluated")
 
+    def test_pointer_shift_and_board_audits_preserve_archive_scope(self):
+        path = LEDGER_PATH.parent / "pointer-shift-and-board-audits-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(len(rows), 40)
+        self.assertEqual(rows, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(ledger["retired_second_level_directories"]), 4)
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        self.assertEqual(len(ledger["prior_archived_evidence"]), 2)
+        for entry in ledger["entries"] + ledger["prior_archived_evidence"]:
+            self.assert_fingerprint(REPO / entry["new_path"], entry["original_sha256"], entry["size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[:2], [entry["git_mode"], entry["original_git_blob"]])
+        edit, = ledger["consumer_edits"]
+        raw = (REPO / edit["new_path"]).read_bytes()
+        mapping = edit["path_only_edit"]
+        self.assertEqual(raw.count(mapping["new"].encode()), 1)
+        original = raw.replace(mapping["new"].encode(), mapping["old"].encode())
+        self.assertEqual(hashlib.sha256(original).hexdigest(), edit["original_sha256"])
+        compat = ledger["compatibility"]
+        self.assertEqual(len(compat["snippet_checks"]), 9)
+        for entry in compat["snippet_checks"]:
+            body = (REPO / entry["path"]).read_bytes().split(b"\n", 1)[1]
+            self.assertEqual(hashlib.sha256(body).hexdigest(), entry["sha256_body"])
+            self.assertEqual(len(body.splitlines()), entry["n_lines"])
+        import base64
+        f = compat["encoded_figure"]
+        decoded = base64.b64decode((REPO / f["b64"]).read_text())
+        self.assertEqual(decoded, (REPO / f["png"]).read_bytes())
+        self.assertEqual(hashlib.sha256(decoded).hexdigest(), f["sha256"])
+        self.assertEqual(len(decoded), f["size_bytes"])
+        for mission, owner in compat["case_ownership"].items():
+            if mission != "m18222":
+                self.assertIsNone(owner["id"])
+                self.assertIsNone(owner["case_path"])
+                output = subprocess.check_output(
+                    [sys.executable, "tools/benchmark_registry.py", "--find-asset", owner["archive_path"]],
+                    cwd=REPO, text=True,
+                )
+                paths = json.loads(output)["paths"]
+                for entry in ledger["entries"]:
+                    if entry["new_path"].startswith(owner["archive_path"] + "/"):
+                        self.assertIn(entry["new_path"], paths)
+                continue
+            output = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", owner["id"]], cwd=REPO, text=True,
+            )
+            (record,) = json.loads(output)["cases"]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            (variant,) = record["variants"]
+            self.assertEqual(variant["path"], owner["case_path"])
+            for entry in ledger["entries"] + ledger["prior_archived_evidence"]:
+                if entry["new_path"].startswith(owner["archive_path"] + "/"):
+                    self.assertIn(entry["new_path"], variant["evidence"])
+            definition = json.loads((REPO / owner["manifest"]).read_text())
+            self.assertIn("WITHHELD", definition["scope"])
+            self.assertIn("Archive-only", definition["scope"])
+        for name in compat["navigation_indexes"]:
+            doc = REPO / name
+            for link in re.findall(r"\]\(([^)]+)\)", doc.read_text()):
+                self.assertTrue((doc.parent / link).is_file(), link)
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+
     def test_xval_preregistrations_keep_original_objects_and_report_links(self):
         ledger_path = LEDGER_PATH.parent / "xval-preregistrations-2026-11-22.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

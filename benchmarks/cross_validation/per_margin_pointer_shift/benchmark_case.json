@@ -1,0 +1,61 @@
+{
+  "scope": "Historical L2 audit of m18129; frozen source-derived TCLB reference snapshot only. OSS binary and GPU paths WITHHELD; no current primary implementation or L3/L4 acceptance. Archive-only evidence registration; current acceptance not evaluated.",
+  "criteria": {
+    "historical_gates": "Historical source-derived local equivalence and 15% analytical owner gate; external TCLB binary and GPU comparison withheld",
+    "historical_verdict": "Audit L2 only; frozen result PASS applies only to historical local comparisons. L3/L4 not established.",
+    "source": "development/audit/m18222/AUDIT_m18222.md"
+  },
+  "source": [
+    "development/audit/m18222/evidence_snapshot/per_margin_pointer_shift.py",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/run_xval.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/cross_validation/per_margin_pointer_shift/README.md",
+    "development/audit/m18222/README.md",
+    "development/audit/m18222/AUDIT_m18222.md",
+    "development/audit/m18222/evidence_snapshot/XVAL-LBM-PER-MARGIN-ARRAYS-POINTER-SHIFT-STREAMING.md"
+  ],
+  "reference_files": [
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/REF.json"
+  ],
+  "results": [
+    "development/audit/m18222/evidence_snapshot/result.json",
+    "development/audit/m18222/audit_summary.json"
+  ],
+  "evidence": [
+    "development/audit/m18222/AUDIT_m18222.md",
+    "development/audit/m18222/audit_run.py",
+    "development/audit/m18222/audit_summary.json",
+    "development/audit/m18222/cost.json",
+    "development/audit/m18222/cost_threads.json",
+    "development/audit/m18222/evidence_snapshot/XVAL-LBM-PER-MARGIN-ARRAYS-POINTER-SHIFT-STREAMING.md",
+    "development/audit/m18222/evidence_snapshot/figures/fig1_tgv_error.png",
+    "development/audit/m18222/evidence_snapshot/figures/fig2_equivalence_profile.png",
+    "development/audit/m18222/evidence_snapshot/figures/fig3_transport_cost.png",
+    "development/audit/m18222/evidence_snapshot/per_margin_pointer_shift.py",
+    "development/audit/m18222/evidence_snapshot/result.json",
+    "development/audit/m18222/evidence_snapshot/test_xval_tclb_pointer_shift.py",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/extract_oss_ref.py",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/REF.json",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/field_access_uses_pocket.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/ftabs_per_margin_arrays.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/iterate_border_interior_split.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/margin_table.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/move_pocket_pointer_shift.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/mpi_margin_exchange.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/offsets_block_addressing.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/pop_push_templates.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/oss_ref/stencil_derived_extent.txt",
+    "development/audit/m18222/evidence_snapshot/xval_tclb_pointer_shift/run_xval.py",
+    "development/audit/m18222/fig_m18222_evidence.png",
+    "development/audit/m18222/fresh.json",
+    "development/audit/m18222/make_deliverables.py",
+    "development/audit/m18222/mutation.json",
+    "development/audit/m18222/provenance.json",
+    "development/audit/m18222/publish_report.py",
+    "development/audit/m18222/referee.json",
+    "development/audit/m18222/tests.json",
+    "development/audit/m18222/verdict_m18222.sql"
+  ]
+}
