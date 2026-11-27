@@ -12,7 +12,7 @@ CROSS已读：CMB10-RES16（R16-ctrl 1.633265D@12.6228ms 满窗 / R16-tuned 1.74
 ## 2. 怎么做的
 - 车道=集群正典（run_compute，stage_dir=工作树，8 核/臂，cmd 无 cd，PYTHONPATH=.:src；递交前 du -sh 194M<200M 无需瘦身，跑完 du 196M 核对）。
 - 关键：cells=20 单臂预计 ~700-730min，超 run 型 7200s 上限 ⇒ **shard 型 detached**（脱离会话，超 120min 不杀）；单作业单臂分开递交（账 6674 ctrl / 6675 tuned，双节点轮转均落 n315）。
-- 预登记（写死后跑，BB/tmp/CMB11-RES20.prereg.md，跑完零改动）：(a) R20-ctrl 峰深 [1.70,1.78]D；(b) R20-tuned 峰深 [1.74,1.79]D；(c) 外推门：ctrl C16→C20 增量 ≤0.08 ⇒ 分辨率轴封顶定谳 / >0.08 ⇒ 报网格无关性缺失；(d) 双门不变：峰深>1.8017D 且峰时刻<11.4334ms(pc)；(e) 关注 ctrl 时刻税是否续推晚（vs C16 的 12.6228ms）。
+- 预登记（写死后跑，development/audit/drop_entry/BB/tmp/CMB11-RES20.prereg.md，跑完零改动）：(a) R20-ctrl 峰深 [1.70,1.78]D；(b) R20-tuned 峰深 [1.74,1.79]D；(c) 外推门：ctrl C16→C20 增量 ≤0.08 ⇒ 分辨率轴封顶定谳 / >0.08 ⇒ 报网格无关性缺失；(d) 双门不变：峰深>1.8017D 且峰时刻<11.4334ms(pc)；(e) 关注 ctrl 时刻税是否续推晚（vs C16 的 12.6228ms）。
 - 前锚溯源：m27225/m27256 工作树已退役，六份前序 result.json 从集群取回件（/tmp 取回目录）逐字拷入 runs/cmb11_prior/，全部数字程序化提取零手抄。
 - 基础设施披露：shard 型 detached 作业的 pgrep 终态探测存在自匹配缺陷（`pgrep -af 'jobs/cjN'` 匹配到自身 bash 包装行，procs 永非空），调度器 reaper 永不判终（CMB10 的 6270/6271 同病，DB 挂 running 3 天）。本单两臂进程实际已退出（节点 pgrep 无 free_surface_probe 进程、result.json 已落盘取回），以 kill 清账（state=killed, note=user-kill，纯簿记清理，非杀计算）；cj 在飞计数=0。
 

@@ -78,24 +78,34 @@ def main():
 
     # ---- summary table ----
     rows = []
-    for name in ["C8-ctrl", "C12-ctrl", "C16-ctrl", "R20-ctrl",
-                 "C8-tuned", "C12-tuned", "C16-tuned", "R20-tuned"]:
+    for name in [
+        "C8-ctrl",
+        "C12-ctrl",
+        "C16-ctrl",
+        "R20-ctrl",
+        "C8-tuned",
+        "C12-tuned",
+        "C16-tuned",
+        "R20-tuned",
+    ]:
         if name not in arms:
             continue
         a = arms[name]
-        rows.append({
-            "arm": name,
-            "cells": a["cells"],
-            "stop": a["stop"],
-            "peak_depth_D": round(a["peak_depth_D"], 6),
-            "depth_err_pct": round((a["peak_depth_D"] / EXP_DEPTH - 1) * 100, 2),
-            "peak_time_ms_pc": round(a["peak_time_ms_pc"], 4),
-            "time_err_pct": round((a["peak_time_ms_pc"] / EXP_TIME - 1) * 100, 2),
-            "end_drift": a["end_drift"],
-            "mach_max": round(a["mach_max"], 4),
-            "dual_pass": a["peak_depth_D"] > DUAL_DEPTH_GATE
-            and a["peak_time_ms_pc"] < DUAL_TIME_GATE,
-        })
+        rows.append(
+            {
+                "arm": name,
+                "cells": a["cells"],
+                "stop": a["stop"],
+                "peak_depth_D": round(a["peak_depth_D"], 6),
+                "depth_err_pct": round((a["peak_depth_D"] / EXP_DEPTH - 1) * 100, 2),
+                "peak_time_ms_pc": round(a["peak_time_ms_pc"], 4),
+                "time_err_pct": round((a["peak_time_ms_pc"] / EXP_TIME - 1) * 100, 2),
+                "end_drift": a["end_drift"],
+                "mach_max": round(a["mach_max"], 4),
+                "dual_pass": a["peak_depth_D"] > DUAL_DEPTH_GATE
+                and a["peak_time_ms_pc"] < DUAL_TIME_GATE,
+            }
+        )
     c8 = arms["C8-ctrl"]["peak_depth_D"]
     c12 = arms["C12-ctrl"]["peak_depth_D"]
     c16 = arms["C16-ctrl"]["peak_depth_D"]
@@ -105,7 +115,10 @@ def main():
         "dual_gates": {"depth_gt": DUAL_DEPTH_GATE, "time_lt": DUAL_TIME_GATE},
         "arms": rows,
         "extrapolation_gate": {
-            "ctrl_C8": c8, "ctrl_C12": c12, "ctrl_C16": c16, "ctrl_C20": c20,
+            "ctrl_C8": c8,
+            "ctrl_C12": c12,
+            "ctrl_C16": c16,
+            "ctrl_C20": c20,
             "inc_C8_C12": round(c12 - c8, 6),
             "inc_C12_C16": round(c16 - c12, 6),
             "inc_C16_C20": round(c20 - c16, 6),
@@ -124,11 +137,23 @@ def main():
     for name, col, mk in [("R20-ctrl", "tab:blue", "s"), ("R20-tuned", "tab:red", "^")]:
         a = arms[name]
         t = [e["time_ms"] - a["contact_ms"] for e in a["history"]]
-        ax.plot(t, [e["depth_over_D"] for e in a["history"]], color=col, marker=mk,
-                ms=3, lw=1.0, label=f"{name} ({a['stop']})")
-        ax.annotate(f"{a['peak_depth_D']:.4f}D\n@{a['peak_time_ms_pc']:.3f}ms",
-                    (a["peak_time_ms_pc"], a["peak_depth_D"]),
-                    xytext=(8, 8), textcoords="offset points", fontsize=8, color=col)
+        ax.plot(
+            t,
+            [e["depth_over_D"] for e in a["history"]],
+            color=col,
+            marker=mk,
+            ms=3,
+            lw=1.0,
+            label=f"{name} ({a['stop']})",
+        )
+        ax.annotate(
+            f"{a['peak_depth_D']:.4f}D\n@{a['peak_time_ms_pc']:.3f}ms",
+            (a["peak_time_ms_pc"], a["peak_depth_D"]),
+            xytext=(8, 8),
+            textcoords="offset points",
+            fontsize=8,
+            color=col,
+        )
     ax.axhline(EXP_DEPTH, color="k", ls=":", lw=0.8)
     ax.axvline(EXP_TIME, color="k", ls=":", lw=0.8)
     ax.set_xlabel("time (ms post-contact)")
@@ -151,11 +176,18 @@ def main():
         vals.append(arms[f"R20-{tag}"]["peak_depth_D"])
         ax.plot(cells, vals, "-o", color=col, lw=1.4, label=f"{tag} arm")
         for c, v in zip(cells, vals):
-            ax.annotate(f"{v:.4f}", (c, v), xytext=(0, 7),
-                     textcoords="offset points", ha="center", fontsize=7.5)
+            ax.annotate(
+                f"{v:.4f}",
+                (c, v),
+                xytext=(0, 7),
+                textcoords="offset points",
+                ha="center",
+                fontsize=7.5,
+            )
         ax.axhline(EXP_DEPTH, color="k", ls=":", lw=0.9)
-        ax.annotate("experiment", (20, EXP_DEPTH), xytext=(-30, 6),
-                    textcoords="offset points", fontsize=7.5)
+        ax.annotate(
+            "experiment", (20, EXP_DEPTH), xytext=(-30, 6), textcoords="offset points", fontsize=7.5
+        )
         ax.set_xlabel("cells per D")
         ax.set_ylabel("peak depth (D)")
         ax.set_title(ttl, fontsize=9)

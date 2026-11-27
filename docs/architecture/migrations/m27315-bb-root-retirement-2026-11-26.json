@@ -1,0 +1,21 @@
+{
+  "source_commit": "7c7eedc64b586a29d36ae57aaf25dabab1fd5f65",
+  "source_pr": 3053,
+  "root_directories_before": 13,
+  "root_directories_after": 12,
+  "retired_root": "BB",
+  "entries": [
+    {
+      "old_path": "BB/tmp/CMB11-RES20.prereg.md",
+      "new_path": "development/audit/drop_entry/BB/tmp/CMB11-RES20.prereg.md",
+      "original_git_blob": "fe96823c1f113c8965a85ed2a0bc63bd541870d7",
+      "git_mode": "100644",
+      "size_bytes": 1711,
+      "original_sha256": "a896343fbbabe60ea63b1b05d3c84a01a31e73db3d6a49b8de9247d50c28cc85",
+      "new_sha256": "a896343fbbabe60ea63b1b05d3c84a01a31e73db3d6a49b8de9247d50c28cc85"
+    }
+  ],
+  "reference_scan": "One live exact-path reference in development/audit/CMB11-RES20.draft.md; updated path only. No other tracked basename reference outside the moved card and report.",
+  "compatibility": "Original preregistration byte-for-byte preserved; old path recoverable at source revision. No numerical or reproduction command changes.",
+  "scientific_scope": "Archive relocation and reference update only. Existing documented results and limitations are not new scientific acceptance."
+}
