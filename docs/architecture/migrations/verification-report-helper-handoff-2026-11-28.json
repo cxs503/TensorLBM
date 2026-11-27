@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "base_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 53,
+  "docs_second_level_after": 53,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 580,
+  "entries": [
+    {
+      "old_path": "scripts/build_h_theorem_report.py",
+      "new_path": "development/audit/m6744/build_h_theorem_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "07f730784f655fe8fb18b30e6ac996837be3c45b",
+      "original_sha256": "febe189df7c66dc6400d0b832f988336f73eaca749182e794548ce04bee88a28",
+      "size_bytes": 20649,
+      "current_sha256": "febe189df7c66dc6400d0b832f988336f73eaca749182e794548ce04bee88a28",
+      "current_size_bytes": 20649,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/build_mhd_node_report.py",
+      "new_path": "development/audit/m8370/build_mhd_node_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "9a03e7be894d498addf5825881305b4b0616aeaf",
+      "original_sha256": "7b023cada4443dc7bfc4ffbd74aabf401f98897f1047193cd84cffcc7a2d34bc",
+      "size_bytes": 20676,
+      "current_sha256": "b5182ba63a956407d0bf06df50a5f9e849955d72827634fbb4ca141d08e08dcd",
+      "current_size_bytes": 20676,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "Path(__file__).resolve().parents[1]",
+        "new": "Path(__file__).resolve().parents[3]"
+      }
+    },
+    {
+      "old_path": "scripts/build_p315w1_n04_report.py",
+      "new_path": "development/audit/m10860/build_p315w1_n04_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "40f6ac8b34cae68d4ccbb3c5d3985e24c85fe3ab",
+      "original_sha256": "99cc1dc6e68948e0d9baf913e2591067ecc1bfa27c2965ce4e032790c45484dc",
+      "size_bytes": 18872,
+      "current_sha256": "a32dace9d8f091f28c2b551c37548e97f84f9a344fdc39b17d9a04cb7975ad1a",
+      "current_size_bytes": 18872,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "Path(__file__).resolve().parents[1]",
+        "new": "Path(__file__).resolve().parents[3]"
+      }
+    },
+    {
+      "old_path": "scripts/post_p83w2_n01_report.py",
+      "new_path": "development/audit/m9255/post_p83w2_n01_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "8c17062be20033bd23b015ce6342ac854f23717b",
+      "original_sha256": "11e52a896dfd4442f3bb49bc34642bf4f1d015d02c83a5fe664ce7b3ad3da3a4",
+      "size_bytes": 3627,
+      "current_sha256": "11e52a896dfd4442f3bb49bc34642bf4f1d015d02c83a5fe664ce7b3ad3da3a4",
+      "current_size_bytes": 3627,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/post_report_p82w5_n04.py",
+      "new_path": "development/audit/p82w5-n04/post_report_p82w5_n04.py",
+      "git_mode": "100644",
+      "original_git_blob": "c9010cc7eb2e5c73324bbe1ceedb0564d07a3679",
+      "original_sha256": "a7bb3ed3b7c4369768f5b66e479465c9f7d83c75ac9f8b3c779e739338a710f7",
+      "size_bytes": 1954,
+      "current_sha256": "a7bb3ed3b7c4369768f5b66e479465c9f7d83c75ac9f8b3c779e739338a710f7",
+      "current_size_bytes": 1954,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/publish_in61_report.py",
+      "new_path": "development/audit/m6975/publish_in61_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "c8afacf82f8a148307dcb922bd7e63d5b42fa6ee",
+      "original_sha256": "0e0e89b125a859f86a7ea18266f1162229843db762ea79a54d670164e1918cf2",
+      "size_bytes": 20182,
+      "current_sha256": "31ee92e3dbe72f5eb2fc9acc431714b06d8f4caf1e2900f7d81d3a4400801749",
+      "current_size_bytes": 20182,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "Path(__file__).resolve().parents[1]",
+        "new": "Path(__file__).resolve().parents[3]"
+      }
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/P67_N02_h_theorem_kbc.md",
+      "new_path": "docs/P67_N02_h_theorem_kbc.md",
+      "git_mode": "100644",
+      "original_git_blob": "4299c1f87e7cb03911d9d000b465e6604ba776cd",
+      "original_sha256": "818230e1462068bbcf608f5f30c6c59bb645609a5f74cfdbc40de6d3188f1eb5",
+      "size_bytes": 12735,
+      "current_sha256": "db7083ffa6260d12e20cffa23b18a83c2fbc0c3a17e9db8b59140697f6da29e8",
+      "current_size_bytes": 12949,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "# P67-N02 · TensorLBM KBC 碰撞算子 H 定理验证面\n",
+        "new": "# P67-N02 · TensorLBM KBC 碰撞算子 H 定理验证面\n\n> Repository layout note (2026-11-28): [current historical report helper and input limitations](../development/audit/m6744/README.md). The original scientific report below is retained. No fresh run or validation.\n"
+      }
+    },
+    {
+      "old_path": "docs/MHD_SHERCLIFF_BRANCH.md",
+      "new_path": "docs/MHD_SHERCLIFF_BRANCH.md",
+      "git_mode": "100644",
+      "original_git_blob": "c14be7030944b47866531dbcd04c57282b25ddb6",
+      "original_sha256": "edb994dc070e4a3e93bcaa8df57f4b5251597ff6f13e27ae6f89a5547684eff0",
+      "size_bytes": 11811,
+      "current_sha256": "112dbf7e9ab995ff96372c107fccfda2675bef5bc98f16590f4914f2eb11be04",
+      "current_size_bytes": 12025,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "# MHD 物理面 II：绝缘壁 Shercliff 阶梯、Lorentz 力与 MHD 推进器推力/效率账本\n",
+        "new": "# MHD 物理面 II：绝缘壁 Shercliff 阶梯、Lorentz 力与 MHD 推进器推力/效率账本\n\n> Repository layout note (2026-11-28): [current historical report helper and input limitations](../development/audit/m8370/README.md). The original scientific report below is retained. No fresh run or validation.\n"
+      }
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "docs/P315W1_N04_MHD_LBM.md",
+      "new_path": "docs/P315W1_N04_MHD_LBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "11e6fa84e82004a3c85884a2c7e6450f5088168a",
+      "original_sha256": "7a71a9c65dd8c764bf8260319fc75423684fe02cd62f612326c06f3f20249cb0",
+      "size_bytes": 10110,
+      "current_sha256": "7a71a9c65dd8c764bf8260319fc75423684fe02cd62f612326c06f3f20249cb0",
+      "current_size_bytes": 10110,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/P83W2_N01_MA_ERROR_LAW.md",
+      "new_path": "docs/P83W2_N01_MA_ERROR_LAW.md",
+      "git_mode": "100644",
+      "original_git_blob": "fe222f4f8313b58a579f5a1ae0e14ad5ff853786",
+      "original_sha256": "ecfab55c04bf05f9dc8de4925911c56cad99ca97a433d11206940094617a35e0",
+      "size_bytes": 15072,
+      "current_sha256": "ecfab55c04bf05f9dc8de4925911c56cad99ca97a433d11206940094617a35e0",
+      "current_size_bytes": 15072,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/reports/P82W5-N04_yield_stress_moving_wall_3d.md",
+      "new_path": "docs/reports/P82W5-N04_yield_stress_moving_wall_3d.md",
+      "git_mode": "100644",
+      "original_git_blob": "6e99a907234e697ba8fc86ea6dfe563c30b22e23",
+      "original_sha256": "3aecaba222a48ab5a4d8bb5a4f99e5db36d4b3c893ebcde72e368f2ab17e96f1",
+      "size_bytes": 10171,
+      "current_sha256": "3aecaba222a48ab5a4d8bb5a4f99e5db36d4b3c893ebcde72e368f2ab17e96f1",
+      "current_size_bytes": 10171,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/reports/figures/p82w5_n04/figures.json",
+      "new_path": "docs/reports/figures/p82w5_n04/figures.json",
+      "git_mode": "100644",
+      "original_git_blob": "817f03dc8e152336c45dc3a12cb1e0f1f990bfb4",
+      "original_sha256": "5fbdc8848a04a50b3813fd5f1c1691f357b488d080f22e89b7a75de1a33a6992",
+      "size_bytes": 307,
+      "current_sha256": "5fbdc8848a04a50b3813fd5f1c1691f357b488d080f22e89b7a75de1a33a6992",
+      "current_size_bytes": 307,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/wall_model_usability_in61_n06.md",
+      "new_path": "docs/wall_model_usability_in61_n06.md",
+      "git_mode": "100644",
+      "original_git_blob": "7ded6782afcee126b046f0f40d5991dd29feef1f",
+      "original_sha256": "ee62e30d5fcf586e1d1aa66942f75e8071723e6b0a0400c4bf6e68dfa7f5c7a8",
+      "size_bytes": 13337,
+      "current_sha256": "ee62e30d5fcf586e1d1aa66942f75e8071723e6b0a0400c4bf6e68dfa7f5c7a8",
+      "current_size_bytes": 13337,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact old script basenames and paths reviewed at actual main. Two public report references were historical and now have reversible navigation notes; other four scripts have no tracked basename consumer outside excluded historical ledgers. Six indexed exact cross-repository searches in TensorKnowledge/TensorPhysics/TensorPlatform/TensorBench yielded no hits; a rate-limited search was retried. External bookmark/worktree coverage is not exhaustive.",
+    "navigation_indexes": [
+      "development/audit/m6744/README.md",
+      "development/audit/m8370/README.md",
+      "development/audit/m10860/README.md",
+      "development/audit/m9255/README.md",
+      "development/audit/p82w5-n04/README.md",
+      "development/audit/m6975/README.md"
+    ],
+    "new_case_ids": 0,
+    "cli_help_parity": [
+      {
+        "path": "development/audit/m6744/build_h_theorem_report.py",
+        "scope": "--help only; no report building, scientific computation or publication",
+        "before_after_byte_identical": true,
+        "sha256": "a9fe8980b02fdcc5fe97c5f8bd75fe384e3b347b06ab766cf006436e53d3fdb1",
+        "size_bytes": 175
+      },
+      {
+        "path": "development/audit/m8370/build_mhd_node_report.py",
+        "scope": "--help only; no report building, scientific computation or publication",
+        "before_after_byte_identical": true,
+        "sha256": "4513410d5ead44ae6dd7b8ef10f531152e51c54cd3ac6509187df00ff7333551",
+        "size_bytes": 558
+      },
+      {
+        "path": "development/audit/m10860/build_p315w1_n04_report.py",
+        "scope": "--help only; no report building, scientific computation or publication",
+        "before_after_byte_identical": true,
+        "sha256": "c7d834d9e7b425043cb46b75e3faa80ae79adf608a4b7afb02661189e3194a03",
+        "size_bytes": 540
+      },
+      {
+        "path": "development/audit/m9255/post_p83w2_n01_report.py",
+        "scope": "--help only; no report building, scientific computation or publication",
+        "before_after_byte_identical": true,
+        "sha256": "14aa06f54141f7f0aa164577114e9a4a95cb6f93faccdcc9051b29469536f383",
+        "size_bytes": 375
+      },
+      {
+        "path": "development/audit/m6975/publish_in61_report.py",
+        "scope": "--help only; no report building, scientific computation or publication",
+        "before_after_byte_identical": true,
+        "sha256": "05e49ca766d16111e7246fd6f21a2fd1e83ad11e05c8512f328f281c13e11d80",
+        "size_bytes": 115
+      }
+    ],
+    "runtime": "Five genuine old/new help invocations matched byte-for-byte. No original inputs reconstructed; P82 publication helper intentionally not invoked. Three reversible root calculations preserved repo-root resolution; no numerical changes. Existing report URLs maintained; registered case paths unchanged; --find-asset indexes each archive.",
+    "historical_dependencies": [
+      {
+        "mission": "m6744",
+        "old_original_input_directories": [
+          "artifacts/h_theorem_kbc/"
+        ],
+        "tracked_original_inputs_at_main": false,
+        "limitation": "Historical report renderer; original campaign JSON and figures are not tracked. Help compatible, no report regenerated."
+      },
+      {
+        "mission": "m8370",
+        "old_original_input_directories": [
+          "artifacts/mhd_acceptance/",
+          "artifacts/mhd_hartmann/",
+          "artifacts/mhd_shercliff/"
+        ],
+        "tracked_original_inputs_at_main": false,
+        "limitation": "Historical node-report renderer; original artifact directories not tracked. Help compatible, no report regenerated."
+      },
+      {
+        "mission": "m10860",
+        "old_original_input_directories": [
+          "artifacts/mhd_p315w1_n04/"
+        ],
+        "tracked_original_inputs_at_main": false,
+        "limitation": "Historical verification report renderer; original JSON ladder not tracked. Help compatible, no report regenerated."
+      },
+      {
+        "mission": "m9255",
+        "old_original_input_directories": [
+          "artifacts/p83w2_n01/"
+        ],
+        "tracked_original_inputs_at_main": false,
+        "limitation": "Historical report publication helper; original verification JSON and figure bundle not tracked. Help compatible, no posting."
+      },
+      {
+        "mission": "p82w5-n04",
+        "old_original_input_directories": [],
+        "tracked_original_inputs_at_main": false,
+        "limitation": "Old one-off publication helper; default input /tmp/report_p82w5.json is an external local payload, not tracked. Archive-only; no CLI invocation because main reads and posts the payload."
+      },
+      {
+        "mission": "m6975",
+        "old_original_input_directories": [
+          "artifacts/in61_n06_wall_model_usability/"
+        ],
+        "tracked_original_inputs_at_main": false,
+        "limitation": "Historical wall-model report helper; original input record not tracked. Help compatible, no report posted."
+      }
+    ]
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

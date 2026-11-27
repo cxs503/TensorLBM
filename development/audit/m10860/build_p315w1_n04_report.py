@@ -19,7 +19,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 INDIR = ROOT / "artifacts" / "mhd_p315w1_n04"
 DOC = ROOT / "docs" / "P315W1_N04_MHD_LBM.md"
 
