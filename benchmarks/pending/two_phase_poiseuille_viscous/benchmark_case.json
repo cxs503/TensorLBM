@@ -1,0 +1,34 @@
+{
+  "scope": "Existing pending m8802 viscous-coupling runner and original negative historical evidence. The archived conclusion is Honest-FAIL; current acceptance is not evaluated. Later m14431 draft claims belong to a distinct case and are linked through the archive index, not counted as m8802 results.",
+  "criteria": {
+    "max_rel_err_pct_lte": 10,
+    "target_grid_converged_pct_lt": 3,
+    "grid_refinement": "monotone error decrease",
+    "mass_drift_per_step_lt": 1e-06,
+    "source": "Original pending runner docstring; no criterion changed."
+  },
+  "source": [
+    "benchmarks/pending/two_phase_poiseuille_viscous/run.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/pending/two_phase_poiseuille_viscous/README.md",
+    "development/verification/mcmp_poiseuille_knowledge_loop/README.md",
+    "development/verification/mcmp_poiseuille_knowledge_loop/step1_knowledge_retrieval.md",
+    "development/verification/mcmp_poiseuille_knowledge_loop/step2_fix_plan.md",
+    "development/verification/mcmp_poiseuille_knowledge_loop/step4_verification_report.md"
+  ],
+  "reference_files": [
+    "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-poiseuille-viscous-numeric-result.json",
+    "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-self-mode-error-attribution.json",
+    "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-viscous-velocity-coupling.json"
+  ],
+  "results": [
+    "development/evidence/m8802_mcmp_viscous_coupling_falsification.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/mcmp-knowledge-loop-archive-2026-11-27.json",
+    "development/verification/mcmp_poiseuille_knowledge_loop/fig_method_comparison.png",
+    "development/verification/mcmp_poiseuille_knowledge_loop/fig_velocity_profile_comparison.png"
+  ]
+}

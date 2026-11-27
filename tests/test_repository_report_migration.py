@@ -965,6 +965,51 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertNotIn('_HERE.parents[2] / "runs"', probe)
         self.assertIn('_HERE / "evidence" / "sdaa_m452"', probe)
 
+    def test_mcmp_knowledge_loop_archive_retains_failure_and_draft_ownership(self):
+        ledger_path = LEDGER_PATH.parent / "mcmp-knowledge-loop-archive-2026-11-27.json"
+        ledger = json.loads(ledger_path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            paths = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                     if row["verification"] == ledger_path.relative_to(REPO).as_posix()}
+        self.assertEqual(len(paths), 10)
+        self.assertEqual(paths, {entry["old_path"]: entry["new_path"] for entry in ledger["entries"]})
+        for entry in ledger["entries"]:
+            self.assert_fingerprint(REPO / entry["new_path"], entry["original_sha256"],
+                                    entry["size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[:2], [entry["git_mode"], entry["original_git_blob"]])
+            self.assertFalse((REPO / entry["old_path"]).exists())
+        self.assertFalse((REPO / "docs/tk-e2e").exists())
+        compatibility = ledger["compatibility"]
+        original = (REPO / compatibility["frozen_evidence"]).read_bytes()
+        self.assertEqual(hashlib.sha256(original).hexdigest(), compatibility["frozen_evidence_sha256"])
+        self.assertEqual(json.loads(original)["conclusion"]["verdict"], "Honest-FAIL")
+        for path in compatibility["pending_claim_drafts"] + compatibility["later_claim_drafts"]:
+            self.assertEqual(json.loads((REPO / path).read_text())["status"], "draft")
+        self.assertFalse(ledger["science"]["full_replay_performed"])
+        for case_path in (compatibility["owner_pending"], compatibility["owner_later"]):
+            output = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", case_path], cwd=REPO, text=True,
+            )
+            (case,) = json.loads(output)["cases"]
+            self.assertEqual(case["id"], case_path)
+            self.assertEqual(case["current_acceptance"], "not_evaluated")
+            variant = case["variants"][0]
+            if case_path == compatibility["owner_pending"]:
+                self.assertEqual(variant["results"], [compatibility["frozen_evidence"]])
+                self.assertEqual(set(variant["reference_files"]), set(compatibility["pending_claim_drafts"]))
+            else:
+                self.assertIn(compatibility["later_case_pointer"], variant["evidence"])
+                self.assertNotIn(compatibility["frozen_evidence"], variant["results"])
+        indexes = ("development/verification/mcmp_poiseuille_knowledge_loop/README.md",
+                   compatibility["owner_pending"] + "/README.md", compatibility["later_case_pointer"])
+        for p in indexes:
+            index = REPO / p
+            for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / link).is_file(), link)
+
     def test_m18430_audit_tools_preserve_provenance_and_report_url(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "m18430-audit-tools-2026-11-22.json").read_text(

@@ -1,0 +1,223 @@
+{
+  "scope": "Retire internal TensorKnowledge m8802/m14431 knowledge-loop work records from docs, preserving published manuals and the two distinct benchmark IDs. No solver or benchmark runner change.",
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "prerequisite": "#3048 exact candidate; not merged",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "BB",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 84
+  },
+  "candidate_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 84
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 83
+  },
+  "retired_second_level_directories": [
+    "docs/tk-e2e"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-poiseuille-viscous-numeric-result.json",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-poiseuille-viscous-numeric-result.json",
+      "git_mode": "100644",
+      "original_git_blob": "f09b2cc9ce9d593488a316d6563df290b751831b",
+      "original_sha256": "bbb6a73094ef0b5408d27c21e01b5c9273a281fde40bfafec9cf7f73111c5dc2",
+      "size_bytes": 2860,
+      "current_sha256": "bbb6a73094ef0b5408d27c21e01b5c9273a281fde40bfafec9cf7f73111c5dc2",
+      "current_size_bytes": 2860,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-self-mode-error-attribution.json",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-self-mode-error-attribution.json",
+      "git_mode": "100644",
+      "original_git_blob": "ae750caea27e18943263dfc220103bc9ff665387",
+      "original_sha256": "e104ddb92202cf4bd9a5bfd00f76554b7937d1d2875d4b0df5355573197968e4",
+      "size_bytes": 2730,
+      "current_sha256": "e104ddb92202cf4bd9a5bfd00f76554b7937d1d2875d4b0df5355573197968e4",
+      "current_size_bytes": 2730,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-stratified-repair-viscous-guo.json",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-stratified-repair-viscous-guo.json",
+      "git_mode": "100644",
+      "original_git_blob": "4f39555c3216b858ce8db06e969e68cf3eefa67c",
+      "original_sha256": "60ad37bfefb74c974d468da36b5dab0ab3d6aa6595ba4219583e2ac328c8de80",
+      "size_bytes": 2907,
+      "current_sha256": "60ad37bfefb74c974d468da36b5dab0ab3d6aa6595ba4219583e2ac328c8de80",
+      "current_size_bytes": 2907,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-viscous-velocity-coupling.json",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-viscous-velocity-coupling.json",
+      "git_mode": "100644",
+      "original_git_blob": "d9f08f5c82786e3b41e0a9d93233c5ed7aa26e8c",
+      "original_sha256": "cc686ca1fda006d3979c08c55721510d1857c3ba58b1f53839fbf48947311315",
+      "size_bytes": 2797,
+      "current_sha256": "cc686ca1fda006d3979c08c55721510d1857c3ba58b1f53839fbf48947311315",
+      "current_size_bytes": 2797,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-wall-convention-halfway.json",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-wall-convention-halfway.json",
+      "git_mode": "100644",
+      "original_git_blob": "098262b0584ff48710b1fadb733f62bb8de1f081",
+      "original_sha256": "00489ee9991cdccf910e640d88734adc924a8dc99ce17d4135ca4bf4f8e3e7de",
+      "size_bytes": 3045,
+      "current_sha256": "00489ee9991cdccf910e640d88734adc924a8dc99ce17d4135ca4bf4f8e3e7de",
+      "current_size_bytes": 3045,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/fig_method_comparison.png",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/fig_method_comparison.png",
+      "git_mode": "100644",
+      "original_git_blob": "1664beabede19e0554e52640ca6b06867d6b5cb8",
+      "original_sha256": "1d258eb816e74ef585d57cd297f3c48fda7e7e61975d58c16e26a8e765171f83",
+      "size_bytes": 55672,
+      "current_sha256": "1d258eb816e74ef585d57cd297f3c48fda7e7e61975d58c16e26a8e765171f83",
+      "current_size_bytes": 55672,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/fig_velocity_profile_comparison.png",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/fig_velocity_profile_comparison.png",
+      "git_mode": "100644",
+      "original_git_blob": "3fff28efcd044963af610c3db2b45113538578c1",
+      "original_sha256": "c09b3399c7b3979a2027a4f83224f8f3b7fdb85a7c86dc266922bd26376c460a",
+      "size_bytes": 120127,
+      "current_sha256": "c09b3399c7b3979a2027a4f83224f8f3b7fdb85a7c86dc266922bd26376c460a",
+      "current_size_bytes": 120127,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/step1_knowledge_retrieval.md",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/step1_knowledge_retrieval.md",
+      "git_mode": "100644",
+      "original_git_blob": "602467d6579da8552fdb7475948847783359a64d",
+      "original_sha256": "8e308b12006bea2026cf06d247d219968b8b69e519ed9522ba5a017e6ade329a",
+      "size_bytes": 3887,
+      "current_sha256": "8e308b12006bea2026cf06d247d219968b8b69e519ed9522ba5a017e6ade329a",
+      "current_size_bytes": 3887,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/step2_fix_plan.md",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/step2_fix_plan.md",
+      "git_mode": "100644",
+      "original_git_blob": "9f7d3221127316e53c433647a78dcb4b5a904562",
+      "original_sha256": "d8c40bf964d5c15750f034306db93f5dd9eec92e7d227f122de284848bbfe10f",
+      "size_bytes": 4017,
+      "current_sha256": "d8c40bf964d5c15750f034306db93f5dd9eec92e7d227f122de284848bbfe10f",
+      "current_size_bytes": 4017,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/tk-e2e/step4_verification_report.md",
+      "new_path": "development/verification/mcmp_poiseuille_knowledge_loop/step4_verification_report.md",
+      "git_mode": "100644",
+      "original_git_blob": "a65472792f80fd7c0a5cd3ca7dacc47c69876ae4",
+      "original_sha256": "9ac656548793d3b48fb86f96e67d430c6845bac9dc45ac863943959233c06cf2",
+      "size_bytes": 8783,
+      "current_sha256": "9ac656548793d3b48fb86f96e67d430c6845bac9dc45ac863943959233c06cf2",
+      "current_size_bytes": 8783,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "original_tree": "f4469e80f49185f0b43e61c3468db8a8f5803e9b",
+    "reference_scan": "Exact tk-e2e path and file names scanned in actual main and the all-candidate preview. Only external-to-directory literal reference is frozen m8802 evidence JSON. Cross-repository indexed search of TensorKnowledge, TensorPlatform, TensorPhysics and TensorBench returned no matches; not an exhaustive external link audit. Internal draft mission records, not the published user manual catalogue.",
+    "frozen_evidence": "development/evidence/m8802_mcmp_viscous_coupling_falsification.json",
+    "frozen_evidence_sha256": "4fc596b1ca4a043fe65db929b258738bdf7d5c8e816e3214d46bf434e8a2313d",
+    "frozen_evidence_prior_ledger": "docs/architecture/migrations/evidence-root-retirement-2026-11-21.json",
+    "historical_path_resolution": "Old path strings inside immutable claims and prior evidence remain historical literals; resolve through this ledger and migration CSV. The original source commit preserves old Git URLs. No active runtime consumer was found.",
+    "owner_pending": "benchmarks/pending/two_phase_poiseuille_viscous",
+    "owner_later": "benchmarks/verified/mcmp_stratified_poiseuille",
+    "pending_claim_drafts": [
+      "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-poiseuille-viscous-numeric-result.json",
+      "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-self-mode-error-attribution.json",
+      "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-viscous-velocity-coupling.json"
+    ],
+    "later_claim_drafts": [
+      "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-stratified-repair-viscous-guo.json",
+      "development/verification/mcmp_poiseuille_knowledge_loop/claims/tkc-tensorlbm-mcmp-wall-convention-halfway.json"
+    ],
+    "later_case_pointer": "benchmarks/verified/mcmp_stratified_poiseuille/evidence/knowledge_drafts/README.md",
+    "known_historical_command_paths": {
+      "cases/mcmp_stratified_poiseuille/run_coupling.py": "benchmarks/verified/mcmp_stratified_poiseuille/run_coupling.py",
+      "cases/mcmp_stratified_poiseuille/run_sweep.py": "benchmarks/verified/mcmp_stratified_poiseuille/run_sweep.py"
+    }
+  },
+  "science": {
+    "historical_m8802_verdict": "Honest-FAIL",
+    "historical_hypothesis_falsified": true,
+    "later_claim_drafts": 2,
+    "current_acceptance": "not_evaluated",
+    "full_replay_performed": false,
+    "scope": "Historic recorded narrative evidence, not a new result.json or current machine verdict. Later draft claims belong to m14431 and are not treated as fresh passes. All five claims remain original draft status."
+  },
+  "status_ledger_observation": {
+    "case": "two_phase_poiseuille_viscous",
+    "machine": "unknown",
+    "machine_source": null,
+    "pending_machine_pass_fail_unknown": [
+      1,
+      19,
+      44
+    ],
+    "note": "A README is now present, so the existing combined no-README/no-machine-verdict soft warning is removed. The pending machine verdict and machine pass/fail/unknown counts are unchanged; this is documentation recovery only, not scientific acceptance."
+  },
+  "evidence_gaps": {
+    "unresolved_historical_claim_refs": [
+      "artifacts/mcmp_stratified_poiseuille/analysis.json",
+      "artifacts/mcmp_stratified_poiseuille/records/walls_*.json"
+    ],
+    "scope": "The above historical artifact paths were not found in actual main, the current path migration CSV, or the inspected path history in fetched refs. The later case result.json is tracked, but it is not a substitute for those missing raw artifacts. The m8802 case still has no current stored machine result. Preserve original claims; do not substitute or infer missing values."
+  }
+}

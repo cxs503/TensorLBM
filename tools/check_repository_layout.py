@@ -169,6 +169,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT"),
     ("xval", "XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT"),
     ("xval", "gitlab_ci_staged_gates"),
+    ("docs", "tk-e2e"),
     ("xval", "XVAL-LBM-INSTRUCTION-DSL-TESTS-SH"),
 }
 
