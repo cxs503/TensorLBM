@@ -53,6 +53,8 @@ RETIRED_FILES = {
     "xval/REPORT_XVAL_NEBB_BODYFORCE.md",
     "xval/make_xval_figure.py",
     "xval/xval_figure_b64.json",
+    "scripts/audit_cavity_metric_geometry.py",
+    "scripts/array_drag_reference_audit.py",
     "xval/xval_phasefield_mcmp_poiseuille.py",
     "xval/xval_fingering_dynamics.py",
     "xval/xval_lbmconfig_single_point_config.py",

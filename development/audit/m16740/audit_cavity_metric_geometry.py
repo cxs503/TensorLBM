@@ -17,7 +17,7 @@ Outputs (programmatic, no hand-copied numbers):
 * ``outputs/audit/m16740/cavity_metric_geometry.json``
 * ``outputs/figures/m16740_cavity_metric_geometry.png``
 
-Usage: ``python scripts/audit_cavity_metric_geometry.py``
+Usage: ``python development/audit/m16740/audit_cavity_metric_geometry.py``
 """
 
 from __future__ import annotations

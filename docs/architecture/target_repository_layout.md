@@ -178,6 +178,8 @@ The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.
 preserves the hardware scripts alongside their verification records and
 identifies the maintained baseline launcher.
 
+The [zero-solver audit handoff ledger](migrations/zero-solver-audit-handoff-2026-11-28.json) records two historical offline audit scripts, their preserved report URLs, actual input provenance and pre/post generated-output parity. No solver was rerun or scientific acceptance assigned.
+
 The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)
 records the paths, original Git objects, checksums and compatibility checks for
 `configs/`, `demos/`, `notebooks/`, `references/`, `regression_rules/`

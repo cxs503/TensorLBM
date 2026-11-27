@@ -12,7 +12,7 @@ Outputs (all under ``artifacts/array_drag_reference/``):
   tables.md   -- the markdown tables quoted by docs/ARRAY_DRAG_REFERENCE_AUDIT.md
   fig.png     -- left: K(lambda) of every variant; right: deviation vs canonical
 
-Run:  python scripts/array_drag_reference_audit.py
+Run:  python development/audit/m16754/array_drag_reference_audit.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import math
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 import matplotlib  # noqa: E402

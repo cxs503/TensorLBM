@@ -1,5 +1,7 @@
 # 方腔 Ghia 度量的「几何本体」审计与约定落盘（m16740）
 
+> Repository layout note (2026-11-28): [archived audit, current replay path and retained evidence](../development/audit/m16740/README.md). Historical report and verdict are unchanged; this relocation is not new scientific acceptance.
+
 **锚点**：REPRO-LBM-HOU1995（论文复现·Simulation of Cavity Flow by the Lattice Boltzmann Method [Hou et al. 1995]）——
 该复现的全部误差数字都由 `compare_ghia` 这个度量产出，本单先把度量本身钉死。
 **结论一句话**：`ghia_errors` 是 TensorLBM 全部二维方腔验收（Re=100/400/1000/5000）的判据本体，
@@ -40,7 +42,7 @@
    把 `ghia_metric`（壁面平面 / 四组分数 / 解析地板 / **整条中线 u、v 场**）写进 `run_metadata.json`，
    CSV 坐标改用配方一致映射；新增配置项 `ghia_metric_convention ∈ {legacy_w0, symmetric_w+0.5, recipe_planes}`
    （默认 `legacy_w0`，历史数字不动）决定 headline `ghia_errors` 用哪种约定。
-5. **工具链**：`scripts/audit_cavity_metric_geometry.py`（零仿真，输出 JSON+图）；
+5. **工具链**：`development/audit/m16740/audit_cavity_metric_geometry.py`（零仿真，输出 JSON+图）；
    `tests/test_cavity_metric_geometry.py`（26 条不变量测试）。
 
 ## 3. 计算结果（程序化输出，零手抄）
@@ -135,7 +137,7 @@
 
 ```bash
 # 零仿真度量几何审计（秒级）
-PYTHONPATH=$PWD/src python scripts/audit_cavity_metric_geometry.py
+PYTHONPATH=$PWD/src python development/audit/m16740/audit_cavity_metric_geometry.py
 
 # 不变量测试（26 条）
 python -m pytest tests/test_cavity_metric_geometry.py -q
