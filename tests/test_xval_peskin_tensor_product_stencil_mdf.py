@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 import torch
 
-XVAL_DIR = Path(__file__).resolve().parents[1] / "xval" / "XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF"
+XVAL_DIR = Path(__file__).resolve().parents[1] / "development" / "verification" / "peskin_tensor_product_stencil_mdf"
 sys.path.insert(0, str(XVAL_DIR))
 
 import oss_ref  # noqa: E402

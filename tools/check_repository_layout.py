@@ -56,6 +56,8 @@ RETIRED_FILES = {
     "src/tensorlbm/dg_verification.py",
 }
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
+    ("xval", "XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF"),
+    ("docs", "audit_m17835"),
     ("docs", "audit_m17592"),
     ("docs", "audit_m17636"),
     ("docs", "audit_m17888"),

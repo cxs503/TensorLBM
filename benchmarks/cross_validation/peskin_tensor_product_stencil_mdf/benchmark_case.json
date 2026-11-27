@@ -1,0 +1,45 @@
+{
+  "scope": "Historical archive-only 2-D Peskin operator and cylinder comparison (m18131), plus the separate partial solid-interior attempt (m20490). Original NumPy reference adaptation is not native JAX; historical operator agreement did not establish physical drag acceptance. The later 3-D sphere studies at benchmarks/xval_ib3d_diffuse_interface_mdf and benchmarks/xval_peskin_stencil_mdf_r2 are distinct and unchanged.",
+  "criteria": {
+    "owner_acceptance_pct": 15.0,
+    "stencil_identity": "1e-12 absolute on weights, identical non-zero node keys, 2-D and 3-D",
+    "kernel_identity": "1e-12 absolute on the Peskin 4-pt delta",
+    "oss_vs_tl_force": "15% relative on sum_x F_grid at matched convergence (n_iter = 10) and h = 0.9 cells",
+    "iface_slip": "15% relative interface slip; a PASS requires the slip below the bar, not merely a small arm-to-arm difference",
+    "end_to_end": "15% on Cd between arms (literature is an informational column, the setup is not claimed to be unbounded-flow accurate)"
+  },
+  "source": [
+    "development/verification/peskin_tensor_product_stencil_mdf/run_xval.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/run_l4_interior.py",
+    "src/tensorlbm/ibm_force_transfer.py",
+    "src/tensorlbm/ibm3d_mdf.py"
+  ],
+  "config": [
+    "development/verification/peskin_tensor_product_stencil_mdf/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/peskin_tensor_product_stencil_mdf/README.md",
+    "development/verification/peskin_tensor_product_stencil_mdf/README.md",
+    "development/verification/peskin_tensor_product_stencil_mdf/REPORT.md",
+    "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/REPORT_R2.md"
+  ],
+  "reference_files": [
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/PROVENANCE.json",
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/__init__.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/geometry.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/kernels.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/mdf.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/np_jax_shim.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/stencil.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/oss_ref/stencil3d.py"
+  ],
+  "results": [
+    "development/verification/peskin_tensor_product_stencil_mdf/artifacts/xval_peskin_tp_mdf.json",
+    "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/artifacts/screen.json"
+  ],
+  "evidence": [
+    "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/make_figures.py",
+    "development/verification/peskin_tensor_product_stencil_mdf/r2_interior/make_report.py",
+    "docs/architecture/migrations/peskin-and-conv-audit-2026-11-27.json"
+  ]
+}

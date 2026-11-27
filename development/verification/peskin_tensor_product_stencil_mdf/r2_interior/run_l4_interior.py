@@ -42,7 +42,7 @@ import torch
 
 HERE = Path(__file__).resolve().parent
 XV = HERE.parent
-ROOT = XV.parents[1]
+ROOT = XV.parents[2]
 
 sys.path.insert(0, str(XV))
 sys.path.insert(0, str(ROOT / "src"))

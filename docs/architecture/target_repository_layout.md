@@ -154,6 +154,8 @@ archives the standalone channel verification probes under development.
 
 The [AMR, buffer, survey and LES audit archive ledger](migrations/amr-survey-les-audit-docs-2026-11-27.json) preserves four historical audit directories and links their original records to existing cases without evaluating scientific acceptance.
 
+The [Peskin and convolution audit archive ledger](migrations/peskin-and-conv-audit-2026-11-27.json) retires one XVAL campaign directory and one historical audit directory, with preserved original vendor provenance, recorded evidence and compatible entry paths.
+
 ## Root files and rollout
 
 The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.json)
