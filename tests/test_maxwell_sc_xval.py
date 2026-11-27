@@ -2,7 +2,7 @@
 
 The anchor is the Maxwell equal-area construction on the Shan-Chen *lattice*
 equation of state ``p = rho/3 - (G/6) psi^2`` implemented independently in
-``xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/maxwell_sc.py``.
+``development/verification/shan_chen_edm_lycett_luo/round1/maxwell_sc.py``.
 
 Assertions (physics, not shapes):
 
@@ -33,7 +33,7 @@ import pytest
 import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-XVAL = os.path.join(HERE, "..", "xval", "XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO")
+XVAL = os.path.join(HERE, "..", "development", "verification", "shan_chen_edm_lycett_luo", "round1")
 sys.path.insert(0, os.path.abspath(XVAL))
 
 import maxwell_sc as MW  # noqa: E402

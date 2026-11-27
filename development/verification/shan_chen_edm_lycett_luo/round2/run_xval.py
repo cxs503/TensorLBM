@@ -52,7 +52,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 FORCINGS = ("velocity_shift", "edm", "guo")

@@ -212,6 +212,17 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertIn("src/tensorlbm/shallow_water.py", campaign["variants"][0]["source"])
         self.assertIn("benchmarks/dam_break_ritter/replays/2026-11-21.json", campaign["variants"][0]["results"])
 
+    def test_shan_chen_edm_rounds_keep_separate_historical_evidence(self):
+        (case,) = self.registry("--case", "xval:shan_chen_edm_lycett_luo")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        variant = case["variants"][0]
+        base = "development/verification/shan_chen_edm_lycett_luo"
+        self.assertIn(f"{base}/round1/artifacts/results.json", variant["results"])
+        self.assertIn(f"{base}/round2/artifacts/compact.json", variant["results"])
+        self.assertEqual(sum(x.endswith(".png") for x in variant["evidence"]), 6)
+        self.assertIn("development/audit/m21400/AUDIT_M21378.md",
+                      variant["documentation"])
+
     def test_single_drop_case_separates_formal_and_exploratory_histories(self):
         case_id = "benchmarks/pending/droplet_impact_3d_pool"
         (case,) = self.registry("--case", case_id)

@@ -1,0 +1,756 @@
+{
+  "scope": "Retire two historical SCMP/EDM validation round directories as a single indexed archive, preserve all tracked original data, re-render missing figures and update local readers.",
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "prerequisite": "#3048 exact candidate; not yet merged.",
+  "retired_paths": [
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO",
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2"
+  ],
+  "root_directories_before": [
+    ".github",
+    "BB",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "root_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 40
+    }
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/REPORT.md",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "74529eb3cc9d220108e35e168cb23088ef19e49b",
+      "original_sha256": "937ba0011c1451181fe2e29d33e536372f9d118767a34c5c189b2d99e6c50dad",
+      "original_size_bytes": 12486,
+      "current_sha256": "c971688caa7004a91273088879bdefafb3041dd9303a54a2a88b215b80393872",
+      "current_size_bytes": 12504,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/analyze.py",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "e091a19a47155481bceb3d63de4609eaf9f373d3",
+      "original_sha256": "910df2442891081292af27dc0da331965bdb30a31fa9e265c75c7e7713eec9a8",
+      "original_size_bytes": 9507,
+      "current_sha256": "910df2442891081292af27dc0da331965bdb30a31fa9e265c75c7e7713eec9a8",
+      "current_size_bytes": 9507,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/TABLE.md",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/TABLE.md",
+      "git_mode": "100644",
+      "original_git_blob": "3359acafcf8dbadb50807b441dcfadd227c72dd1",
+      "original_sha256": "9ae0b135e229f5ead826a5c1776854df76b195b0199277b042d9b7d3b73d2e7a",
+      "original_size_bytes": 5081,
+      "current_sha256": "9ae0b135e229f5ead826a5c1776854df76b195b0199277b042d9b7d3b73d2e7a",
+      "current_size_bytes": 5081,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_edm_tau0.6.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau0.6.json",
+      "git_mode": "100644",
+      "original_git_blob": "38b79bbb670cbbee47ffb2ebf1fab661941cf9d9",
+      "original_sha256": "ae84025cecba8b961447a123cee6adfbdd335a6853a6eaab22e76d31a894b271",
+      "original_size_bytes": 6419,
+      "current_sha256": "ae84025cecba8b961447a123cee6adfbdd335a6853a6eaab22e76d31a894b271",
+      "current_size_bytes": 6419,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_edm_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "43f0bb27766444628af4b28f713e8e0e654a2fc8",
+      "original_sha256": "47a203da81841c2c0948cef72729edf184a548ac96922d3f06cee8bc246a3869",
+      "original_size_bytes": 6440,
+      "current_sha256": "47a203da81841c2c0948cef72729edf184a548ac96922d3f06cee8bc246a3869",
+      "current_size_bytes": 6440,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_edm_tau1.0_icS.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0_icS.json",
+      "git_mode": "100644",
+      "original_git_blob": "f44ef12e10dc0921c7691918685efab96f9d822e",
+      "original_sha256": "57f80befd2b2a4878f766f62d19d47fc3400c2a734add1373ba939ab12c547cd",
+      "original_size_bytes": 6433,
+      "current_sha256": "57f80befd2b2a4878f766f62d19d47fc3400c2a734add1373ba939ab12c547cd",
+      "current_size_bytes": 6433,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_edm_tau1.5.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "da1c21961cbe75b73e55241ddd75578db8f8d012",
+      "original_sha256": "17185bd79718b743fb403e0eeff203040eb54116d2299ca08f0e4912a0b53716",
+      "original_size_bytes": 6425,
+      "current_sha256": "17185bd79718b743fb403e0eeff203040eb54116d2299ca08f0e4912a0b53716",
+      "current_size_bytes": 6425,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_guo_tau0.6.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau0.6.json",
+      "git_mode": "100644",
+      "original_git_blob": "1f9c2520ff7b4827bc2a50d8fde2f4c6e9f81598",
+      "original_sha256": "c8655355de300c86100f7cd4040218f4686993fbdaf98b0e62ee54a24a5c634f",
+      "original_size_bytes": 6421,
+      "current_sha256": "c8655355de300c86100f7cd4040218f4686993fbdaf98b0e62ee54a24a5c634f",
+      "current_size_bytes": 6421,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_guo_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "9e595e9352e5f6efe520e759b417379be9e4401b",
+      "original_sha256": "9f60b8743f444d31b5e595eea5155e3d679d37ca6bb6f2c3973174ad5e6463e1",
+      "original_size_bytes": 6415,
+      "current_sha256": "9f60b8743f444d31b5e595eea5155e3d679d37ca6bb6f2c3973174ad5e6463e1",
+      "current_size_bytes": 6415,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_guo_tau1.0_icS.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0_icS.json",
+      "git_mode": "100644",
+      "original_git_blob": "57c1d0487992a9d6f0d7bfc9fb2ec5954e442cf9",
+      "original_sha256": "472279322b72ed27923bb0bb8bc6e6d6de92c93c8cdf06e79511d48f066415c9",
+      "original_size_bytes": 6431,
+      "current_sha256": "472279322b72ed27923bb0bb8bc6e6d6de92c93c8cdf06e79511d48f066415c9",
+      "current_size_bytes": 6431,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_guo_tau1.5.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "bf1633465811a67743dee495098636e3d026f25b",
+      "original_sha256": "e55a5c54f54ac64e8febf24ba3ca211ee2330f404fc5a431e0933d3410fefcc8",
+      "original_size_bytes": 6439,
+      "current_sha256": "e55a5c54f54ac64e8febf24ba3ca211ee2330f404fc5a431e0933d3410fefcc8",
+      "current_size_bytes": 6439,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_velocity_shift_tau0.6.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau0.6.json",
+      "git_mode": "100644",
+      "original_git_blob": "f96c7b9ac1178ce28dbc419b325ec90ca4bb0666",
+      "original_sha256": "095d45ee4e86a11a26e9af9ca9d6a8e8f6ba5d68ba7a9d8a48c4c71fcf7e0691",
+      "original_size_bytes": 6444,
+      "current_sha256": "095d45ee4e86a11a26e9af9ca9d6a8e8f6ba5d68ba7a9d8a48c4c71fcf7e0691",
+      "current_size_bytes": 6444,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "12c0cc74ee42931cbbd418ca9f8f957b1d022684",
+      "original_sha256": "0745c76d5c29183cac803fd5cf82d7b91a47dd0c6c065aceacd2c28d8f477ac4",
+      "original_size_bytes": 6462,
+      "current_sha256": "0745c76d5c29183cac803fd5cf82d7b91a47dd0c6c065aceacd2c28d8f477ac4",
+      "current_size_bytes": 6462,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0_icS.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0_icS.json",
+      "git_mode": "100644",
+      "original_git_blob": "8ec899e42f9ce36881f61745fbd542cda1d2e7b0",
+      "original_sha256": "9d3c4367b04aacf83966ef018f17b62bb49d2aa131ecf08421b5643e48406d11",
+      "original_size_bytes": 6454,
+      "current_sha256": "9d3c4367b04aacf83966ef018f17b62bb49d2aa131ecf08421b5643e48406d11",
+      "current_size_bytes": 6454,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/cs_Gdefault_velocity_shift_tau1.5.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "2b1a408915fbb439ac2fe55784851e6ec2bd88f5",
+      "original_sha256": "95cef9abaf8aece05cacd075e729e47642029c14af32b563aa7fec3458b09352",
+      "original_size_bytes": 6431,
+      "current_sha256": "95cef9abaf8aece05cacd075e729e47642029c14af32b563aa7fec3458b09352",
+      "current_size_bytes": 6431,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_G4.5_edm_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G4.5_edm_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "0e957c0d30b493599e2a3276aed62de4bcfd5cee",
+      "original_sha256": "3136c3966caa93e48c327d07bc3638db57b1e4c1cf49f231c76ff433f5c3f5aa",
+      "original_size_bytes": 6241,
+      "current_sha256": "3136c3966caa93e48c327d07bc3638db57b1e4c1cf49f231c76ff433f5c3f5aa",
+      "current_size_bytes": 6241,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_G5.5_edm_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G5.5_edm_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "3173cc30b7f8c789e8fc48838261efab66743a66",
+      "original_sha256": "69a73040c8a191609f287528292ee284566afe02a5dc64eae5706c9b8c6a2ed3",
+      "original_size_bytes": 6245,
+      "current_sha256": "69a73040c8a191609f287528292ee284566afe02a5dc64eae5706c9b8c6a2ed3",
+      "current_size_bytes": 6245,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_edm_tau0.6.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau0.6.json",
+      "git_mode": "100644",
+      "original_git_blob": "934e0407fcdc72cbfd558ed20638bdcc2ee57f50",
+      "original_sha256": "8c0ef14290e9405ecb0ffda6759b68cd701c4147e0b1e5e1cac21c9d2c3c8e89",
+      "original_size_bytes": 6279,
+      "current_sha256": "8c0ef14290e9405ecb0ffda6759b68cd701c4147e0b1e5e1cac21c9d2c3c8e89",
+      "current_size_bytes": 6279,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_edm_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "e54474e3ed45cf7af89ee1b17ae26dd44b769dd8",
+      "original_sha256": "4fe2bdaf1ba60de36c5d5d8f3615a4bad214f0a817f7ea41f962002627877243",
+      "original_size_bytes": 6288,
+      "current_sha256": "4fe2bdaf1ba60de36c5d5d8f3615a4bad214f0a817f7ea41f962002627877243",
+      "current_size_bytes": 6288,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_edm_tau1.0_icS.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0_icS.json",
+      "git_mode": "100644",
+      "original_git_blob": "92e001e732ace2032fc8db4ed17f60da75889b70",
+      "original_sha256": "6bdda3894a8aedbdfb291f78bfc41c80aa112e5187f83b4a5487880cc33d62c0",
+      "original_size_bytes": 6286,
+      "current_sha256": "6bdda3894a8aedbdfb291f78bfc41c80aa112e5187f83b4a5487880cc33d62c0",
+      "current_size_bytes": 6286,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_edm_tau1.5.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "f80d8f1f806abd7665f06515baad564564a8b088",
+      "original_sha256": "96df3d05d4c789c33beb9db2b502a514d8e3440d4633438bbf70995cf5c7a19e",
+      "original_size_bytes": 6282,
+      "current_sha256": "96df3d05d4c789c33beb9db2b502a514d8e3440d4633438bbf70995cf5c7a19e",
+      "current_size_bytes": 6282,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_edm_tau2.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau2.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "d6e878d7fec441120bc64210da124ff0b0fd7e7f",
+      "original_sha256": "b4e73cd60110d9568ff2ab977ea9a6ae57b32ef590f8bacd63f75f7086d6c3c9",
+      "original_size_bytes": 6271,
+      "current_sha256": "b4e73cd60110d9568ff2ab977ea9a6ae57b32ef590f8bacd63f75f7086d6c3c9",
+      "current_size_bytes": 6271,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_guo_tau0.6.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau0.6.json",
+      "git_mode": "100644",
+      "original_git_blob": "6be8ab8f81b57ca011a0a1fe0a8ecdc7eb329547",
+      "original_sha256": "5b750aa618f7f5931b04cefd375232b3fb9f3ab5d582d86b09a59efa8851373b",
+      "original_size_bytes": 6297,
+      "current_sha256": "5b750aa618f7f5931b04cefd375232b3fb9f3ab5d582d86b09a59efa8851373b",
+      "current_size_bytes": 6297,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_guo_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "a2bbfe701e5f2bd0584e2c19601d034e100a8e31",
+      "original_sha256": "9f6f7cb786673ffb24fb6aea08bca219faef2eb4d39fe663deeeec0bb449ceab",
+      "original_size_bytes": 6289,
+      "current_sha256": "9f6f7cb786673ffb24fb6aea08bca219faef2eb4d39fe663deeeec0bb449ceab",
+      "current_size_bytes": 6289,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_guo_tau1.0_icS.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0_icS.json",
+      "git_mode": "100644",
+      "original_git_blob": "d73e68d4e6bb6982c9002e3ee4afa5ef0ac9ce44",
+      "original_sha256": "3a2828645b35cb24c3045735b3a420607fd9655556651c31d046c31b3b548112",
+      "original_size_bytes": 6296,
+      "current_sha256": "3a2828645b35cb24c3045735b3a420607fd9655556651c31d046c31b3b548112",
+      "current_size_bytes": 6296,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_guo_tau1.5.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "1d78ae7112ba821e5cebeb137328b46a34b926af",
+      "original_sha256": "42133e74a8ae62695a9914995775cd4cc26bfc50083f67a8cceb6b8bf32aceed",
+      "original_size_bytes": 6283,
+      "current_sha256": "42133e74a8ae62695a9914995775cd4cc26bfc50083f67a8cceb6b8bf32aceed",
+      "current_size_bytes": 6283,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_guo_tau2.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau2.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "8c972837866d48f56e99a01f891886e7626a8886",
+      "original_sha256": "46557351a50816f96bbc6b172d478f1261a197553704dcb7384e8ee5b192236e",
+      "original_size_bytes": 6290,
+      "current_sha256": "46557351a50816f96bbc6b172d478f1261a197553704dcb7384e8ee5b192236e",
+      "current_size_bytes": 6290,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_velocity_shift_tau0.6.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau0.6.json",
+      "git_mode": "100644",
+      "original_git_blob": "60e01dae84040e17d86402ae38087dd103c39645",
+      "original_sha256": "24686d2fe69a9162f0f3f907ba960297065a030fc4e0ac8e58d0d64296b3b295",
+      "original_size_bytes": 6313,
+      "current_sha256": "24686d2fe69a9162f0f3f907ba960297065a030fc4e0ac8e58d0d64296b3b295",
+      "current_size_bytes": 6313,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "55d009a49c7e5b14de87707acf4226d243e7914d",
+      "original_sha256": "0921305f3c18b7192502f373808566251ed421d801592d49233eecfb80862b3a",
+      "original_size_bytes": 6305,
+      "current_sha256": "0921305f3c18b7192502f373808566251ed421d801592d49233eecfb80862b3a",
+      "current_size_bytes": 6305,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0_icS.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0_icS.json",
+      "git_mode": "100644",
+      "original_git_blob": "a3519c4479b9c05c9be09ea7e5033782a2acb14b",
+      "original_sha256": "908390a3f980cf803d5720f0ffdb351a6265fe314da4af4ec5af1b558574c2af",
+      "original_size_bytes": 6310,
+      "current_sha256": "908390a3f980cf803d5720f0ffdb351a6265fe314da4af4ec5af1b558574c2af",
+      "current_size_bytes": 6310,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_velocity_shift_tau1.5.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "f5b73ab67b3510971fb2b0842c5c88f7d7ae15c3",
+      "original_sha256": "dd13c0d46a61493c1e2a822ff94c88b8626f201b97e18d46fd9f0e207fd1f50e",
+      "original_size_bytes": 6291,
+      "current_sha256": "dd13c0d46a61493c1e2a822ff94c88b8626f201b97e18d46fd9f0e207fd1f50e",
+      "current_size_bytes": 6291,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/cases/exp_Gdefault_velocity_shift_tau2.0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau2.0.json",
+      "git_mode": "100644",
+      "original_git_blob": "e5f82bedad60f105918f17b30a289b20f13b6195",
+      "original_sha256": "a644ab53f4c302dd3d7ff58d99dfba9a49bca9e8635c474cda164a203fe6642a",
+      "original_size_bytes": 6262,
+      "current_sha256": "a644ab53f4c302dd3d7ff58d99dfba9a49bca9e8635c474cda164a203fe6642a",
+      "current_size_bytes": 6262,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/artifacts/results.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "a66b301a929b391572056e500e101125ecdc51e9",
+      "original_sha256": "ebc80c12f29157266735c250754e65c8a6071fdddda99ced950241eead33f6b0",
+      "original_size_bytes": 193984,
+      "current_sha256": "ebc80c12f29157266735c250754e65c8a6071fdddda99ced950241eead33f6b0",
+      "current_size_bytes": 193984,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/maxwell_sc.py",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/maxwell_sc.py",
+      "git_mode": "100644",
+      "original_git_blob": "81c3411c608a76f398743638cd1ce3201f6ef7f8",
+      "original_sha256": "c1871336225e93919bd4437b774cdde97d9210d3bdef00bdd49d46911dcf6e59",
+      "original_size_bytes": 9014,
+      "current_sha256": "c1871336225e93919bd4437b774cdde97d9210d3bdef00bdd49d46911dcf6e59",
+      "current_size_bytes": 9014,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/run_coexistence.py",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round1/run_coexistence.py",
+      "git_mode": "100644",
+      "original_git_blob": "f925d7ea5705a69c840608b8af31ff9a0e3b47c7",
+      "original_sha256": "4b64dc8fb610531fde3c9276e7038f298789d88290a6fa9117ee6b7492e55927",
+      "original_size_bytes": 9761,
+      "current_sha256": "4b64dc8fb610531fde3c9276e7038f298789d88290a6fa9117ee6b7492e55927",
+      "current_size_bytes": 9761,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/REPORT.md",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "9b02bc4fa7a12f1355f4a9ad2c7151216837226b",
+      "original_sha256": "242701c78d7f8f42e0924bc633706b0097c19a49fcda45bf6347247a371b106a",
+      "original_size_bytes": 10569,
+      "current_sha256": "3c3b2c98d7c747368249faf9bcd54661009c548dca978d5aa3ffcaa3db14b8a8",
+      "current_size_bytes": 10584,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/REVIEW_R1.md",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/REVIEW_R1.md",
+      "git_mode": "100644",
+      "original_git_blob": "d579ccf5b9caf1565a9964f4485c98bd12e540b1",
+      "original_sha256": "28a3949c839424a106d3ce0f1f069f01cb7b09d0d4a044fed5ac803b860b57b0",
+      "original_size_bytes": 5082,
+      "current_sha256": "28a3949c839424a106d3ce0f1f069f01cb7b09d0d4a044fed5ac803b860b57b0",
+      "current_size_bytes": 5082,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/compact.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/compact.json",
+      "git_mode": "100644",
+      "original_git_blob": "bddc3ab891c1d6239b0a0588991a39cbe66ccbe0",
+      "original_sha256": "54d6ea7eb9426f1b30efae5c3daae69265d87b6dbe8f78f0d4ebed7ea058f987",
+      "original_size_bytes": 39976,
+      "current_sha256": "54d6ea7eb9426f1b30efae5c3daae69265d87b6dbe8f78f0d4ebed7ea058f987",
+      "current_size_bytes": 39976,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/part0.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/part0.json",
+      "git_mode": "100644",
+      "original_git_blob": "e1a7165247cc308c379a7421246a6a7222fc454b",
+      "original_sha256": "0d453a58c9dbad36a6abee6c0d553f40959c60ccfecaa09f15560a957b68a30a",
+      "original_size_bytes": 7809,
+      "current_sha256": "0d453a58c9dbad36a6abee6c0d553f40959c60ccfecaa09f15560a957b68a30a",
+      "current_size_bytes": 7809,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/part1.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/part1.json",
+      "git_mode": "100644",
+      "original_git_blob": "ccc1b120f07157b89b6de1b75efd9fbcb162858c",
+      "original_sha256": "fdc2b7c8e8107bf453ba12f4b9a03ccf3fe8ff2c8396693aa00061ee544cf145",
+      "original_size_bytes": 10766,
+      "current_sha256": "fdc2b7c8e8107bf453ba12f4b9a03ccf3fe8ff2c8396693aa00061ee544cf145",
+      "current_size_bytes": 10766,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/shard_00.json",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/shard_00.json",
+      "git_mode": "100644",
+      "original_git_blob": "a90bf9210f553aa3fee7281a65f7bc3de95cb649",
+      "original_sha256": "5b5b0b8f20a581da5e87fc039a689ebd3e7a4a08ef377c07e962f3148a7ee66f",
+      "original_size_bytes": 1750,
+      "current_sha256": "5b5b0b8f20a581da5e87fc039a689ebd3e7a4a08ef377c07e962f3148a7ee66f",
+      "current_size_bytes": 1750,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/local_sweep.py",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/local_sweep.py",
+      "git_mode": "100644",
+      "original_git_blob": "d6a005cbcc5f2af11d107ac1e1285c120d6381d8",
+      "original_sha256": "5babc538de951ec19c426614d0aa593b8d23b7485a4d2b8ef249493697929855",
+      "original_size_bytes": 5316,
+      "current_sha256": "5babc538de951ec19c426614d0aa593b8d23b7485a4d2b8ef249493697929855",
+      "current_size_bytes": 5316,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/run_xval.py",
+      "new_path": "development/verification/shan_chen_edm_lycett_luo/round2/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "07f007e4163218358377ffd873d2330d587e6e94",
+      "original_sha256": "2571166888befaa536ee37fa578a7f1e86aa8c83d3396bb2a586d8bdf0d1139b",
+      "original_size_bytes": 16088,
+      "current_sha256": "99a30bb59e6611cf0f3578423d023047a6ab62bce07e3664b84acac73b03337c",
+      "current_size_bytes": 16088,
+      "byte_identical": false
+    }
+  ],
+  "updated_consumers": [
+    {
+      "path": "tests/test_maxwell_sc_xval.py",
+      "original_sha256": "95e1894df79c9e65f444b0a06df67461b30a1d594447f74041ec38062f1a936f",
+      "current_sha256": "00c6f21e95b69e48d1693e6560c05e4166e7703d20c8dbb0e92e0b069455503d",
+      "reason": "Preserve active local evidence/source lookup; historical audit reports and external publishing routines are not executed."
+    },
+    {
+      "path": "tests/test_xval_sc_edm_laplace_r2.py",
+      "original_sha256": "fa2383e93ffecd4a774c1adae10b519635b057f22ab5894c0e646999f79565de",
+      "current_sha256": "eb76d78fa9d9f02147ea2fbdb7a99bb1a05d48f09358d131d0d6faf054ebfc81",
+      "reason": "Preserve active local evidence/source lookup; historical audit reports and external publishing routines are not executed."
+    }
+  ],
+  "registry": [
+    "benchmarks/cross_validation/shan_chen_edm_lycett_luo/benchmark_case.json"
+  ],
+  "restored_derived_figures": [
+    {
+      "path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig1_coexistence.png",
+      "sha256": "5bf9574636cb86c6a6e3f57fc4cac7f79badc83a0b4a290ed94677ac596fcbd9",
+      "size_bytes": 72920,
+      "renderer": "development/verification/shan_chen_edm_lycett_luo/round1/analyze.py",
+      "input_sha256": {
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau0.6.json": "ae84025cecba8b961447a123cee6adfbdd335a6853a6eaab22e76d31a894b271",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0.json": "47a203da81841c2c0948cef72729edf184a548ac96922d3f06cee8bc246a3869",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0_icS.json": "57f80befd2b2a4878f766f62d19d47fc3400c2a734add1373ba939ab12c547cd",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.5.json": "17185bd79718b743fb403e0eeff203040eb54116d2299ca08f0e4912a0b53716",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau0.6.json": "c8655355de300c86100f7cd4040218f4686993fbdaf98b0e62ee54a24a5c634f",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0.json": "9f60b8743f444d31b5e595eea5155e3d679d37ca6bb6f2c3973174ad5e6463e1",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0_icS.json": "472279322b72ed27923bb0bb8bc6e6d6de92c93c8cdf06e79511d48f066415c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.5.json": "e55a5c54f54ac64e8febf24ba3ca211ee2330f404fc5a431e0933d3410fefcc8",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau0.6.json": "095d45ee4e86a11a26e9af9ca9d6a8e8f6ba5d68ba7a9d8a48c4c71fcf7e0691",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0.json": "0745c76d5c29183cac803fd5cf82d7b91a47dd0c6c065aceacd2c28d8f477ac4",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0_icS.json": "9d3c4367b04aacf83966ef018f17b62bb49d2aa131ecf08421b5643e48406d11",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.5.json": "95cef9abaf8aece05cacd075e729e47642029c14af32b563aa7fec3458b09352",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G4.5_edm_tau1.0.json": "3136c3966caa93e48c327d07bc3638db57b1e4c1cf49f231c76ff433f5c3f5aa",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G5.5_edm_tau1.0.json": "69a73040c8a191609f287528292ee284566afe02a5dc64eae5706c9b8c6a2ed3",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau0.6.json": "8c0ef14290e9405ecb0ffda6759b68cd701c4147e0b1e5e1cac21c9d2c3c8e89",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0.json": "4fe2bdaf1ba60de36c5d5d8f3615a4bad214f0a817f7ea41f962002627877243",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0_icS.json": "6bdda3894a8aedbdfb291f78bfc41c80aa112e5187f83b4a5487880cc33d62c0",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.5.json": "96df3d05d4c789c33beb9db2b502a514d8e3440d4633438bbf70995cf5c7a19e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau2.0.json": "b4e73cd60110d9568ff2ab977ea9a6ae57b32ef590f8bacd63f75f7086d6c3c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau0.6.json": "5b750aa618f7f5931b04cefd375232b3fb9f3ab5d582d86b09a59efa8851373b",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0.json": "9f6f7cb786673ffb24fb6aea08bca219faef2eb4d39fe663deeeec0bb449ceab",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0_icS.json": "3a2828645b35cb24c3045735b3a420607fd9655556651c31d046c31b3b548112",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.5.json": "42133e74a8ae62695a9914995775cd4cc26bfc50083f67a8cceb6b8bf32aceed",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau2.0.json": "46557351a50816f96bbc6b172d478f1261a197553704dcb7384e8ee5b192236e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau0.6.json": "24686d2fe69a9162f0f3f907ba960297065a030fc4e0ac8e58d0d64296b3b295",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0.json": "0921305f3c18b7192502f373808566251ed421d801592d49233eecfb80862b3a",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0_icS.json": "908390a3f980cf803d5720f0ffdb351a6265fe314da4af4ec5af1b558574c2af",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.5.json": "dd13c0d46a61493c1e2a822ff94c88b8626f201b97e18d46fd9f0e207fd1f50e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau2.0.json": "a644ab53f4c302dd3d7ff58d99dfba9a49bca9e8635c474cda164a203fe6642a"
+      },
+      "verification": "Actual offline rendering of tracked data: old/new layouts yield identical bytes. Derived, not the missing original PNG."
+    },
+    {
+      "path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig2_tau_dependence.png",
+      "sha256": "fba9655a9a498c6c2756b4173c9c9f61cdb6360210758d372e8aea070686f665",
+      "size_bytes": 104258,
+      "renderer": "development/verification/shan_chen_edm_lycett_luo/round1/analyze.py",
+      "input_sha256": {
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau0.6.json": "ae84025cecba8b961447a123cee6adfbdd335a6853a6eaab22e76d31a894b271",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0.json": "47a203da81841c2c0948cef72729edf184a548ac96922d3f06cee8bc246a3869",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0_icS.json": "57f80befd2b2a4878f766f62d19d47fc3400c2a734add1373ba939ab12c547cd",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.5.json": "17185bd79718b743fb403e0eeff203040eb54116d2299ca08f0e4912a0b53716",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau0.6.json": "c8655355de300c86100f7cd4040218f4686993fbdaf98b0e62ee54a24a5c634f",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0.json": "9f60b8743f444d31b5e595eea5155e3d679d37ca6bb6f2c3973174ad5e6463e1",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0_icS.json": "472279322b72ed27923bb0bb8bc6e6d6de92c93c8cdf06e79511d48f066415c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.5.json": "e55a5c54f54ac64e8febf24ba3ca211ee2330f404fc5a431e0933d3410fefcc8",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau0.6.json": "095d45ee4e86a11a26e9af9ca9d6a8e8f6ba5d68ba7a9d8a48c4c71fcf7e0691",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0.json": "0745c76d5c29183cac803fd5cf82d7b91a47dd0c6c065aceacd2c28d8f477ac4",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0_icS.json": "9d3c4367b04aacf83966ef018f17b62bb49d2aa131ecf08421b5643e48406d11",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.5.json": "95cef9abaf8aece05cacd075e729e47642029c14af32b563aa7fec3458b09352",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G4.5_edm_tau1.0.json": "3136c3966caa93e48c327d07bc3638db57b1e4c1cf49f231c76ff433f5c3f5aa",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G5.5_edm_tau1.0.json": "69a73040c8a191609f287528292ee284566afe02a5dc64eae5706c9b8c6a2ed3",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau0.6.json": "8c0ef14290e9405ecb0ffda6759b68cd701c4147e0b1e5e1cac21c9d2c3c8e89",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0.json": "4fe2bdaf1ba60de36c5d5d8f3615a4bad214f0a817f7ea41f962002627877243",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0_icS.json": "6bdda3894a8aedbdfb291f78bfc41c80aa112e5187f83b4a5487880cc33d62c0",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.5.json": "96df3d05d4c789c33beb9db2b502a514d8e3440d4633438bbf70995cf5c7a19e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau2.0.json": "b4e73cd60110d9568ff2ab977ea9a6ae57b32ef590f8bacd63f75f7086d6c3c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau0.6.json": "5b750aa618f7f5931b04cefd375232b3fb9f3ab5d582d86b09a59efa8851373b",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0.json": "9f6f7cb786673ffb24fb6aea08bca219faef2eb4d39fe663deeeec0bb449ceab",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0_icS.json": "3a2828645b35cb24c3045735b3a420607fd9655556651c31d046c31b3b548112",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.5.json": "42133e74a8ae62695a9914995775cd4cc26bfc50083f67a8cceb6b8bf32aceed",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau2.0.json": "46557351a50816f96bbc6b172d478f1261a197553704dcb7384e8ee5b192236e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau0.6.json": "24686d2fe69a9162f0f3f907ba960297065a030fc4e0ac8e58d0d64296b3b295",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0.json": "0921305f3c18b7192502f373808566251ed421d801592d49233eecfb80862b3a",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0_icS.json": "908390a3f980cf803d5720f0ffdb351a6265fe314da4af4ec5af1b558574c2af",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.5.json": "dd13c0d46a61493c1e2a822ff94c88b8626f201b97e18d46fd9f0e207fd1f50e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau2.0.json": "a644ab53f4c302dd3d7ff58d99dfba9a49bca9e8635c474cda164a203fe6642a"
+      },
+      "verification": "Actual offline rendering of tracked data: old/new layouts yield identical bytes. Derived, not the missing original PNG."
+    },
+    {
+      "path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig3_profiles.png",
+      "sha256": "0ff537b3c08bf82c95197986badc12bb33c8628d7a8973e79d7cd61645959ec0",
+      "size_bytes": 112074,
+      "renderer": "development/verification/shan_chen_edm_lycett_luo/round1/analyze.py",
+      "input_sha256": {
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau0.6.json": "ae84025cecba8b961447a123cee6adfbdd335a6853a6eaab22e76d31a894b271",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0.json": "47a203da81841c2c0948cef72729edf184a548ac96922d3f06cee8bc246a3869",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0_icS.json": "57f80befd2b2a4878f766f62d19d47fc3400c2a734add1373ba939ab12c547cd",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.5.json": "17185bd79718b743fb403e0eeff203040eb54116d2299ca08f0e4912a0b53716",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau0.6.json": "c8655355de300c86100f7cd4040218f4686993fbdaf98b0e62ee54a24a5c634f",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0.json": "9f60b8743f444d31b5e595eea5155e3d679d37ca6bb6f2c3973174ad5e6463e1",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0_icS.json": "472279322b72ed27923bb0bb8bc6e6d6de92c93c8cdf06e79511d48f066415c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.5.json": "e55a5c54f54ac64e8febf24ba3ca211ee2330f404fc5a431e0933d3410fefcc8",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau0.6.json": "095d45ee4e86a11a26e9af9ca9d6a8e8f6ba5d68ba7a9d8a48c4c71fcf7e0691",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0.json": "0745c76d5c29183cac803fd5cf82d7b91a47dd0c6c065aceacd2c28d8f477ac4",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0_icS.json": "9d3c4367b04aacf83966ef018f17b62bb49d2aa131ecf08421b5643e48406d11",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.5.json": "95cef9abaf8aece05cacd075e729e47642029c14af32b563aa7fec3458b09352",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G4.5_edm_tau1.0.json": "3136c3966caa93e48c327d07bc3638db57b1e4c1cf49f231c76ff433f5c3f5aa",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G5.5_edm_tau1.0.json": "69a73040c8a191609f287528292ee284566afe02a5dc64eae5706c9b8c6a2ed3",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau0.6.json": "8c0ef14290e9405ecb0ffda6759b68cd701c4147e0b1e5e1cac21c9d2c3c8e89",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0.json": "4fe2bdaf1ba60de36c5d5d8f3615a4bad214f0a817f7ea41f962002627877243",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0_icS.json": "6bdda3894a8aedbdfb291f78bfc41c80aa112e5187f83b4a5487880cc33d62c0",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.5.json": "96df3d05d4c789c33beb9db2b502a514d8e3440d4633438bbf70995cf5c7a19e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau2.0.json": "b4e73cd60110d9568ff2ab977ea9a6ae57b32ef590f8bacd63f75f7086d6c3c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau0.6.json": "5b750aa618f7f5931b04cefd375232b3fb9f3ab5d582d86b09a59efa8851373b",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0.json": "9f6f7cb786673ffb24fb6aea08bca219faef2eb4d39fe663deeeec0bb449ceab",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0_icS.json": "3a2828645b35cb24c3045735b3a420607fd9655556651c31d046c31b3b548112",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.5.json": "42133e74a8ae62695a9914995775cd4cc26bfc50083f67a8cceb6b8bf32aceed",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau2.0.json": "46557351a50816f96bbc6b172d478f1261a197553704dcb7384e8ee5b192236e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau0.6.json": "24686d2fe69a9162f0f3f907ba960297065a030fc4e0ac8e58d0d64296b3b295",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0.json": "0921305f3c18b7192502f373808566251ed421d801592d49233eecfb80862b3a",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0_icS.json": "908390a3f980cf803d5720f0ffdb351a6265fe314da4af4ec5af1b558574c2af",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.5.json": "dd13c0d46a61493c1e2a822ff94c88b8626f201b97e18d46fd9f0e207fd1f50e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau2.0.json": "a644ab53f4c302dd3d7ff58d99dfba9a49bca9e8635c474cda164a203fe6642a"
+      },
+      "verification": "Actual offline rendering of tracked data: old/new layouts yield identical bytes. Derived, not the missing original PNG."
+    },
+    {
+      "path": "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/fig4_error_bars.png",
+      "sha256": "9afd99d5c5fc30bd4d64f911f979f2552e655a113cb9902a77f08f8eef6118c0",
+      "size_bytes": 53275,
+      "renderer": "development/verification/shan_chen_edm_lycett_luo/round1/analyze.py",
+      "input_sha256": {
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau0.6.json": "ae84025cecba8b961447a123cee6adfbdd335a6853a6eaab22e76d31a894b271",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0.json": "47a203da81841c2c0948cef72729edf184a548ac96922d3f06cee8bc246a3869",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.0_icS.json": "57f80befd2b2a4878f766f62d19d47fc3400c2a734add1373ba939ab12c547cd",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_edm_tau1.5.json": "17185bd79718b743fb403e0eeff203040eb54116d2299ca08f0e4912a0b53716",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau0.6.json": "c8655355de300c86100f7cd4040218f4686993fbdaf98b0e62ee54a24a5c634f",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0.json": "9f60b8743f444d31b5e595eea5155e3d679d37ca6bb6f2c3973174ad5e6463e1",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.0_icS.json": "472279322b72ed27923bb0bb8bc6e6d6de92c93c8cdf06e79511d48f066415c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_guo_tau1.5.json": "e55a5c54f54ac64e8febf24ba3ca211ee2330f404fc5a431e0933d3410fefcc8",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau0.6.json": "095d45ee4e86a11a26e9af9ca9d6a8e8f6ba5d68ba7a9d8a48c4c71fcf7e0691",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0.json": "0745c76d5c29183cac803fd5cf82d7b91a47dd0c6c065aceacd2c28d8f477ac4",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.0_icS.json": "9d3c4367b04aacf83966ef018f17b62bb49d2aa131ecf08421b5643e48406d11",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/cs_Gdefault_velocity_shift_tau1.5.json": "95cef9abaf8aece05cacd075e729e47642029c14af32b563aa7fec3458b09352",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G4.5_edm_tau1.0.json": "3136c3966caa93e48c327d07bc3638db57b1e4c1cf49f231c76ff433f5c3f5aa",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_G5.5_edm_tau1.0.json": "69a73040c8a191609f287528292ee284566afe02a5dc64eae5706c9b8c6a2ed3",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau0.6.json": "8c0ef14290e9405ecb0ffda6759b68cd701c4147e0b1e5e1cac21c9d2c3c8e89",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0.json": "4fe2bdaf1ba60de36c5d5d8f3615a4bad214f0a817f7ea41f962002627877243",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.0_icS.json": "6bdda3894a8aedbdfb291f78bfc41c80aa112e5187f83b4a5487880cc33d62c0",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau1.5.json": "96df3d05d4c789c33beb9db2b502a514d8e3440d4633438bbf70995cf5c7a19e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_edm_tau2.0.json": "b4e73cd60110d9568ff2ab977ea9a6ae57b32ef590f8bacd63f75f7086d6c3c9",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau0.6.json": "5b750aa618f7f5931b04cefd375232b3fb9f3ab5d582d86b09a59efa8851373b",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0.json": "9f6f7cb786673ffb24fb6aea08bca219faef2eb4d39fe663deeeec0bb449ceab",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.0_icS.json": "3a2828645b35cb24c3045735b3a420607fd9655556651c31d046c31b3b548112",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau1.5.json": "42133e74a8ae62695a9914995775cd4cc26bfc50083f67a8cceb6b8bf32aceed",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_guo_tau2.0.json": "46557351a50816f96bbc6b172d478f1261a197553704dcb7384e8ee5b192236e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau0.6.json": "24686d2fe69a9162f0f3f907ba960297065a030fc4e0ac8e58d0d64296b3b295",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0.json": "0921305f3c18b7192502f373808566251ed421d801592d49233eecfb80862b3a",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.0_icS.json": "908390a3f980cf803d5720f0ffdb351a6265fe314da4af4ec5af1b558574c2af",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau1.5.json": "dd13c0d46a61493c1e2a822ff94c88b8626f201b97e18d46fd9f0e207fd1f50e",
+        "development/verification/shan_chen_edm_lycett_luo/round1/artifacts/cases/exp_Gdefault_velocity_shift_tau2.0.json": "a644ab53f4c302dd3d7ff58d99dfba9a49bca9e8635c474cda164a203fe6642a"
+      },
+      "verification": "Actual offline rendering of tracked data: old/new layouts yield identical bytes. Derived, not the missing original PNG."
+    },
+    {
+      "path": "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/fig1_laplace_tau_coexistence.png",
+      "sha256": "8e2de0fe4bf8eed8b9f4ee4143fa732195f6606699e7cc32a7bd82e344c92b21",
+      "size_bytes": 145362,
+      "renderer": "development/verification/shan_chen_edm_lycett_luo/round2/local_sweep.py::make_figures",
+      "input_sha256": {
+        "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/compact.json": "54d6ea7eb9426f1b30efae5c3daae69265d87b6dbe8f78f0d4ebed7ea058f987"
+      },
+      "verification": "Actual offline rendering of tracked data: old/new layouts yield identical bytes. Derived, not the missing original PNG."
+    },
+    {
+      "path": "development/audit/m21400/fig1_m21378_audit.png",
+      "sha256": "a4378d0a4e73b2fd7114d601ed311b2179529ffd4de40bf689787154baf34d03",
+      "size_bytes": 189045,
+      "renderer": "development/verification/shan_chen_edm_lycett_luo/replay_audit_figure.py (loads the unchanged development/audit/m21400/make_figure_m21378.py)",
+      "input_sha256": {
+        "development/verification/shan_chen_edm_lycett_luo/round2/artifacts/compact.json": "54d6ea7eb9426f1b30efae5c3daae69265d87b6dbe8f78f0d4ebed7ea058f987",
+        "development/audit/m21400/probe_m21378_results.json": "4aafe7ca8674cb7ff0293165638b9cf9e0604ba3d6a5cad57c9aef4a0719c994"
+      },
+      "verification": "Actual offline rendering of tracked data: old/new layouts yield identical bytes. Derived, not the missing original PNG."
+    }
+  ],
+  "historical_gaps": {
+    "original_round2_png": "Checked former PR #2455 exact head af9197484d85b479e7523835b351c119b12fa884 and agent/m21378 tip 1a14396017530028dcceb77532153c703671d314: original PNG absent, compact JSON blob bddc3ab891c1d6239b0a0588991a39cbe66ccbe0 equals current main; historical audit reports binary filtering. No exact original claimed.",
+    "round1_figures": "Originally cited plots absent on main; restored from the 29 available case JSON files, no claim of identity to original images.",
+    "scientific_limits": "Historical R2 compact 21-case payload is not the full 45-case campaign; external TCLB execution unverified. Historical reviews and audit SQL remain unchanged."
+  },
+  "dependencies": {
+    "canonical_source": "src/tensorlbm/multiphase.py",
+    "historic_references": "Quoted frozen origin paths and original audit tools remain unchanged. Local read-only figure replay uses the new path adapter; full historical probes/publishing require the original checkout and were not run.",
+    "audit_figure_replay": "development/verification/shan_chen_edm_lycett_luo/replay_audit_figure.py"
+  },
+  "validation": {
+    "before": "10 + 5 targeted CPU tests passed",
+    "after": "15 targeted CPU tests passed; actual CLI help outputs identical; all six offline PNGs and R1 aggregate JSON and Markdown table byte-identical before and after; no mock or solver campaign replay; new read-only audit figure adapter calls the original frozen renderer with relocated inputs and identical PNG output",
+    "current_scientific_acceptance": "not_evaluated"
+  },
+  "deferred_sibling_candidates": [
+    {
+      "directory": "xval/XVAL-LBM-PRESSURE-TENSOR-EQUILIBRIUM-TRANSPLANT",
+      "targeted_baseline": "12 passed",
+      "reason": "Original full artifacts/xval_pressure_tensor_equilibrium/results.json is absent. Existing audit summary is not its full payload; leave renderer and case linkage untouched pending evidence recovery."
+    },
+    {
+      "directory": "xval/LBM_WALL_ORDER_PARAMETER_WETTING",
+      "targeted_baseline": "31 passed, 1 existing xfail",
+      "reason": "Historical renderer needs per-run JSONs and fields under runs/; current tree contains summary and independent audit snapshots but not raw runs. Preserve root until compatibility review."
+    }
+  ],
+  "frozen_audit_tools": [
+    {
+      "path": "development/audit/m21400/make_figure_m21378.py",
+      "sha256": "0043b23ce8688370bf10cfe06b5fecf79970b4543829d0570acd8a1e9ce3a3ae",
+      "status": "Original audit ledger requires exact historical blob; unchanged. Original paths refer to the original checkout."
+    },
+    {
+      "path": "development/audit/m21400/probe_m21378.py",
+      "sha256": "f8e4293fecbc8527ee89f1ab397def05d04e72303dbf7820913081f9b10340d3",
+      "status": "Original audit ledger requires exact historical blob; unchanged. Original paths refer to the original checkout."
+    },
+    {
+      "path": "development/audit/m21400/publish_report_m21378.py",
+      "sha256": "6bb3f0e6571dfbdaeeb99097861b27558b8a8922c2e8f6e3c36666460aee3cb1",
+      "status": "Original audit ledger requires exact historical blob; unchanged. Original paths refer to the original checkout."
+    }
+  ]
+}
