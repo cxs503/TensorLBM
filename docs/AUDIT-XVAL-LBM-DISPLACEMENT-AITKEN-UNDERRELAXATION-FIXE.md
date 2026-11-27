@@ -1,7 +1,9 @@
 # AUDIT · XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE — 独立对抗复核 + 尺度无关守卫修复
 
+> 归档索引： [Aitken 交叉验证证据和路径说明](../benchmarks/cross_validation/aitken_underrelaxation_life/README.md)。本文数值和判定为历史记录，不代表当前版本科学验收；原始图的可检索状态见索引。
+
 任务 m18271 · 仓 TensorLBM · 分支 `agent/m18271` · 复核对象 = m17727（merge `5cc7dc04`，Merge #2067）
-工件：`xval/aitken_underrelaxation_life/{scale_guard_probe.py, scale_guard_figures.py, out/scale_guard.json, out/fig5_scale_guard.png}`、
+工件：`development/verification/aitken_underrelaxation_life/{scale_guard_probe.py, scale_guard_figures.py, out/scale_guard.json, out/fig5_scale_guard.png}`、
 测试 `tests/test_fsi_aitken_guard_scale.py` · 数字全部由脚本写入 JSON，本文表格由 JSON 程序化生成（零手抄）。
 判据：owner 精度标准 <15%（报告纪律要求显式回答 <3%）。
 
@@ -34,7 +36,7 @@ m17727 的交付（位移 Aitken 不动点对标 + 把 `fsi_partitioned.AitkenRe
 
 ### F1 [High] 绝对下限把发散阈值移位而非消除（m17727 的核心主张被证伪一部分）
 
-复现：`PYTHONPATH=src python3 xval/aitken_underrelaxation_life/scale_guard_probe.py`
+复现：`PYTHONPATH=src python3 development/verification/aitken_underrelaxation_life/scale_guard_probe.py`
 （`out/scale_guard.json.driver_ladder`；列 = 平均子迭代/步 · 收敛解对 monolithic Newmark 的最大相对误差 %）
 
 | β_eff | 默认 ω_min=0（本单） iters / err_mono% | m17727 floor 1e-4 | 原始 floor 5e-2 | clip=False |
@@ -115,13 +117,13 @@ G2b 旧 floor 复现、G3 守卫语义/向后兼容、G4 β=1e6 无停滞（对 
 | `src/tensorlbm/fsi_added_mass.py` | 同一守卫；默认 `omega_min: 1e-4 → 0.0`；校验放宽为 `0 <= omega_min <= omega0`；docstring 写明"返回增量"契约 |
 | `src/tensorlbm/fsi_partitioned_stability.py` | 同一守卫；默认 `omega_min: 1e-3 → 0.0`；`abs()` 语义保留并注明 |
 | `tests/test_fsi_aitken_guard_scale.py` | 新增 9 个断言点（G1/G2/G2b/G3/G4），含修复前基线复现 |
-| `xval/aitken_underrelaxation_life/scale_guard_probe.py`, `scale_guard_figures.py` | 复现/作图管线；`out/scale_guard.json`、`out/fig5_scale_guard.png` |
+| `development/verification/aitken_underrelaxation_life/scale_guard_probe.py`, `scale_guard_figures.py` | 复现/作图管线；`out/scale_guard.json`、`out/fig5_scale_guard.png` |
 
 向后兼容：显式传 `omega_min=0.05/1e-4/1e-3` 的三条历史臂行为不变（表 1/表 2 可证），21 个 FSI 调用点全部用默认值。
 
 ## 4. 结果图
 
-`xval/aitken_underrelaxation_life/out/fig5_scale_guard.png`
+`development/verification/aitken_underrelaxation_life/out/fig5_scale_guard.png`
 （a）四条臂的「每步子迭代数 vs β_eff」对数图，标出 β=39 与 β=9999 两条理论阈值线，发散点用红叉；（b）三份副本
 回采因子 vs 解析 `ω*=1/(1+β)`，修复后三点重合（相对偏差 0）。
 
@@ -129,7 +131,7 @@ G2b 旧 floor 复现、G3 守卫语义/向后兼容、G4 β=1e6 无停滞（对 
 
 - `PYTHONPATH=src python3 -m pytest tests/test_fsi_aitken_guard_scale.py -q` → **9 passed**（0.54 s）
 - `PYTHONPATH=src python3 -m pytest tests/test_fsi_aitken_life_xval.py tests/test_fsi_aitken_guard_scale.py tests/test_fsi_partitioned.py tests/test_fsi_partitioned_stability.py tests/test_fsi_added_mass.py -q` → **101 passed**（24.6 s，无回归）
-- `PYTHONPATH=src python3 xval/aitken_underrelaxation_life/scale_guard_probe.py && ... scale_guard_figures.py` → JSON 25 KB + PNG
+- `PYTHONPATH=src python3 development/verification/aitken_underrelaxation_life/scale_guard_probe.py && ... scale_guard_figures.py` → JSON 25 KB + PNG
 - 容量纪律：本单全部为标量 1-DOF 计算（全套 probe < 1 s），未起重算力进程（本机 load15 ≈ 118 ≥ 100），未占集群。
 
 ## 6. 误差判定（是否 <3%）

@@ -1,0 +1,333 @@
+{
+  "scope": "Retire a historical Aitken interface cross-validation directory; keep the published report paths and test reference import compatible. Numerical algorithms, parameters and assertions are unchanged.",
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "prerequisite": "#3048 exact candidate, not yet merged",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "BB",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 42
+  },
+  "candidate_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 42
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 41
+  },
+  "retired_second_level_directories": [
+    "xval/aitken_underrelaxation_life"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/aitken_underrelaxation_life/figures.py",
+      "new_path": "development/verification/aitken_underrelaxation_life/figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "cde3f0869b110f1931efd7b2ecb3b3ebcc24387a",
+      "original_sha256": "6c9d081c3295d7e1affe7866d7ad0844cd59a40f18c1b5c700fb2f9cf2824f56",
+      "size_bytes": 5853,
+      "current_sha256": "6c9d081c3295d7e1affe7866d7ad0844cd59a40f18c1b5c700fb2f9cf2824f56",
+      "current_size_bytes": 5853,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/make_report.py",
+      "new_path": "development/verification/aitken_underrelaxation_life/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "d5faabb75099e7bf016b2374c395316eaebb4adf",
+      "original_sha256": "cc6ce94ff3192d3eba2e4caf297239bb72ca74e74ec6815f96b699f56225b5b1",
+      "size_bytes": 17547,
+      "current_sha256": "f9fb984810da4447b7756024c8585412f3a8375c92bcd83594bf14d3cce9efc8",
+      "current_size_bytes": 17903,
+      "byte_identical": false,
+      "path_only_edit": {
+        "changes": [
+          "repository root path depth",
+          "historical path literals",
+          "archive navigation in report text"
+        ],
+        "reverse_path_edits_match_original": true
+      }
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/out/cases.csv",
+      "new_path": "development/verification/aitken_underrelaxation_life/out/cases.csv",
+      "git_mode": "100644",
+      "original_git_blob": "d37cd945feac98b367a2daccab6326d0ee541a86",
+      "original_sha256": "bfc42d991c95bfa5d5010d9d126d6aabf1680bfc61acbe503d861a4da141f376",
+      "size_bytes": 808,
+      "current_sha256": "bfc42d991c95bfa5d5010d9d126d6aabf1680bfc61acbe503d861a4da141f376",
+      "current_size_bytes": 808,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/out/results.json",
+      "new_path": "development/verification/aitken_underrelaxation_life/out/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "2e44c22ddc4aa7002ab3da63456a12d4a809c2f7",
+      "original_sha256": "0a6bb29560541a85b05948c85f1fa42d24b71706b7a6acc86b05b5e969d7d129",
+      "size_bytes": 1725898,
+      "current_sha256": "0a6bb29560541a85b05948c85f1fa42d24b71706b7a6acc86b05b5e969d7d129",
+      "current_size_bytes": 1725898,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/out/scale_guard.json",
+      "new_path": "development/verification/aitken_underrelaxation_life/out/scale_guard.json",
+      "git_mode": "100644",
+      "original_git_blob": "97fd3816068d810270507628e70dbf28cf18a968",
+      "original_sha256": "73ce393e57112c8fb98f67eccdb159dbf456de0bc4689c95ebc850c05977d5d2",
+      "size_bytes": 30741,
+      "current_sha256": "73ce393e57112c8fb98f67eccdb159dbf456de0bc4689c95ebc850c05977d5d2",
+      "current_size_bytes": 30741,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/out/summary.csv",
+      "new_path": "development/verification/aitken_underrelaxation_life/out/summary.csv",
+      "git_mode": "100644",
+      "original_git_blob": "c8cc43960af163f5cafdf0f8f86505483840a2be",
+      "original_sha256": "06a018687f7b0a685a020a217da2484b84ab0809ccb7031d1cc9a955a828607d",
+      "size_bytes": 10128,
+      "current_sha256": "06a018687f7b0a685a020a217da2484b84ab0809ccb7031d1cc9a955a828607d",
+      "current_size_bytes": 10128,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/predeclared.json",
+      "new_path": "development/verification/aitken_underrelaxation_life/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "d050758702606eebeb0b8a80549701b463757e3c",
+      "original_sha256": "af62b166d7ea74341bea3e4a84df146ef11a85f24a15dd47e0d3efedef84608c",
+      "size_bytes": 8895,
+      "current_sha256": "af62b166d7ea74341bea3e4a84df146ef11a85f24a15dd47e0d3efedef84608c",
+      "current_size_bytes": 8895,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/reference.py",
+      "new_path": "development/verification/aitken_underrelaxation_life/reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "cfe6bd989fce855376e2ce22b44ad3d34a779045",
+      "original_sha256": "712441df8e019e4caa5479cd4e920e242663c014eade9cfb6cec3e68724fd25f",
+      "size_bytes": 9238,
+      "current_sha256": "712441df8e019e4caa5479cd4e920e242663c014eade9cfb6cec3e68724fd25f",
+      "current_size_bytes": 9238,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/run_xval.py",
+      "new_path": "development/verification/aitken_underrelaxation_life/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "bc1b8135dd1ae5efdadc6f5d4cb7cf287bd1851f",
+      "original_sha256": "a20612849b6aae71857b761bd0ccb6f33e06768f7459119934b116d4c4347e8b",
+      "size_bytes": 16681,
+      "current_sha256": "9c9f6b2ef8778063e41c4d78f3cc1f92a6b02113720e021a962789360fceaef9",
+      "current_size_bytes": 16707,
+      "byte_identical": false,
+      "path_only_edit": {
+        "changes": [
+          "repository root path depth",
+          "historical path literals"
+        ],
+        "reverse_path_edits_match_original": true
+      }
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/scale_guard_figures.py",
+      "new_path": "development/verification/aitken_underrelaxation_life/scale_guard_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "8a17b02b1b791409691cf271130efdf9bcdd1eeb",
+      "original_sha256": "a614939cfd93ec92b957f84a9c75fa89f4731ef42670b44f7042f6d23a264faa",
+      "size_bytes": 3735,
+      "current_sha256": "a614939cfd93ec92b957f84a9c75fa89f4731ef42670b44f7042f6d23a264faa",
+      "current_size_bytes": 3735,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/aitken_underrelaxation_life/scale_guard_probe.py",
+      "new_path": "development/verification/aitken_underrelaxation_life/scale_guard_probe.py",
+      "git_mode": "100644",
+      "original_git_blob": "2ba046f4f9918ea2910c5ec12d077ec88e3a9364",
+      "original_sha256": "ee4e53494c4e46c661c7fa8482569c52056a7191bd7c2e39e8451e810c24d42d",
+      "size_bytes": 7969,
+      "current_sha256": "ee4e53494c4e46c661c7fa8482569c52056a7191bd7c2e39e8451e810c24d42d",
+      "current_size_bytes": 7969,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXED-POINT.md",
+      "new_path": "docs/XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXED-POINT.md",
+      "git_mode": "100644",
+      "original_git_blob": "b93a12af0e91ecbc34b6a62ea3db19711bf21542",
+      "original_sha256": "85284b88865056d9bda169117438d835ac9ae8817b85747590ba4d8293a587df",
+      "size_bytes": 16073,
+      "current_sha256": "be2d1a5dcc750dc98456bb8d8276fa115dce50c90329f23f78ff98ac421d60ee",
+      "current_size_bytes": 16422,
+      "byte_identical": false,
+      "change": "path literals and archive navigation; all historical numbers/thresholds retained"
+    },
+    {
+      "old_path": "docs/AUDIT-XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE.md",
+      "new_path": "docs/AUDIT-XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE.md",
+      "git_mode": "100644",
+      "original_git_blob": "33c5da54bc5a240e12f7e160462c26f3b71fcf77",
+      "original_sha256": "6083025882b2bff645cc734414f2a98e77d623b2608236af507e10551a4bfcda",
+      "size_bytes": 12671,
+      "current_sha256": "79eaf3f25d24fa7e19327f968e599a9b2d6bb07863c123783772c2f74c678d22",
+      "current_size_bytes": 13020,
+      "byte_identical": false,
+      "change": "path literals and archive navigation; all historical numbers/thresholds retained"
+    },
+    {
+      "old_path": "src/tensorlbm/fsi_partitioned.py",
+      "new_path": "src/tensorlbm/fsi_partitioned.py",
+      "git_mode": "100644",
+      "original_git_blob": "0223faa66fd987644f03106a35eae5967227af77",
+      "original_sha256": "eb6b8aef0c8d618a3a23fb2b4aa79e17292c054757876aed5d568e384f8080f6",
+      "size_bytes": 33093,
+      "current_sha256": "97d25c86551458cbae2639a190e15e34e558cdfe8fe14b76cfe9ae5003c23a0d",
+      "current_size_bytes": 33133,
+      "byte_identical": false,
+      "change": "documentation path literal only"
+    },
+    {
+      "old_path": "src/tensorlbm/fsi_added_mass.py",
+      "new_path": "src/tensorlbm/fsi_added_mass.py",
+      "git_mode": "100644",
+      "original_git_blob": "7bf320d024232d8ab842c23438dc4fee82f60814",
+      "original_sha256": "75b04d89149f37c50e11722b22801dcfe8c5f849f9b98f944f8f0e45f996d7f7",
+      "size_bytes": 39199,
+      "current_sha256": "a87be5605de48f3558561e27d8ab065fd521af384ada0e5bd413f60ed5c691e4",
+      "current_size_bytes": 39219,
+      "byte_identical": false,
+      "change": "documentation path literal only"
+    },
+    {
+      "old_path": "src/tensorlbm/fsi_partitioned_stability.py",
+      "new_path": "src/tensorlbm/fsi_partitioned_stability.py",
+      "git_mode": "100644",
+      "original_git_blob": "caaf20a10baa43e20437708757735cd7305ad9b0",
+      "original_sha256": "bc308fbe74a7ba17dcc6a0d05bdb2d655afdbb1957354360e8c1afc71d9b8877",
+      "size_bytes": 37034,
+      "current_sha256": "19b68d5d067a2aa0f51b3d63938b508f08d0b1d672c10b36a2d91b95a6993f40",
+      "current_size_bytes": 37054,
+      "byte_identical": false,
+      "change": "documentation path literal only"
+    },
+    {
+      "old_path": "tests/test_fsi_aitken_guard_scale.py",
+      "new_path": "tests/test_fsi_aitken_guard_scale.py",
+      "git_mode": "100644",
+      "original_git_blob": "f6333c5093db7b1a54935561d2d34093a6ecbbf8",
+      "original_sha256": "601690933fe944bacea8330dcd1d430c21162e7106c8be663bb149ff4bb472b6",
+      "size_bytes": 7437,
+      "current_sha256": "efebdccb5641fee12246298b1c723b8f668a17697466b5b2e3f331babc426337",
+      "current_size_bytes": 7460,
+      "byte_identical": false,
+      "change": "reference import path only; test assertions unchanged"
+    },
+    {
+      "old_path": "tests/test_fsi_aitken_life_xval.py",
+      "new_path": "tests/test_fsi_aitken_life_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "0147f2450f092b910c3ece0fc719e87db8eeb132",
+      "original_sha256": "1e294ced0f3fe9a94c9f20c11512c72ab1e92e0bb23aff5e9d26b7561d4dc5a5",
+      "size_bytes": 7596,
+      "current_sha256": "9ecee2801ed941167a3f669a2bcc9875ee9192ed7030d5ff56d2e0ff838a0e0e",
+      "current_size_bytes": 7619,
+      "byte_identical": false,
+      "change": "reference import path only; test assertions unchanged"
+    }
+  ],
+  "compatibility": {
+    "historical_audit": "development/audit/m17828/verdict_m17828.sql",
+    "historical_audit_sha256": "2de01b63ae65adffda5182d21b95e119816eee7df2c2d7ea542ce2dcf85f5883",
+    "updated_consumers": [
+      "docs/XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXED-POINT.md",
+      "docs/AUDIT-XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE.md",
+      "src/tensorlbm/fsi_partitioned.py",
+      "src/tensorlbm/fsi_added_mass.py",
+      "src/tensorlbm/fsi_partitioned_stability.py",
+      "tests/test_fsi_aitken_guard_scale.py",
+      "tests/test_fsi_aitken_life_xval.py"
+    ],
+    "original_tree": "ce5a547b7f87896ce220ca90ec3acb8ffe247cde",
+    "registry_id": "xval:aitken_underrelaxation_life",
+    "reference_scan_scope": "Exact literal and segmented test import path scanned at actual main and full local integrated preview. All maintained references updated; original historical SQL remains unchanged. The original preregistration also retains its historical path literals byte-for-byte.",
+    "report_writer": "Published target and /tmp/report.json contract retained. Source generator is historical and needs absent figure files; do not run it against protected historical evidence or published docs.",
+    "original_outputs": "out/results.json, out/scale_guard.json, out/cases.csv and out/summary.csv retained byte-for-byte."
+  },
+  "evidence_gaps": {
+    "missing_original_figures": [
+      "xval/aitken_underrelaxation_life/out/fig1_iterations_vs_beta.png",
+      "xval/aitken_underrelaxation_life/out/fig2_omega_vs_beta.png",
+      "xval/aitken_underrelaxation_life/out/fig3_history_and_residual_beta25.png",
+      "xval/aitken_underrelaxation_life/out/fig4_dt_sensitivity.png",
+      "xval/aitken_underrelaxation_life/out/fig5_scale_guard.png"
+    ],
+    "scope": "Not found by exact filename in actual main or path history in all fetched refs; absence does not establish that no external copy exists. No substitute images or simulation outputs generated."
+  },
+  "science": {
+    "historical_reference_scope": "Independent method transcription and scalar linear 1-DOF reference (not a direct external solver execution); historical claims remain historical.",
+    "original_result_rows": 42,
+    "current_acceptance": "not_evaluated",
+    "full_replay_performed": false
+  },
+  "migration_compatibility_verification": {
+    "baseline_revision": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+    "check": "python -m pytest tests/test_fsi_aitken_guard_scale.py tests/test_fsi_aitken_life_xval.py -q",
+    "before": {
+      "passed": 17,
+      "failed": 0
+    },
+    "after": {
+      "passed": 17,
+      "failed": 0
+    },
+    "runner_imports": "run_xval and scale_guard_probe imported without executing main; canonical src/tensorlbm and relocated reference module resolved; output root unchanged relative to campaign.",
+    "scope": "Compatibility regressions only, not a new scientific campaign; no full replay or mock."
+  }
+}

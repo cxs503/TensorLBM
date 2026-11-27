@@ -163,7 +163,7 @@ class AitkenRelaxation:
     via :func:`tensorlbm.fsi_partitioned.clamp_aitken_factor`.  A positive
     absolute floor diverges for ``beta_eff > 1/omega_min - 1`` -- the former
     default ``1e-4`` therefore failed at ``beta_eff = 2e4``
-    (``xval/aitken_underrelaxation_life/out/scale_guard.json``).
+    (``development/verification/aitken_underrelaxation_life/out/scale_guard.json``).
 
     ``step`` returns the *increment* ``omega * r`` (not ``state + omega r``),
     unlike its sibling in :mod:`tensorlbm.fsi_partitioned`.

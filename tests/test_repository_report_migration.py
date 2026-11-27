@@ -982,6 +982,51 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for target in evidence.glob("sdaa_suboff_sail_resistance*.json"):
             self.assertIn(f"](evidence/sdaa/{target.name})", readme)
 
+    def test_aitken_archive_paths_and_original_evidence(self):
+        ledger_path = LEDGER_PATH.parent / "aitken-xval-archive-2026-11-27.json"
+        ledger = json.loads(ledger_path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            paths = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                     if row["verification"] == ledger_path.relative_to(REPO).as_posix()}
+        self.assertEqual(paths, {entry["old_path"]: entry["new_path"] for entry in ledger["entries"]})
+        self.assertEqual(len(paths), 11)
+        self.assertEqual(sum(entry["byte_identical"] for entry in ledger["entries"]), 9)
+        for entry in ledger["entries"]:
+            self.assert_fingerprint(REPO / entry["new_path"], entry["current_sha256"],
+                                    entry["current_size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[0], entry["git_mode"])
+            if entry["byte_identical"]:
+                self.assertEqual(index[1], entry["original_git_blob"])
+            self.assertFalse((REPO / entry["old_path"]).exists())
+        self.assertFalse((REPO / ledger["retired_second_level_directories"][0]).exists())
+        self.assertEqual(len(ledger["evidence_gaps"]["missing_original_figures"]), 5)
+        self.assertFalse(ledger["science"]["full_replay_performed"])
+        # The ledger pins the migration-time hashes; maintained consumers may
+        # evolve independently. Enforce path contracts, not permanent solver hashes.
+        for entry in ledger["consumer_edits"]:
+            consumer = REPO / entry["new_path"]
+            self.assertTrue(consumer.is_file())
+            self.assertNotIn("xval/aitken_underrelaxation_life", consumer.read_text())
+        for path in ("tests/test_fsi_aitken_guard_scale.py", "tests/test_fsi_aitken_life_xval.py"):
+            self.assertIn('"development", "verification", "aitken_underrelaxation_life"',
+                          (REPO / path).read_text())
+        index = REPO / "benchmarks/cross_validation/aitken_underrelaxation_life/README.md"
+        for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+            self.assertTrue((index.parent / link).is_file(), link)
+        result = subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--case", "xval:aitken_underrelaxation_life"],
+            cwd=REPO, text=True,
+        )
+        (case,) = json.loads(result)["cases"]
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        self.assertEqual(case["variants"][0]["results"], [
+            "development/verification/aitken_underrelaxation_life/out/results.json",
+            "development/verification/aitken_underrelaxation_life/out/scale_guard.json",
+        ])
+
     def test_docs_process_directories_are_retired_with_exact_provenance(self):
         ledger_path = LEDGER_PATH.parent / "docs-process-directories-2026-11-22.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

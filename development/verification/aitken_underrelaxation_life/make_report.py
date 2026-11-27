@@ -7,7 +7,7 @@ import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 OUT = os.path.join(HERE, "out")
 DOC = os.path.join(ROOT, "docs", "XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXED-POINT.md")
 
@@ -113,7 +113,10 @@ it50_old = get[("ours_old_default", 50.0)]
 
 doc = f"""# XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE — 位移 Aitken 欠松弛不动点（TensorLBM vs joconnor22/LIFE）
 
-任务 m17727 · 仓 TensorLBM · 分支 `agent/m17727` · 工件目录 `xval/aitken_underrelaxation_life/`
+任务 m17727 · 仓 TensorLBM · 分支 `agent/m17727` · 工件目录 `development/verification/aitken_underrelaxation_life/`
+
+> 归档索引： [Aitken 交叉验证证据和路径说明](../benchmarks/cross_validation/aitken_underrelaxation_life/README.md)。本文数值和判定为历史记录，不代表当前版本科学验收；原始图的可检索状态见索引。
+
 判据：owner 精度标准 <15%。
 
 ## ① 问题与参考实现出处
@@ -137,7 +140,7 @@ Newmark 质量 `m_eff = m_s + cγΔt + kβ_NΔt²` 全量重解（= LIFE 的 exp
 
 | 组分 | 路径 | 说明 |
 |---|---|---|
-| 参考臂 LIFE | `xval/aitken_underrelaxation_life/reference.py::life_fixed_point_step` | **独立代码路径**，以**位移**为界面变量，二阶外推预测器，`k≥2` 起 Aitken，**不裁剪**，残差按 `ref_L√DOF` 归一，`MAXIT=20` |
+| 参考臂 LIFE | `development/verification/aitken_underrelaxation_life/reference.py::life_fixed_point_step` | **独立代码路径**，以**位移**为界面变量，二阶外推预测器，`k≥2` 起 Aitken，**不裁剪**，残差按 `ref_L√DOF` 归一，`MAXIT=20` |
 | REF-D（离散真值） | `reference.py::monolithic_newmark` | 单次求解用**总质量** `m_s+m_a` 的 Newmark（耦合系统的离散精确解） |
 | REF-C（连续真值） | `reference.py::analytic_sdof` | `(m_s+m_a)d̈+cḋ+kd=F0 sin(Ωt)` 的闭式解（欠阻尼，静止初值） |
 | 被测臂 | `tensorlbm.fsi_partitioned.solve_partitioned_1d` + `AitkenRelaxation` | 界面变量为**加速度**；本单新增 `predictor∈{{none,linear,quadratic}}`（LIFE 的 2.5/−2/0.5）与 `ref_scale`（相对残差）两个可选参数，并为 `AitkenRelaxation` 增加 `clip` 开关 |
@@ -238,11 +241,11 @@ K2 ≤ {max(get[(a,b)]['err_vs_analytic_pct'] for a in arms for b in betas if ge
 3. **1-DOF 限制**：标量 Aitken 对线性标量映射 2–3 步精确收敛，本单迭代数是**下界**；多自由度 FEM 结构下标量因子无法消掉多模态误差，迭代数会显著上升（LIFE 的真实场景）。
 4. **OSS 二进制不可执行**（沙箱无外网）—— 对标物是冻结方法摘要 + 独立转写，故"一致"验证的是**算法**而非 OSS 可执行文件；已写入 `predeclared.json.interpretation_limits`。
 
-**产物清单**：`xval/aitken_underrelaxation_life/{{predeclared.json, reference.py, run_xval.py, figures.py,
+**产物清单**：`development/verification/aitken_underrelaxation_life/{{predeclared.json, reference.py, run_xval.py, figures.py,
 out/{{results.json, summary.csv, cases.csv, fig1..fig4.png}}}}`；代码改动 `src/tensorlbm/fsi_partitioned.py`（predictor/ref_scale/clip + 默认下限修复）；
 测试 `tests/test_fsi_aitken_life_xval.py`（T1 递推恒等、T2 预测器不亏、T3 β=50 修复前后对照、T4 与 LIFE 转写一致）。
 
-**复现**：`PYTHONPATH=src python3 xval/aitken_underrelaxation_life/run_xval.py && PYTHONPATH=src python3 xval/aitken_underrelaxation_life/figures.py &&
+**复现**：`PYTHONPATH=src python3 development/verification/aitken_underrelaxation_life/run_xval.py && PYTHONPATH=src python3 development/verification/aitken_underrelaxation_life/figures.py &&
 PYTHONPATH=src python3 -m pytest tests/test_fsi_aitken_life_xval.py -q`
 
 **生态摩擦**：①`tensor/knowledge/search` 引擎 8021 offline（`engine_offline`），`oss_solutions`/`oss_inventory` 表对任务账号无读权限，

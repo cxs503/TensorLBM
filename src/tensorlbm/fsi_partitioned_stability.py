@@ -525,7 +525,7 @@ class AitkenRelaxation:
     ``omega_min = 0`` (default) is scale free (positivity only, shared guard
     :func:`tensorlbm.fsi_partitioned.clamp_aitken_factor`); the former
     absolute floor ``1e-3`` diverged for ``beta_eff >= 4e3``
-    (``xval/aitken_underrelaxation_life/out/scale_guard.json``).
+    (``development/verification/aitken_underrelaxation_life/out/scale_guard.json``).
     """
 
     def __init__(
