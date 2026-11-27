@@ -2008,6 +2008,52 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
         self.assertFalse(ledger["science"]["algorithm_changed"])
 
+    def test_historical_campaign_report_script_handoff_preserves_provenance(self):
+        path = LEDGER_PATH.parent / "historical-campaign-report-script-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 7)
+        for old in manifest:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", old], cwd=REPO))
+        for row in ledger["entries"]:
+            destination = REPO / row["new_path"]
+            self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+            mode, blob = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
+            ).split()[:2]
+            self.assertEqual(mode, row["git_mode"])
+            original = destination.read_bytes()
+            if row["byte_identical"]:
+                self.assertEqual(blob, row["original_git_blob"])
+            else:
+                edit = row["path_only_edit"]
+                self.assertEqual(original.count(edit["new"].encode()), 1)
+                original = original.replace(edit["new"].encode(), edit["old"].encode())
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(len(original), row["size_bytes"])
+            self.assertEqual(hashlib.sha1(f"blob {len(original)}\0".encode() + original).hexdigest(),
+                             row["original_git_blob"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / target).is_file(), target)
+        registry = json.loads(subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--json"], cwd=REPO,
+        ))["cases"]
+        for mission, owner in ledger["compatibility"]["related_existing_cases"].items():
+            record, variant = next((row, v) for row in registry for v in row["variants"]
+                                   if v["path"] == owner)
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            self.assertIn(f"{owner}/evidence/{mission}/README.md", variant["evidence"])
+        self.assertEqual(len(ledger["compatibility"]["cli_help_parity"]), 5)
+        self.assertTrue(all(row["before_after_byte_identical"]
+                            for row in ledger["compatibility"]["cli_help_parity"]))
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_hotpatch_records_keep_provenance_and_manual_navigation(self):
         ledger_path = LEDGER_PATH.parent / "hotpatch-mission-records-2026-11-22.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

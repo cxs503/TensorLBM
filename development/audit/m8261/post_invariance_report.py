@@ -21,7 +21,7 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 ART = ROOT / "artifacts" / "invariance" / "P170W2-N08"
 FIGDIR = ROOT / "figures"
 

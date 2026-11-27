@@ -108,6 +108,8 @@ maneuvering report figures and W31 transcription evidence.
 
 The [m15884 board and intelligence design ledger](migrations/dfg-board-and-drop-design-records-2026-11-27.json) preserves two internal historical work folders and links their evidence from existing cases. It also records the baseline reanalysis failure and incomplete NEBB evidence which prevent XVAL root retirements.
 
+The [historical campaign report script handoff ledger](migrations/historical-campaign-report-script-handoff-2026-11-28.json) archives seven one-off report helpers and registers original paths, compatible CLI help and missing historical inputs while keeping published reports stable.
+
 The [Ghia W26 tool ledger](migrations/ghia-w26-tool-retirement-2026-11-23.json)
 places anchor extraction, analytic checks and report utilities beside the Ghia
 reference data. The archived register keeps its original provenance.

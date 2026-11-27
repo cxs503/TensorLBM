@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "base_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 53,
+  "docs_second_level_after": 53,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 579,
+  "entries": [
+    {
+      "old_path": "scripts/post_poiseuille_order_report.py",
+      "new_path": "development/audit/m6295/post_poiseuille_order_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "e41f2a3b73e4bfb150f8e8e5da0ac851e86891e8",
+      "original_sha256": "67ffbf891cf9eeab1b182c47c7a44faa42d43c595f3e7e7179629e925655fa60",
+      "size_bytes": 11799,
+      "current_sha256": "a340f11c9ba5215782a9778a640fc595aa62d25635f772435cf8a2c238626509",
+      "current_size_bytes": 11799,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "Path(__file__).resolve().parents[1]",
+        "new": "Path(__file__).resolve().parents[3]"
+      }
+    },
+    {
+      "old_path": "scripts/post_invariance_report.py",
+      "new_path": "development/audit/m8261/post_invariance_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "d5aea60e923a720b5f3e2c27dcfb3ae5c2c9f40e",
+      "original_sha256": "b28050ea24bf622ccada8ed54e27b2e7fca60a98eec72cfdfaaafd2aae4aac88",
+      "size_bytes": 13094,
+      "current_sha256": "50c10a5dc37e6e50470510ef27b1ca76948d9b2ccfe1782e78ebd90cdf80bd28",
+      "current_size_bytes": 13094,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "Path(__file__).resolve().parents[1]",
+        "new": "Path(__file__).resolve().parents[3]"
+      }
+    },
+    {
+      "old_path": "scripts/p49n01_publish_report.py",
+      "new_path": "development/audit/m5391/p49n01_publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "b140ebd609f898c98a05d409a3887837b3076925",
+      "original_sha256": "263ad1d927f7c86a72b91892ee9885657ce433311c9f295a516d40ae8aa538c6",
+      "size_bytes": 13926,
+      "current_sha256": "263ad1d927f7c86a72b91892ee9885657ce433311c9f295a516d40ae8aa538c6",
+      "current_size_bytes": 13926,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/n10_publish_report.py",
+      "new_path": "development/audit/m7867/n10_publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "8f830449ac4ea9963b248c2c4c4e43ea1f23920b",
+      "original_sha256": "7c1a5ce58ff4fcbfde1b1dec498e3d859a5719a55638d9ff156af91e7443329b",
+      "size_bytes": 4947,
+      "current_sha256": "bcc8e02917eee9b5c2f8ab13f7f156e1c6958318d3667983f68124c2cb416c2c",
+      "current_size_bytes": 4947,
+      "byte_identical": false,
+      "path_only_edit": {
+        "old": "Path(__file__).resolve().parents[1]",
+        "new": "Path(__file__).resolve().parents[3]"
+      }
+    },
+    {
+      "old_path": "scripts/fcm_report_payload.py",
+      "new_path": "development/audit/m9387/fcm_report_payload.py",
+      "git_mode": "100644",
+      "original_git_blob": "93a8065f347a3e089282721dc1b2e369cbacaf7e",
+      "original_sha256": "27c50dc353bb42bbb6948c60ca47fc0db2d41e09911679b2c6d337dd3f03977e",
+      "size_bytes": 17951,
+      "current_sha256": "27c50dc353bb42bbb6948c60ca47fc0db2d41e09911679b2c6d337dd3f03977e",
+      "current_size_bytes": 17951,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/_build_report_payload_p493.py",
+      "new_path": "development/audit/m9483/_build_report_payload_p493.py",
+      "git_mode": "100644",
+      "original_git_blob": "f1dad42ed1a86724c6f4b64c86fecb59e491a61d",
+      "original_sha256": "abcb5d7bbf51c8d880e3cbb3defceda34d99daeb471dfe55fb190e39d018572f",
+      "size_bytes": 5258,
+      "current_sha256": "abcb5d7bbf51c8d880e3cbb3defceda34d99daeb471dfe55fb190e39d018572f",
+      "current_size_bytes": 5258,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/post_curved_wall_report.py",
+      "new_path": "development/audit/m5201/post_curved_wall_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "2b066ed131816318fd775703de95f1c10e5ffe52",
+      "original_sha256": "023f5a1d96fe77ef40dd659d9407dbf2c4fbb0de40e4d9ab6641524857517175",
+      "size_bytes": 6454,
+      "current_sha256": "023f5a1d96fe77ef40dd659d9407dbf2c4fbb0de40e4d9ab6641524857517175",
+      "current_size_bytes": 6454,
+      "byte_identical": true
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "docs/poiseuille_resolution_order_20261107.md",
+      "new_path": "docs/poiseuille_resolution_order_20261107.md",
+      "git_mode": "100644",
+      "original_git_blob": "7ee57df40ce89bd62f49377e8c364ccc72bced64",
+      "original_sha256": "4a012cc83abedb9729c508b0780b0bf557b19c3d06e3235a26b11e70b5bacdb7",
+      "size_bytes": 6949,
+      "current_sha256": "4a012cc83abedb9729c508b0780b0bf557b19c3d06e3235a26b11e70b5bacdb7",
+      "current_size_bytes": 6949,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/INVARIANCE_CERTIFICATION.md",
+      "new_path": "docs/INVARIANCE_CERTIFICATION.md",
+      "git_mode": "100644",
+      "original_git_blob": "ba7ed7a3398305c7475c4549d11acf3d352c1361",
+      "original_sha256": "3a5f80f8dffa956e07a9ea2e1431f941b47f7b15f89846eeb87bdf092bb7d17e",
+      "size_bytes": 11066,
+      "current_sha256": "3a5f80f8dffa956e07a9ea2e1431f941b47f7b15f89846eeb87bdf092bb7d17e",
+      "current_size_bytes": 11066,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/P49_N01_STOKES_WAVE_TANK.md",
+      "new_path": "docs/P49_N01_STOKES_WAVE_TANK.md",
+      "git_mode": "100644",
+      "original_git_blob": "7381b6cd28cbdd3f7ed6295ad40ec8bcf9f59f39",
+      "original_sha256": "e07f4dbd3ba6b14782e2e559271a53fe1923295b614ec970aa61036a0e394397",
+      "size_bytes": 15849,
+      "current_sha256": "e07f4dbd3ba6b14782e2e559271a53fe1923295b614ec970aa61036a0e394397",
+      "current_size_bytes": 15849,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/scalar-transport-verification-n10.md",
+      "new_path": "docs/scalar-transport-verification-n10.md",
+      "git_mode": "100644",
+      "original_git_blob": "2bdbf25a52d30deb7fef6a77269bcf81ea1684d8",
+      "original_sha256": "b44881bd00f7062ccc84eb372957748877ca12191b829b81d264f7167dad4ccf",
+      "size_bytes": 17253,
+      "current_sha256": "b44881bd00f7062ccc84eb372957748877ca12191b829b81d264f7167dad4ccf",
+      "current_size_bytes": 17253,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/FCM_PARTICLE_SUSPENSION.md",
+      "new_path": "docs/FCM_PARTICLE_SUSPENSION.md",
+      "git_mode": "100644",
+      "original_git_blob": "25537e2025463428450ea8a463d795af642de8b2",
+      "original_sha256": "a4a9079bd5833c6ade31434c9837a918a9fca7674fc7c5872e287b6c2caff07c",
+      "size_bytes": 10640,
+      "current_sha256": "a4a9079bd5833c6ade31434c9837a918a9fca7674fc7c5872e287b6c2caff07c",
+      "current_size_bytes": 10640,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/P493_N02_INVARIANCE_MATURITY.md",
+      "new_path": "docs/P493_N02_INVARIANCE_MATURITY.md",
+      "git_mode": "100644",
+      "original_git_blob": "64e7980abf4f459c64b2ca696e0713ffbc5d0843",
+      "original_sha256": "2d84d346d3c0ca894ae70f773b2c78648994661e662580c5bb2b57c306c30d20",
+      "size_bytes": 18377,
+      "current_sha256": "2d84d346d3c0ca894ae70f773b2c78648994661e662580c5bb2b57c306c30d20",
+      "current_size_bytes": 18377,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/experiments/archived/workspaces/scratch/report_p493.json",
+      "new_path": "development/experiments/archived/workspaces/scratch/report_p493.json",
+      "git_mode": "100644",
+      "original_git_blob": "63380de78d585d33ae0c231a50d901a0e3e0d57c",
+      "original_sha256": "99b8caba84d93bd39416d44cc748ce9ff89244d14b96dbae134987b357242ba6",
+      "size_bytes": 550102,
+      "current_sha256": "99b8caba84d93bd39416d44cc748ce9ff89244d14b96dbae134987b357242ba6",
+      "current_size_bytes": 550102,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/curved_wall_force_scaling_in19_t1.md",
+      "new_path": "docs/curved_wall_force_scaling_in19_t1.md",
+      "git_mode": "100644",
+      "original_git_blob": "025d0d46b48496d7cdaa1f3b499d7e40c2b29468",
+      "original_sha256": "a811cf1a6059f541b6a94a66d7e9d2cea390ddd10f8bcf745fe7045dfa706136",
+      "size_bytes": 8535,
+      "current_sha256": "a811cf1a6059f541b6a94a66d7e9d2cea390ddd10f8bcf745fe7045dfa706136",
+      "current_size_bytes": 8535,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact old paths and basenames reviewed at actual main: no tracked external-to-file basename references after excluding migration ledgers and frozen archived trees. All seven indexed exact-code searches across TensorKnowledge/TensorPhysics/TensorPlatform/TensorBench returned no hits (two rate-limited searches retried successfully). This is not exhaustive external bookmark or mission-worktree verification.",
+    "navigation_indexes": [
+      "development/audit/m6295/README.md",
+      "benchmarks/verified/poiseuille_convergence_order/evidence/m6295/README.md",
+      "development/audit/m8261/README.md",
+      "development/audit/m5391/README.md",
+      "benchmarks/verified/wave_tank/evidence/m5391/README.md",
+      "development/audit/m7867/README.md",
+      "development/audit/m9387/README.md",
+      "development/audit/m9483/README.md",
+      "development/audit/m5201/README.md"
+    ],
+    "related_existing_cases": {
+      "m6295": "benchmarks/verified/poiseuille_convergence_order",
+      "m5391": "benchmarks/verified/wave_tank"
+    },
+    "new_case_ids": 0,
+    "cli_help_parity": [
+      {
+        "path": "development/audit/m6295/post_poiseuille_order_report.py",
+        "scope": "--help only; no publication or scientific computation",
+        "before_after_byte_identical": true,
+        "sha256": "35e2b400be96a568a87fa9c9555afad3222963ad67a3d2790b4f781a5ef2cc1e",
+        "size_bytes": 171,
+        "python": "python"
+      },
+      {
+        "path": "development/audit/m8261/post_invariance_report.py",
+        "scope": "--help only; no publication or scientific computation",
+        "before_after_byte_identical": true,
+        "sha256": "66400a9eb0a906b1c72f7a1478696ef1645c9a1928cd9b1580676a25f53067c6",
+        "size_bytes": 136,
+        "python": "python"
+      },
+      {
+        "path": "development/audit/m5391/p49n01_publish_report.py",
+        "scope": "--help only; no publication or scientific computation",
+        "before_after_byte_identical": true,
+        "sha256": "144fa731339a4d8ddfdde492977d4a91a88accfd8d98daa5665415b99cfc75fe",
+        "size_bytes": 235,
+        "python": "/usr/bin/python3"
+      },
+      {
+        "path": "development/audit/m7867/n10_publish_report.py",
+        "scope": "--help only; no publication or scientific computation",
+        "before_after_byte_identical": true,
+        "sha256": "4604cde75baf21e099d7e33e76aeb772eacca580e9d0db9ef79bf1b6d4ac3b3c",
+        "size_bytes": 176,
+        "python": "python"
+      },
+      {
+        "path": "development/audit/m9387/fcm_report_payload.py",
+        "scope": "--help only; no publication or scientific computation",
+        "before_after_byte_identical": true,
+        "sha256": "744612f852e78f16071873f63a4506bc62d7e9ab9a21d99ac7e869ffbef42442",
+        "size_bytes": 185,
+        "python": "python"
+      }
+    ],
+    "runtime": "Five help commands executed before/after; p49 help required real system Python requests 2.32.3 and Pillow 11.1.0 (default Python lacks requests). No mock. Other two scripts are archive-only and were not invoked. Root path-only corrections on three help-compatible scripts, no numerical algorithm change.",
+    "historical_dependencies": [
+      {
+        "mission": "m6295",
+        "old_input_directory": "artifacts/poiseuille_order_20261107/",
+        "tracked_original_inputs_at_main": false,
+        "limitation": "help; root path corrected; original results.json, forcing_variant.json and PNG not tracked"
+      },
+      {
+        "mission": "m8261",
+        "old_input_directory": "artifacts/invariance/P170W2-N08/",
+        "tracked_original_inputs_at_main": false,
+        "limitation": "help; root path corrected; original campaign input JSON and referenced figure files not supplied"
+      },
+      {
+        "mission": "m5391",
+        "old_input_directory": "artifacts/P49_N01/",
+        "tracked_original_inputs_at_main": false,
+        "limitation": "help with real system requests/Pillow; original summary.json and figure bundle not tracked"
+      },
+      {
+        "mission": "m7867",
+        "old_input_directory": "artifacts/scalar_transport_n10/",
+        "tracked_original_inputs_at_main": false,
+        "limitation": "help; root path corrected; original report.json and figure bundle not supplied"
+      },
+      {
+        "mission": "m9387",
+        "old_input_directory": "artifacts/fcm_suspension/",
+        "tracked_original_inputs_at_main": false,
+        "limitation": "help; original input directory not tracked; do not invoke writer against canonical docs"
+      },
+      {
+        "mission": "m9483",
+        "old_input_directory": "artifacts/invariance/P493-N02/",
+        "tracked_original_inputs_at_main": false,
+        "limitation": "archive-only, original local builder executes on import; no invocation; original input directory absent"
+      },
+      {
+        "mission": "m5201",
+        "old_input_directory": "artifacts/curved_wall_force_scaling/",
+        "tracked_original_inputs_at_main": false,
+        "limitation": "archive-only, main would publish; original sweep_results.json and figure bundle not supplied"
+      }
+    ],
+    "deferred": [
+      {
+        "path": "scripts/build_weak_compressibility_report.py",
+        "reason": "has an active shell runner caller; preserve until checked together"
+      },
+      {
+        "path": "scripts/p482_n05_publish_report.py",
+        "reason": "source-authority pinned path; retain until exact compatibility review"
+      },
+      {
+        "path": "scripts/post_platform_report.py and scripts/publish_platform_report.py",
+        "reason": "generic reusable API helpers rather than identified historical missions; review supported tooling contract separately"
+      }
+    ]
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}
