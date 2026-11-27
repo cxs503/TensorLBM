@@ -1,0 +1,342 @@
+{
+  "scope": "Retire two loose XVAL scripts and the complete m17877 audit document directory. Consolidate one proven byte-identical source duplicate; keep original frozen audit, stable published reports and canonical solver ownership.",
+  "source_commit": "2bc878c2c03e46692e9edaf07a8490bae6010a51",
+  "candidate_base_commit": "153f8ee72fde6b941f21a2955d6db7d66250c157",
+  "prerequisite": "#3067 exact tested repair candidate; not merged",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 17,
+    "xval_loose_files": 18,
+    "docs_second_level_count": 81
+  },
+  "candidate_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 17,
+    "xval_loose_files": 18,
+    "docs_second_level_count": 81
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "xval_second_level_count": 17,
+    "xval_loose_files": 16,
+    "docs_second_level_count": 80
+  },
+  "retired_second_level_directories": [
+    "docs/audit_m17877"
+  ],
+  "retired_files": [
+    "xval/xval_fingering_dynamics.py",
+    "xval/xval_lbmconfig_single_point_config.py"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/audit_m17877/AUDIT_m17877.md",
+      "new_path": "development/audit/m17877/AUDIT_m17877.md",
+      "git_mode": "100644",
+      "original_git_blob": "90c9628352729aeb56614d2b9af07697ba7c7631",
+      "original_sha256": "979867fc955422c7288357ee12857a52aaf4cf1b967b22a4d5d9067973c2a98c",
+      "size_bytes": 11491,
+      "current_sha256": "979867fc955422c7288357ee12857a52aaf4cf1b967b22a4d5d9067973c2a98c",
+      "current_size_bytes": 11491,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/audit_probe2.json",
+      "new_path": "development/audit/m17877/audit_probe2.json",
+      "git_mode": "100644",
+      "original_git_blob": "b484da19ecc1638219d92c0fabdfafb3259bd6d6",
+      "original_sha256": "f706a1b8a00e944544c99e29b1903870bcf4b696720d299effe1a4b59568fc0f",
+      "size_bytes": 4824,
+      "current_sha256": "f706a1b8a00e944544c99e29b1903870bcf4b696720d299effe1a4b59568fc0f",
+      "current_size_bytes": 4824,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/audit_probe2.py",
+      "new_path": "development/audit/m17877/audit_probe2.py",
+      "git_mode": "100644",
+      "original_git_blob": "0b8f2143bce5ca0b2ab8e844f0b6e27af0bccdfc",
+      "original_sha256": "dbd852d6fca8c1fab1b57a319bf47b606711cdd3b178f18ffcc5e4c6d4b1ba6e",
+      "size_bytes": 3479,
+      "current_sha256": "dbd852d6fca8c1fab1b57a319bf47b606711cdd3b178f18ffcc5e4c6d4b1ba6e",
+      "current_size_bytes": 3479,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/audit_rerun.json",
+      "new_path": "development/audit/m17877/audit_rerun.json",
+      "git_mode": "100644",
+      "original_git_blob": "8d8be5cd82b17305928ffd05d2e32ab2380ad81c",
+      "original_sha256": "21710482bda446ededb2373d7996fc183520434a799b8d6e869dddeb1ac70e23",
+      "size_bytes": 2729,
+      "current_sha256": "21710482bda446ededb2373d7996fc183520434a799b8d6e869dddeb1ac70e23",
+      "current_size_bytes": 2729,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/audit_run.py",
+      "new_path": "development/audit/m17877/audit_run.py",
+      "git_mode": "100644",
+      "original_git_blob": "bc0926aeba3b5b84e391e0c9ed3b5b92e89454e9",
+      "original_sha256": "b67c1f7eb4b3eb0b5d1a981afba7f9dd3fb441e5b4491e1f6aa79f88b75d22d1",
+      "size_bytes": 2913,
+      "current_sha256": "b67c1f7eb4b3eb0b5d1a981afba7f9dd3fb441e5b4491e1f6aa79f88b75d22d1",
+      "current_size_bytes": 2913,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/audit_summary.json",
+      "new_path": "development/audit/m17877/audit_summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "126900e734d67b9e2cf43d7f1997620e24a3c307",
+      "original_sha256": "0e07fe679c170ae8b5a630cec2fc2cace7b2c54808d540099e2b81ffe94da331",
+      "size_bytes": 1557,
+      "current_sha256": "0e07fe679c170ae8b5a630cec2fc2cace7b2c54808d540099e2b81ffe94da331",
+      "current_size_bytes": 1557,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/evidence_snapshot/SHA256SUMS.txt",
+      "new_path": "development/audit/m17877/evidence_snapshot/SHA256SUMS.txt",
+      "git_mode": "100644",
+      "original_git_blob": "007cba644918a3f0af0a0a7b441c4079eed4af5d",
+      "original_sha256": "f6c8346064e7754dea7ebd086f06846e37984fbc559401bbac2b15fcfb08e6cc",
+      "size_bytes": 380,
+      "current_sha256": "f6c8346064e7754dea7ebd086f06846e37984fbc559401bbac2b15fcfb08e6cc",
+      "current_size_bytes": 380,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/evidence_snapshot/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md",
+      "new_path": "development/audit/m17877/evidence_snapshot/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md",
+      "git_mode": "100644",
+      "original_git_blob": "62809c7c0923d4f7231accb428ec3c2d1d5c71f7",
+      "original_sha256": "553edc751dc7596be567afb270b5f96fc8cc7182460c688817a7da691c4fe107",
+      "size_bytes": 7118,
+      "current_sha256": "553edc751dc7596be567afb270b5f96fc8cc7182460c688817a7da691c4fe107",
+      "current_size_bytes": 7118,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/evidence_snapshot/fig3_laplace_vs_radius.png",
+      "new_path": "development/audit/m17877/evidence_snapshot/fig3_laplace_vs_radius.png",
+      "git_mode": "100644",
+      "original_git_blob": "9b007825df4dc73409d2a30aaa4ac3996dfb8f31",
+      "original_sha256": "6d393e3cdd52a922c8c5eb17aaa662378220a3bef1d1c40ca1dbde93030b3d82",
+      "size_bytes": 57401,
+      "current_sha256": "6d393e3cdd52a922c8c5eb17aaa662378220a3bef1d1c40ca1dbde93030b3d82",
+      "current_size_bytes": 57401,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/evidence_snapshot/primary_results.json",
+      "new_path": "development/audit/m17877/evidence_snapshot/primary_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "33cff9ec6f4997195b298ddf573bf101ca0d405c",
+      "original_sha256": "5f6db1d2838d83b138cafcc96f4bf4f775505be0d067f301bb6293c0bce5d8ef",
+      "size_bytes": 662,
+      "current_sha256": "5f6db1d2838d83b138cafcc96f4bf4f775505be0d067f301bb6293c0bce5d8ef",
+      "current_size_bytes": 662,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/evidence_snapshot/xval_fingering_dynamics.py",
+      "new_path": "development/audit/m17877/evidence_snapshot/xval_fingering_dynamics.py",
+      "git_mode": "100644",
+      "original_git_blob": "9441da560ae0c34f6e0a95b5b54053a16d57426e",
+      "original_sha256": "6bf6d083fe8a8ba0da184da08ed0a75f607f1327299df5cdee32fa9254fcc2b4",
+      "size_bytes": 24086,
+      "current_sha256": "6bf6d083fe8a8ba0da184da08ed0a75f607f1327299df5cdee32fa9254fcc2b4",
+      "current_size_bytes": 24086,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/fig_m17877_evidence.png",
+      "new_path": "development/audit/m17877/fig_m17877_evidence.png",
+      "git_mode": "100644",
+      "original_git_blob": "118b06effb722916cd359f15ec840f7c6fd0c07e",
+      "original_sha256": "1630a0cdf95fbd208f116fc30b3958395015b2045694b8753d07ae1cd0149ba2",
+      "size_bytes": 157663,
+      "current_sha256": "1630a0cdf95fbd208f116fc30b3958395015b2045694b8753d07ae1cd0149ba2",
+      "current_size_bytes": 157663,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/gen_fig_summary.py",
+      "new_path": "development/audit/m17877/gen_fig_summary.py",
+      "git_mode": "100644",
+      "original_git_blob": "05b4f420ca2fc8ebf8e4d7cafbbb241281368de4",
+      "original_sha256": "635c1fa6709a1b7927525fe789b20c08d179e5eb83e847b9d2c92e59a73aba42",
+      "size_bytes": 4665,
+      "current_sha256": "635c1fa6709a1b7927525fe789b20c08d179e5eb83e847b9d2c92e59a73aba42",
+      "current_size_bytes": 4665,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/make_verdict_sql.py",
+      "new_path": "development/audit/m17877/make_verdict_sql.py",
+      "git_mode": "100644",
+      "original_git_blob": "8f87f33296fbf9df5487803da0681c93e2b767f6",
+      "original_sha256": "e5c0f8d4abb31d14d7c11e9d0490929837a567bf4addfac4f5a5a2156d25464c",
+      "size_bytes": 10247,
+      "current_sha256": "e5c0f8d4abb31d14d7c11e9d0490929837a567bf4addfac4f5a5a2156d25464c",
+      "current_size_bytes": 10247,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m17877/publish_report.py",
+      "new_path": "development/audit/m17877/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "4ab729f45ad065af63947a355bcae89fe535bf79",
+      "original_sha256": "f03ae719e5652351db6492192388d3f00c7ab4bc0e4f32bb1a76350b4ebc6688",
+      "size_bytes": 2583,
+      "current_sha256": "f03ae719e5652351db6492192388d3f00c7ab4bc0e4f32bb1a76350b4ebc6688",
+      "current_size_bytes": 2583,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/xval_fingering_dynamics.py",
+      "new_path": "development/audit/m17877/evidence_snapshot/xval_fingering_dynamics.py",
+      "git_mode": "100644",
+      "original_git_blob": "9441da560ae0c34f6e0a95b5b54053a16d57426e",
+      "original_sha256": "6bf6d083fe8a8ba0da184da08ed0a75f607f1327299df5cdee32fa9254fcc2b4",
+      "size_bytes": 24086,
+      "current_sha256": "6bf6d083fe8a8ba0da184da08ed0a75f607f1327299df5cdee32fa9254fcc2b4",
+      "current_size_bytes": 24086,
+      "byte_identical": true,
+      "consolidated_verified_duplicate": true
+    },
+    {
+      "old_path": "xval/xval_lbmconfig_single_point_config.py",
+      "new_path": "development/verification/lbmconfig_poiseuille/m17952_legacy.py",
+      "git_mode": "100644",
+      "original_git_blob": "9ca868b2e490b5730b4f79ddad7d652eb277aa78",
+      "original_sha256": "74eaab3160a0eb836838a9681b80dc37edb02db993fa98d0700d2699844391cd",
+      "size_bytes": 8686,
+      "current_sha256": "74eaab3160a0eb836838a9681b80dc37edb02db993fa98d0700d2699844391cd",
+      "current_size_bytes": 8686,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "src/tensorlbm/phasefield/free_energy_channel.py",
+      "new_path": "src/tensorlbm/phasefield/free_energy_channel.py",
+      "git_mode": "100644",
+      "original_git_blob": "93377823d6d66fc548c0571cdb191c62c6204fd2",
+      "original_sha256": "289b9702277a9113179aef2e658f42eb21966c9459c02a49e13017f27bd43ccc",
+      "size_bytes": 16482,
+      "current_sha256": "779f0e06eb916fe2eb6bbd3d8f73fb86cd1f0936cc05c606e3082310e01d50fa",
+      "current_size_bytes": 16520,
+      "byte_identical": false,
+      "change": "documentation path literal only"
+    },
+    {
+      "old_path": "docs/XVAL_LBM_LBMCONFIG_SINGLE_POINT_CONFIG.md",
+      "new_path": "docs/XVAL_LBM_LBMCONFIG_SINGLE_POINT_CONFIG.md",
+      "git_mode": "100644",
+      "original_git_blob": "4a807a82522701a7db772c1775ba2e96bf450994",
+      "original_sha256": "5f9cb0ce6620dd94a995e9aefceb0f28700a0701fc7dacd052595a6a702ae608",
+      "size_bytes": 11065,
+      "current_sha256": "9c9c9a43de2ee776b11aa5df4800d7faecffcb9074347a8c8192bffc26d661c2",
+      "current_size_bytes": 11108,
+      "byte_identical": false
+    },
+    {
+      "old_path": "benchmarks/cross_validation/lbmconfig_poiseuille/benchmark_case.json",
+      "new_path": "benchmarks/cross_validation/lbmconfig_poiseuille/benchmark_case.json",
+      "git_mode": "100644",
+      "original_git_blob": "9f478c2c83dcb990f3f3988d9c908e9ef975f0fe",
+      "original_sha256": "1950612f43612596766c87c3c47ad7bef193048406bb5f87263f988f51c4f72e",
+      "size_bytes": 905,
+      "current_sha256": "f09e01ed917403b4ff905f1e0bb55918d1fff8ee8527cc3bf3442d6fe230f849",
+      "current_size_bytes": 1053,
+      "byte_identical": false
+    }
+  ],
+  "compatibility": {
+    "source_duplicate": {
+      "old_paths": [
+        "xval/xval_fingering_dynamics.py",
+        "docs/audit_m17877/evidence_snapshot/xval_fingering_dynamics.py"
+      ],
+      "new_path": "development/audit/m17877/evidence_snapshot/xval_fingering_dynamics.py",
+      "git_blob": "9441da560ae0c34f6e0a95b5b54053a16d57426e",
+      "sha256": "6bf6d083fe8a8ba0da184da08ed0a75f607f1327299df5cdee32fa9254fcc2b4",
+      "mode": "100644"
+    },
+    "frozen_snapshot_checksums": {
+      "XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md": "553edc751dc7596be567afb270b5f96fc8cc7182460c688817a7da691c4fe107",
+      "fig3_laplace_vs_radius.png": "6d393e3cdd52a922c8c5eb17aaa662378220a3bef1d1c40ca1dbde93030b3d82",
+      "primary_results.json": "5f6db1d2838d83b138cafcc96f4bf4f775505be0d067f301bb6293c0bce5d8ef",
+      "xval_fingering_dynamics.py": "6bf6d083fe8a8ba0da184da08ed0a75f607f1327299df5cdee32fa9254fcc2b4"
+    },
+    "prior_artifact_handoff": {
+      "prior_ledger": "docs/architecture/migrations/xval-artifacts-retirement-2026-11-23.json",
+      "original_source_path": "xval/artifacts/primary_results.json",
+      "prior_destination": "docs/audit_m17877/evidence_snapshot/primary_results.json",
+      "current_destination": "development/audit/m17877/evidence_snapshot/primary_results.json",
+      "sha256": "5f6db1d2838d83b138cafcc96f4bf4f775505be0d067f301bb6293c0bce5d8ef"
+    },
+    "frozen_prior_audit_sql": {
+      "path": "development/audit/m17877/verdict_m17877.sql",
+      "sha256": "68beb4be31686b27895f1e2d2c72446ca84711bcd2064ceefd6dfbfb8ae94ce0"
+    },
+    "reference_scan": "Exact names scanned at actual main and pending integrated preview; only maintained source docstring and published LBMConfig report needed updating. Historical audit, absolute worktree paths and snapshot report literals remain frozen. Cross-repository indexed search found no hits; not exhaustive external URL coverage.",
+    "case_ids": [
+      "xval:cupy_dropin_no_kernel_fusion",
+      "xval:lbmconfig_poiseuille"
+    ],
+    "prior_cupy_archive_ledger": "docs/architecture/migrations/halo-cupy-archives-2026-11-26.json",
+    "historical_script_scope": "m17952 has an obsolete configuration convention, hard-coded historical workspace input/output and no retained result. m17877 audit scripts use historical absolute paths and publishing tools; none executed."
+  },
+  "evidence_gaps": {
+    "missing_original_lbmconfig_output": "xval/out_lbmconfig_single_point.json",
+    "scope": "Not tracked in actual main or inspected fetched path history. Historical audit snapshot contains exact primary result and reports but does not supply every underlying historical convergence value. No reconstruction or substitute simulation."
+  },
+  "science": {
+    "current_acceptance": "not_evaluated",
+    "full_replay_performed": false,
+    "later_cupy_reported_all_pass": true,
+    "scope": "Original archived values and acceptance flags only, not a current result."
+  }
+}
