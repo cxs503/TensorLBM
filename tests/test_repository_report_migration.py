@@ -1411,6 +1411,63 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         case = REPO / "benchmarks/water_entry/single_drop/README.md"
         self.assertIn(f"](../../../{ledger['new_directory']}/)", case.read_text(encoding="utf-8"))
 
+    def test_historical_collision_matrix_retires_active_frozen_source_consumers(self):
+        path = LEDGER_PATH.parent / "historical-collision-matrix-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 7)
+        for directory in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", directory], cwd=REPO))
+        for row in ledger["entries"]:
+            dest = REPO / row["new_path"]
+            self.assert_fingerprint(dest, row["current_sha256"], row["current_size_bytes"])
+            original = dest.read_bytes()
+            for edit in reversed(row.get("path_only_edits", [])):
+                old, new = edit["old"].encode(), edit["new"].encode()
+                self.assertEqual(original.count(new), edit["count"])
+                original = original.replace(new, old)
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(len(original), row["size_bytes"])
+            self.assertFalse((REPO / row["old_path"]).exists())
+            mode = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
+            ).split()[0]
+            self.assertEqual(mode, row["git_mode"])
+        for row in ledger["unchanged_related_assets_at_migration"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        source = ledger["source_authority"]
+        policy = json.loads((REPO / source["policy"]).read_text())
+        for old in source["removed_exact_allowlist_entries"]:
+            self.assertNotIn(old, policy["allowed_active_references"])
+        self.assertEqual(policy["historical_tree_oid"], source["unchanged_frozen_tree"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                if target.startswith("https://github.com/cxs503/TensorLBM/blob/"):
+                    self.assertTrue(target.startswith(
+                        "https://github.com/cxs503/TensorLBM/blob/" + ledger["base_main"] + "/"))
+                else:
+                    self.assertTrue((index.parent / target).is_file(), target)
+        for row in ledger["entries"]:
+            if row["new_path"].endswith(".py"):
+                found = json.loads(subprocess.check_output(
+                    [sys.executable, "tools/benchmark_registry.py", "--find-asset",
+                     row["new_path"]], cwd=REPO,
+                ))["paths"]
+                self.assertIn(row["new_path"], found)
+        for receipt in ledger["compatibility"]["import_receipts"]:
+            self.assertEqual(receipt["actual_imported_package"],
+                             policy["historical_root"] + "/src/tensorlbm/__init__.py")
+            self.assertTrue(receipt["repo_root_before_after_identical"])
+            self.assertFalse(receipt["solver_invoked"])
+        self.assertTrue(ledger["compatibility"]["cli_help_parity"]["before_after_byte_identical"])
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_cavity_sdaa_evidence_preserves_bytes_links_and_scope(self):
         ledger_path = LEDGER_PATH.parent / "cavity-sdaa-artifacts-2026-11-22.json"
         entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]

@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "base_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 53,
+  "docs_second_level_after": 51,
+  "benchmarks_second_level_before": 108,
+  "benchmarks_second_level_after": 107,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 586,
+  "retired_second_level_directories": [
+    "docs/m23039",
+    "docs/m23153",
+    "benchmarks/collision_operator_matrix"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/m23039/APPLICABILITY_MATRIX.md",
+      "new_path": "development/audit/m23039/APPLICABILITY_MATRIX.md",
+      "git_mode": "100644",
+      "original_git_blob": "ca5f58bf6392bc7d50489056e0d04571055b22cc",
+      "original_sha256": "ddb683e39ac1f5dd484a1ccaf6ad183996887ba7a36f72f338004b2669d65de6",
+      "size_bytes": 4816,
+      "current_sha256": "ddb683e39ac1f5dd484a1ccaf6ad183996887ba7a36f72f338004b2669d65de6",
+      "current_size_bytes": 4816,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23039/PREREG.json",
+      "new_path": "development/audit/m23039/PREREG.json",
+      "git_mode": "100644",
+      "original_git_blob": "704cd4750be41f2a13ec9724bb9422d2ff370549",
+      "original_sha256": "e8bd2684399ae73468544c1636df77b0da688fdb15cf1e1c41b25386aa7ca926",
+      "size_bytes": 4934,
+      "current_sha256": "e8bd2684399ae73468544c1636df77b0da688fdb15cf1e1c41b25386aa7ca926",
+      "current_size_bytes": 4934,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23039/collision_matrix_results.json",
+      "new_path": "development/audit/m23039/collision_matrix_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "4f3e7b836299fb009b1e22bb2b758641881a4557",
+      "original_sha256": "2d4ed538854626ee2c78da910fed1c62623c7e0e3f2e6389b5579f2b6044503e",
+      "size_bytes": 3180,
+      "current_sha256": "2d4ed538854626ee2c78da910fed1c62623c7e0e3f2e6389b5579f2b6044503e",
+      "current_size_bytes": 3180,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23153/APPLICABILITY_MATRIX.md",
+      "new_path": "development/audit/m23153/APPLICABILITY_MATRIX.md",
+      "git_mode": "100644",
+      "original_git_blob": "56556a88482139f34aed85bb1f3d9ede4d3f5be1",
+      "original_sha256": "dc1fe74d90209e2a31043daca86ff4af56dfe2f745c4412305550cef169676be",
+      "size_bytes": 7205,
+      "current_sha256": "dc1fe74d90209e2a31043daca86ff4af56dfe2f745c4412305550cef169676be",
+      "current_size_bytes": 7205,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m23153/PREREG.json",
+      "new_path": "development/audit/m23153/PREREG.json",
+      "git_mode": "100644",
+      "original_git_blob": "19a789c4fbd9ea5d385fcd4ba53990602fb8c607",
+      "original_sha256": "9fbd548f36dcf2155774525b93c9ac230725d89a9887884de111f8cb277645ae",
+      "size_bytes": 2207,
+      "current_sha256": "9fbd548f36dcf2155774525b93c9ac230725d89a9887884de111f8cb277645ae",
+      "current_size_bytes": 2207,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/collision_operator_matrix/run_all.py",
+      "new_path": "development/audit/m23039/run_all.py",
+      "git_mode": "100644",
+      "original_git_blob": "a2638584723b1c8d4ee04fba495f8f7c35c61bc6",
+      "original_sha256": "c51fb1a8554c7f8f34ecdc1ffd29ac1058e0bbb46c7e8139c916f85846c3ac1d",
+      "size_bytes": 26969,
+      "current_sha256": "2ae3def868e78ad4bb9349a53d4abaaa2ac78277a863cb420be2b991d7d24aee",
+      "current_size_bytes": 26957,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "Path(__file__).resolve().parents[2]",
+          "new": "Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "REPO / \"docs\" / \"m23039\"",
+          "new": "REPO / \"outputs\" / \"historical\" / \"collision_operator_matrix\" / \"m23039\"",
+          "count": 1
+        },
+        {
+          "old": "benchmarks/collision_operator_matrix/run_all.py",
+          "new": "development/audit/m23039/run_all.py",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "old_path": "benchmarks/collision_operator_matrix/run_cluster.py",
+      "new_path": "development/audit/m23039/run_cluster.py",
+      "git_mode": "100644",
+      "original_git_blob": "5d4ebe0804e4000be39f637730662d0f0b00fd57",
+      "original_sha256": "c088b15bc320549cb433d8cbcc48ca9040b34c2dbae79399f74664bcc388cdeb",
+      "size_bytes": 11546,
+      "current_sha256": "3c52e34c5268b2953678e5d6962a95822bacc18f3beeacaf4200eb9ef7b79f47",
+      "current_size_bytes": 11641,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "Path(__file__).resolve().parents[2]",
+          "new": "Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "REPO / \"docs\" / \"m23039\"",
+          "new": "REPO / \"outputs\" / \"historical\" / \"collision_operator_matrix\" / \"m23039\"",
+          "count": 1
+        },
+        {
+          "old": "Writes results to docs/m23039/.",
+          "new": "Writes replay results to outputs/historical/collision_operator_matrix/m23039/.",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "development/legacy/TensorLBM/benchmarks/mrt_benchmark.py",
+      "new_path": "development/legacy/TensorLBM/benchmarks/mrt_benchmark.py",
+      "git_mode": "100644",
+      "original_git_blob": "53b1d481c376aac96e3c6a70f731dd0fd60df5be",
+      "original_sha256": "dd40365c8072857c25138be0871de4d19698a94de403faaf0f4ee224a0fcbb0f",
+      "size_bytes": 8801,
+      "current_sha256": "dd40365c8072857c25138be0871de4d19698a94de403faaf0f4ee224a0fcbb0f",
+      "current_size_bytes": 8801,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/legacy/TensorLBM/docs/m23153/mrt_benchmark_results.json",
+      "new_path": "development/legacy/TensorLBM/docs/m23153/mrt_benchmark_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "c1ed4140f01a6b435cb1531ca58703da74cd5fcf",
+      "original_sha256": "702b2b4223224b52a8716443e34b6f10e1182896cf4c4ca626618506f0709ecc",
+      "size_bytes": 1996,
+      "current_sha256": "702b2b4223224b52a8716443e34b6f10e1182896cf4c4ca626618506f0709ecc",
+      "current_size_bytes": 1996,
+      "byte_identical": true
+    }
+  ],
+  "source_authority": {
+    "policy": "docs/architecture/source_authority_policy.json",
+    "active_reference_count_before": 33,
+    "active_reference_count_after": 31,
+    "removed_exact_allowlist_entries": {
+      "benchmarks/collision_operator_matrix/run_all.py": {
+        "matches": 6,
+        "matching_lines_sha256": "dc74a3bb613234e4d708d013c2787e09ec8118845c8146207d6064f4d7f4d0ba"
+      },
+      "benchmarks/collision_operator_matrix/run_cluster.py": {
+        "matches": 1,
+        "matching_lines_sha256": "b51178954de2ea3c22d9b8ddc81d02daad97658fa3b95aeef5e0b31abbd633ac"
+      }
+    },
+    "unchanged_frozen_tree": "f482f80c56e861d7a5c038d1b6647394edaa1ba2"
+  },
+  "compatibility": {
+    "reference_scan": "Exact path and names reviewed on actual main and all open governance heads. No active consumer outside the two historical runners and source policy, the historical mission report, and immutable archived evidence. Indexed searches for three exact former directory paths across TensorKnowledge/TensorPhysics/TensorPlatform/TensorBench found no matches. External bookmarks and issue links are not exhaustively verifiable. Original internal mission URLs remain accessible at the immutable base revision; no existing formal user manual path moved.",
+    "navigation_indexes": [
+      "development/audit/m23039/README.md",
+      "development/audit/m23153/README.md"
+    ],
+    "new_case_ids": 0,
+    "frozen_checkout": "Historical scripts resolve the frozen source only when explicitly imported from development, not current production source; no solver or mock called.",
+    "old_output_path": "docs/m23039/collision_matrix_results.json",
+    "new_replay_output_path": "outputs/historical/collision_operator_matrix/m23039/collision_matrix_results.json",
+    "import_receipts": [
+      {
+        "script": "run_all.py",
+        "actual_imported_package": "development/legacy/TensorLBM/src/tensorlbm/__init__.py",
+        "repo_root_before_after_identical": true,
+        "old_output_dir": "docs/m23039",
+        "new_output_dir": "outputs/historical/collision_operator_matrix/m23039",
+        "solver_invoked": false
+      },
+      {
+        "script": "run_cluster.py",
+        "actual_imported_package": "development/legacy/TensorLBM/src/tensorlbm/__init__.py",
+        "repo_root_before_after_identical": true,
+        "old_output_dir": "docs/m23039",
+        "new_output_dir": "outputs/historical/collision_operator_matrix/m23039",
+        "solver_invoked": false
+      }
+    ],
+    "cli_help_parity": {
+      "path": "development/audit/m23039/run_all.py",
+      "before_after_byte_identical": true,
+      "sha256": "46f301da24b4a32782fd4bd8cd5cca57c731b7ad469c1b34a454aebc52c66d9b",
+      "size_bytes": 214
+    },
+    "python": "3.12.14"
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

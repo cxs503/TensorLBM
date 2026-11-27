@@ -78,6 +78,8 @@ The [geometry verification ledger](migrations/geometry-xval-2026-11-26.json)
 records the archived [fill-gradient normal](../../development/verification/fill_gradient_normal/README.md)
 and [EDT geometry tagging](../../development/verification/edt_two_segment_geometry_tag_compression/README.md) studies.
 
+The [historical collision-matrix ledger](migrations/historical-collision-matrix-2026-11-28.json) retires two internal mission folders and the old collision-operator replay folder. The two frozen-source runners are archived, not active benchmark entries; their original results and legacy source tree remain unchanged.
+
 The [kernel and preprocessing ledger](migrations/kernel-preprocess-xval-2026-11-26.json)
 records the archived [warp-shift streaming](../../development/verification/warp_shift_streaming/README.md)
 and [voxel porosity](../../development/verification/voxel_porosity/README.md) studies.
