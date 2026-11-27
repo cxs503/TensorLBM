@@ -1688,6 +1688,52 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn(f"]({catalogue})", (docs / "README.md").read_text(encoding="utf-8"))
         self.assertTrue((docs / catalogue).is_file())
 
+    def test_stokes_blockforest_ce_audit_migration_keeps_original_assets(self):
+        path = LEDGER_PATH.parent / "stokes-blockforest-ce-audits-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(len(rows), 25)
+        self.assertEqual(rows, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(ledger["retired_second_level_directories"]), 3)
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        self.assertEqual(len(ledger["prior_archived_evidence"]), 2)
+        for entry in ledger["entries"] + ledger["prior_archived_evidence"]:
+            self.assert_fingerprint(REPO / entry["new_path"], entry["original_sha256"], entry["size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[:2], [entry["git_mode"], entry["original_git_blob"]])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        owners = ledger["compatibility"]["case_ownership"]
+        for mission, owner in owners.items():
+            raw = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", owner["id"]], cwd=REPO, text=True,
+            )
+            (record,) = json.loads(raw)["cases"]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            (variant,) = record["variants"]
+            self.assertEqual(variant["path"], owner["path"])
+            if mission == "m16256":
+                self.assertIn(owner["pointer"], variant["evidence"])
+                self.assertEqual(variant["results"], [owner["path"] + "/result.json"])
+                self.assertEqual(variant["archive_bucket"], "verified")
+            else:
+                self.assertIn(owner["audit_index"], variant["documentation"])
+                for entry in ledger["entries"]:
+                    if entry["new_path"].startswith(f"development/audit/{mission}/"):
+                        self.assertIn(entry["new_path"], variant["evidence"])
+                self.assertIsNone(variant["archive_bucket"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / link).is_file(), link)
+        for published in ledger["compatibility"]["published_paths"]:
+            self.assertTrue((REPO / published).is_file(), published)
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

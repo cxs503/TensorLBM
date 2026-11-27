@@ -92,6 +92,8 @@ kernel comparison under development with its independent audits.
 
 ## Second-level placement
 
+The [Stokes, Blockforest and Chapman–Enskog historical audit ledger](migrations/stokes-blockforest-ce-audits-2026-11-27.json) maps the retired mission folders to their archived evidence and stable case navigation. It is not a new scientific acceptance.
+
 | Area | Placement |
 | --- | --- |
 | Published documentation | Keep stable report and manual paths. Put static report assets in `docs/assets/<topic>/`, using topic names such as `maneuvering-m1984`. |

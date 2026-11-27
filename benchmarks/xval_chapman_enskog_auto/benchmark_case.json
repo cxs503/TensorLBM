@@ -1,0 +1,38 @@
+{
+  "scope": "Historical L2 audit of mission m17672 (15a9b393); 35 recorded checks, L3/L4 rejected, no registered machine referee. Archive registration only; no current science result.",
+  "criteria": {
+    "historical_gate": "15% error gate, 35 checks; no formal machine referee per audit",
+    "historical_outcome": "L2 confirmed; L3/L4 rejected",
+    "source": "development/audit/m17741/AUDIT.md"
+  },
+  "source": [
+    "benchmarks/xval_chapman_enskog_auto/run_xval.py",
+    "benchmarks/xval_chapman_enskog_auto/make_report.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/xval_chapman_enskog_auto/README.md",
+    "docs/XVAL-LBM-CHAPMAN-ENSKOG-AUTO.md",
+    "development/audit/m17741/README.md",
+    "development/audit/m17741/AUDIT.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "benchmarks/xval_chapman_enskog_auto/result.json",
+    "benchmarks/xval_chapman_enskog_auto/convergence.csv",
+    "benchmarks/xval_chapman_enskog_auto/table.csv",
+    "development/audit/m17741/audit_stats.json",
+    "development/audit/m17741/fresh_rerun_result.json",
+    "development/audit/m17741/probe_m17741.json"
+  ],
+  "evidence": [
+    "development/audit/m17741/AUDIT.md",
+    "development/audit/m17741/audit_m17741.png",
+    "development/audit/m17741/audit_stats.json",
+    "development/audit/m17741/fresh_rerun_result.json",
+    "development/audit/m17741/make_audit_figure.py",
+    "development/audit/m17741/probe_m17741.json",
+    "development/audit/m17741/probe_m17741.py",
+    "development/audit/m17741/verdict_m17741.sql"
+  ]
+}
