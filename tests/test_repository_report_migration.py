@@ -662,6 +662,27 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             self.assertIn(survey["published_duplicate"], script)
             self.assertNotIn(survey["old_path"], script)
 
+    def test_sparse_raster_archive_preserves_tracked_evidence(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "sparse-raster-xval-2026-11-26.json").read_text()
+        )
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["new_sha256"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["new_git_blob"]])
+        for item in ledger["recovered_figures"] + ledger["regenerated_figures"]:
+            with self.subTest(figure=item["path"]):
+                raw = (REPO / item["path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["sha256"])
+                self.assertEqual(len(raw), item["size_bytes"])
+
     def test_papers_root_is_fully_mapped_to_benchmark_and_docs_owners(self):
         ledger_path = LEDGER_PATH.parent / "papers-root-retirement-2026-11-22.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

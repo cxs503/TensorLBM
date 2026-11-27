@@ -19,7 +19,7 @@ Cases (see ``predeclared.json``, written before any run):
   P6  index array vs ``lbmpy.sparse.SparseLbMapper.create_index_array`` (D3Q19)
   P7  storage cost + throughput vs solid fraction
 
-Run:  PYTHONPATH=src python xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/run_r2.py
+Run:  PYTHONPATH=src python development/verification/sparse_list_aos/round2_d3q19/run_r2.py
 Artifacts: results.json, tables.md (both written by this script, no hand copying).
 """
 

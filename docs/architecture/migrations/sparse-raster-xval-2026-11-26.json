@@ -1,0 +1,288 @@
+{
+  "source_commit": "7c7eedc64b586a29d36ae57aaf25dabab1fd5f65",
+  "candidate_base": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 12,
+  "note": "Shared PR #3048 accounts for BB root retirement; this independent batch changes only xval children.",
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 40
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM",
+    "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/predeclared.json",
+      "new_path": "development/verification/sparse_list_aos/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "af294329e0a4724d3f64816bb3923328ee8e8341",
+      "size_bytes": 4892,
+      "original_sha256": "8c4a9f542a8bb53cc02e92702ffe1786e28dc84644491d76eabd4f1b88e11ecd",
+      "new_sha256": "8c4a9f542a8bb53cc02e92702ffe1786e28dc84644491d76eabd4f1b88e11ecd",
+      "byte_identical": true,
+      "new_git_blob": "af294329e0a4724d3f64816bb3923328ee8e8341"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/results.json",
+      "new_path": "development/verification/sparse_list_aos/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "d76266960a262e38a27bfdc054939ef933eb2b7b",
+      "size_bytes": 67960,
+      "original_sha256": "086fc70ddfa40b6fbd2b8632ec86234ec16290a9ed3212ab4e20140bdaa6baef",
+      "new_sha256": "086fc70ddfa40b6fbd2b8632ec86234ec16290a9ed3212ab4e20140bdaa6baef",
+      "byte_identical": true,
+      "new_git_blob": "d76266960a262e38a27bfdc054939ef933eb2b7b"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/REPORT.md",
+      "new_path": "development/verification/sparse_list_aos/round2_d3q19/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "1a06d96c324f9d2adeaa85e9300d919c961572dc",
+      "size_bytes": 7700,
+      "original_sha256": "ca79373799f8a36537d5c637d7a04df2bd27e138531bb3be9ffce7d5cf5361a1",
+      "new_sha256": "ca79373799f8a36537d5c637d7a04df2bd27e138531bb3be9ffce7d5cf5361a1",
+      "byte_identical": true,
+      "new_git_blob": "1a06d96c324f9d2adeaa85e9300d919c961572dc"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/make_report.py",
+      "new_path": "development/verification/sparse_list_aos/round2_d3q19/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "42c04fe58603b40b91c0b1ae76b60a8c7da2d345",
+      "size_bytes": 15360,
+      "original_sha256": "7aac1a4c092639f4cbe6ab349b4537e86a2e0c63fc29fbb3b09f628998e6d478",
+      "new_sha256": "7aac1a4c092639f4cbe6ab349b4537e86a2e0c63fc29fbb3b09f628998e6d478",
+      "byte_identical": true,
+      "new_git_blob": "42c04fe58603b40b91c0b1ae76b60a8c7da2d345"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/predeclared.json",
+      "new_path": "development/verification/sparse_list_aos/round2_d3q19/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "217a2259b3040d60c7d15e75432c28395eada97e",
+      "size_bytes": 6076,
+      "original_sha256": "41d8955440a52a72679d8729910af56d9ee6122044e585cb32023db6501b8d43",
+      "new_sha256": "41d8955440a52a72679d8729910af56d9ee6122044e585cb32023db6501b8d43",
+      "byte_identical": true,
+      "new_git_blob": "217a2259b3040d60c7d15e75432c28395eada97e"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/results.json",
+      "new_path": "development/verification/sparse_list_aos/round2_d3q19/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "7c44d1a0dd1a216514fa78f57a95421a3597b453",
+      "size_bytes": 66831,
+      "original_sha256": "1d494e0bcb8c8d626c063127492e800b2738d9b4182b7cc2b3f85d1ea905f72f",
+      "new_sha256": "1d494e0bcb8c8d626c063127492e800b2738d9b4182b7cc2b3f85d1ea905f72f",
+      "byte_identical": true,
+      "new_git_blob": "7c44d1a0dd1a216514fa78f57a95421a3597b453"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/run_r2.py",
+      "new_path": "development/verification/sparse_list_aos/round2_d3q19/run_r2.py",
+      "git_mode": "100644",
+      "original_git_blob": "a564cfccac752695433bfbe595608554ce98351c",
+      "size_bytes": 32695,
+      "original_sha256": "42a77229c62f064520a4fa116eb449b3565af470de817a364179b51d8d999fdd",
+      "new_sha256": "64cffd426f2a848ad8c8253e49ea0e18194c962e363d1b16dd306df6be48e2bb",
+      "byte_identical": false,
+      "new_git_blob": "58eca1968b5cd973250841011c830a9c16c43958"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/tables.md",
+      "new_path": "development/verification/sparse_list_aos/round2_d3q19/tables.md",
+      "git_mode": "100644",
+      "original_git_blob": "8484c2f5f7985f729bea7282a7ca891942bb59db",
+      "size_bytes": 4414,
+      "original_sha256": "a984a13c0b6c8697ba2455c86fe38640fd181c6da00a1463a8a4b7dfbb287236",
+      "new_sha256": "a984a13c0b6c8697ba2455c86fe38640fd181c6da00a1463a8a4b7dfbb287236",
+      "byte_identical": true,
+      "new_git_blob": "8484c2f5f7985f729bea7282a7ca891942bb59db"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/run_xval.py",
+      "new_path": "development/verification/sparse_list_aos/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "8fc1101e0facba9a8190af3bc2ca719df5b38753",
+      "size_bytes": 28557,
+      "original_sha256": "428834bc0902b15e0b238d99e6f5066854e67ca212228531146e16034798fd24",
+      "new_sha256": "1a622916872d789bef7f2dfae94b560c494cbec41d94e7776aeb8416c4d16fc4",
+      "byte_identical": false,
+      "new_git_blob": "5b6007d7324a4aaa66313df813cbe0813ea24de0"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/tables.md",
+      "new_path": "development/verification/sparse_list_aos/tables.md",
+      "git_mode": "100644",
+      "original_git_blob": "2bb32975004cc8d78b4e6d63869b25e07d4aa4a7",
+      "size_bytes": 5096,
+      "original_sha256": "afa4634bb167a3af3bd6ff7f40e7a2736381e1180a8abe25802ca71669ca1122",
+      "new_sha256": "afa4634bb167a3af3bd6ff7f40e7a2736381e1180a8abe25802ca71669ca1122",
+      "byte_identical": true,
+      "new_git_blob": "2bb32975004cc8d78b4e6d63869b25e07d4aa4a7"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/make_figures.py",
+      "new_path": "development/verification/raster_corner_class/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "226092dbe3cc6fdaca6773460d03da056a317009",
+      "size_bytes": 8662,
+      "original_sha256": "3d2b311eed6ebdd46785acc9d89949c0537cc8b68e447c548b61180d3c9e1595",
+      "new_sha256": "4641057db08a2590af58a330ba3d99a2927d35dc2e4041be36ddb75bcf803303",
+      "byte_identical": false,
+      "new_git_blob": "cbc68a364dbbf0076a7fa3542cfecc0f679dda6e"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/make_report.py",
+      "new_path": "development/verification/raster_corner_class/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "50d8d20a76917f54ed5143cce71c27bb25d2ff49",
+      "size_bytes": 11617,
+      "original_sha256": "f9b8448a7764d25f92b179e17e56989c1fe8c5d8f31ebc4c3cbebf975de85e97",
+      "new_sha256": "22a710bffbf65bc0b4bf9437f9cd3e73c271684deb94adf3799442bb1eba5ea7",
+      "byte_identical": false,
+      "new_git_blob": "ffe73c2662ab63f272cfe40a2320025691b5b096"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/predeclared.json",
+      "new_path": "development/verification/raster_corner_class/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "0f654b36e24cf5d0ae0e2added64e54337bc84ee",
+      "size_bytes": 6753,
+      "original_sha256": "2bc8065c703473ed636c0e11b590080d908647c182626aadf737cf23b7f09f28",
+      "new_sha256": "2bc8065c703473ed636c0e11b590080d908647c182626aadf737cf23b7f09f28",
+      "byte_identical": true,
+      "new_git_blob": "0f654b36e24cf5d0ae0e2added64e54337bc84ee"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/raster_case.py",
+      "new_path": "development/verification/raster_corner_class/raster_case.py",
+      "git_mode": "100644",
+      "original_git_blob": "0ff2faedea03860176002767b8fb23a2f122b070",
+      "size_bytes": 19521,
+      "original_sha256": "014b6eff8bdcf278fbfafa2ec85d9bc49234506e34c6629e7c356b3728e0599a",
+      "new_sha256": "014b6eff8bdcf278fbfafa2ec85d9bc49234506e34c6629e7c356b3728e0599a",
+      "byte_identical": true,
+      "new_git_blob": "0ff2faedea03860176002767b8fb23a2f122b070"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/results.json",
+      "new_path": "development/verification/raster_corner_class/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "ad745b46a55e879747ef9ac14c5dd975f0e9671f",
+      "size_bytes": 35612,
+      "original_sha256": "276256e9dbeba03b3eed5890bd220bae28cd26a45bc163b2212bb23eefabc021",
+      "new_sha256": "276256e9dbeba03b3eed5890bd220bae28cd26a45bc163b2212bb23eefabc021",
+      "byte_identical": true,
+      "new_git_blob": "ad745b46a55e879747ef9ac14c5dd975f0e9671f"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/run_shard.py",
+      "new_path": "development/verification/raster_corner_class/run_shard.py",
+      "git_mode": "100644",
+      "original_git_blob": "fe527ab5d83957de72e0ad62536dde13224b0912",
+      "size_bytes": 1901,
+      "original_sha256": "dff1408995a40ce86b519cba325e34ec9814f929b3b8ded410074c9065231a10",
+      "new_sha256": "e9e2d22e978d41186bfc4f6bd8ea064f1a407ffaf3c8ad9c833f496e5d68aa6a",
+      "byte_identical": false,
+      "new_git_blob": "92f8960215ddf307d52065f5c2876decb72b7968"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK/run_xval.py",
+      "new_path": "development/verification/raster_corner_class/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "3b827b7e626db7a27eade3139b2d0f574abc3688",
+      "size_bytes": 10764,
+      "original_sha256": "ca2dca33db32b59eaeaa088035f3dff49b5041f7ca54181321afc3474b7e5a96",
+      "new_sha256": "f690a87d21b7aaef4bd2a92c751865c6b1393d67d659cfc80743b7f236502cf5",
+      "byte_identical": false,
+      "new_git_blob": "ef1c93931ecd11680a7d780a7c6ce261446b1793"
+    }
+  ],
+  "recovered_figures": [
+    {
+      "path": "development/verification/raster_corner_class/figures/fig1_fields.png",
+      "sha256": "e368495fa50eb2803f2e7065d5d65ce46c6b65c8f70acbb77ed0b19ced675175",
+      "size_bytes": 177518,
+      "source_payload": "development/audit/m18313/report_payload.json",
+      "source_payload_sha256": "eb8cd3a0f55193fd05338ff2183e9da4d77a1a2c1e2ea9e1a7063a6ed4e427fb",
+      "payload_field": "figures[].png_base64",
+      "kind": "original_payload_recovery"
+    },
+    {
+      "path": "development/verification/raster_corner_class/figures/fig2_corner_links.png",
+      "sha256": "120616ced574a6cad5e175c30bcb9b02b6dd4f09e80073fd70576f1ca2c1b53b",
+      "size_bytes": 115052,
+      "source_payload": "development/audit/m18313/report_payload.json",
+      "source_payload_sha256": "eb8cd3a0f55193fd05338ff2183e9da4d77a1a2c1e2ea9e1a7063a6ed4e427fb",
+      "payload_field": "figures[].png_base64",
+      "kind": "original_payload_recovery"
+    },
+    {
+      "path": "development/verification/raster_corner_class/figures/fig3_convergence.png",
+      "sha256": "6f1d77f5826672063d00475f0e41fee11b2da688a484ed0219c0b01634aa475b",
+      "size_bytes": 76862,
+      "source_payload": "development/audit/m18313/report_payload.json",
+      "source_payload_sha256": "eb8cd3a0f55193fd05338ff2183e9da4d77a1a2c1e2ea9e1a7063a6ed4e427fb",
+      "payload_field": "figures[].png_base64",
+      "kind": "original_payload_recovery"
+    },
+    {
+      "path": "development/verification/raster_corner_class/figures/fig4_anchor.png",
+      "sha256": "2aef26202493244c54b2aeae50096a0a69d1120573b3fb140cc8305f94cd6ce5",
+      "size_bytes": 83570,
+      "source_payload": "development/audit/m18313/report_payload.json",
+      "source_payload_sha256": "eb8cd3a0f55193fd05338ff2183e9da4d77a1a2c1e2ea9e1a7063a6ed4e427fb",
+      "payload_field": "figures[].png_base64",
+      "kind": "original_payload_recovery"
+    }
+  ],
+  "reference_scan": "Tracked exact-path scan: published sparse report commands, raster regression import, moved driver root depth and command docs updated. Archived absolute cluster paths, original reports, preregistration and result data intentionally remain historical.",
+  "compatibility": "Official solver source not changed; public report URLs retained. Registry case IDs xval:sparse_list_aos and xval:raster_corner_class; actual source, archived evidence, criteria and reports linked.",
+  "scientific_scope": "Historical evidence, no new full scientific acceptance. No numerical algorithm or tolerances changed.",
+  "retained_independent_failures": {
+    "pointwise": "test_xval_pointwise_tolerance_policy.py::test_policy_matches_recomputation (baseline failure); retain directory",
+    "poiseuille_force_anchor": "test_xval_poiseuille_force_anchor.py::test_reference_profile_is_symmetric_about_midplane (baseline failure); retain directory",
+    "selective_ghost_3dtgv": "four pre-existing failures in test_xval_mpi_ghost_fused_tgv_reference.py; retain both predecessor and follow-up directories"
+  },
+  "regenerated_figures": [
+    {
+      "path": "development/verification/sparse_list_aos/figures/poiseuille_convergence.png",
+      "sha256": "d340202602f718fd5953fcc6936f99eaf3af0645122b4dd8845e339e7983b210",
+      "size_bytes": 48739,
+      "source_data": "development/verification/sparse_list_aos/results.json",
+      "source_data_sha256": "086fc70ddfa40b6fbd2b8632ec86234ec16290a9ed3212ab4e20140bdaa6baef",
+      "renderer": "development/verification/sparse_list_aos/run_xval.py",
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/sparse_list_aos/figures/poiseuille_profile.png",
+      "sha256": "8e0bb3dd789ed78c68d8cbe78802d038c778147dcd094b9160e7eb7a16056c1d",
+      "size_bytes": 107099,
+      "source_data": "development/verification/sparse_list_aos/results.json",
+      "source_data_sha256": "086fc70ddfa40b6fbd2b8632ec86234ec16290a9ed3212ab4e20140bdaa6baef",
+      "renderer": "development/verification/sparse_list_aos/run_xval.py",
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    },
+    {
+      "path": "development/verification/sparse_list_aos/figures/taylor_green_decay.png",
+      "sha256": "385357d3ea70b51e355f25661364aad59e0d5c8bb7f8cc39d73975fa5cb4a842",
+      "size_bytes": 58637,
+      "source_data": "development/verification/sparse_list_aos/results.json",
+      "source_data_sha256": "086fc70ddfa40b6fbd2b8632ec86234ec16290a9ed3212ab4e20140bdaa6baef",
+      "renderer": "development/verification/sparse_list_aos/run_xval.py",
+      "kind": "historical_data_rendered_before_and_after_byte_identically"
+    }
+  ],
+  "validation": {
+    "targeted_before": "20 passed, 1 skipped (lbmpy not installed)",
+    "targeted_after": "20 passed, 1 skipped (lbmpy not installed)",
+    "cli_help": "sparse runner, raster runner and raster shard dispatcher: identical before/after",
+    "offline_render": "3 sparse PNGs from existing JSON were identical before/after; raster report regenerated from committed JSON is identical to original except the explicit archive-navigation note",
+    "unavailable": "Sparse round 2 historical figures are untracked; report publisher not run because it publishes externally. Raster original raw fields and per-run metrics are not tracked; 4 original PNGs are recovered from report payload. Full scientific replays deferred."
+  }
+}

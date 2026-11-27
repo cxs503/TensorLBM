@@ -115,7 +115,7 @@
 
 ## 4. 结果图 (Figures)
 
-图表已在 `xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/figures/` 生成：
+图表已在 `development/verification/sparse_list_aos/figures/` 生成：
 - `poiseuille_profile.png`: P1 通道剖面与解析解对比
 - `poiseuille_convergence.png`: P1 网格收敛曲线
 - `taylor_green_decay.png`: 2-D Taylor-Green衰减曲线
@@ -194,14 +194,14 @@ P6_layout_mismatch_detected: PASS
 ```bash
 # 运行完整验证套件
 cd /srv/tensor/agent/work/m22363
-PYTHONPATH=src python xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/run_r2.py
+PYTHONPATH=src python development/verification/sparse_list_aos/round2_d3q19/run_r2.py
 
 # 运行单元测试
 PYTHONPATH=src python -m pytest tests/test_xval_sparse_list_aos.py tests/test_xval_sparse_list_aos_3d.py -v
 
 # 结果文件
-# xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/results.json
-# xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/tables.md
+# development/verification/sparse_list_aos/round2_d3q19/results.json
+# development/verification/sparse_list_aos/round2_d3q19/tables.md
 ```
 
 ---
@@ -222,3 +222,6 @@ TensorLBM 对 `lssfau/lbmpy` 稀疏列表存储格式的移植实现已通过全
 
 **Commit**: (待提交)  
 **Report ID**: (待发布)
+
+
+Repository relocation: [case index and historical artifacts](../benchmarks/cross_validation/sparse_list_aos/README.md). Original numerical evidence is unchanged.

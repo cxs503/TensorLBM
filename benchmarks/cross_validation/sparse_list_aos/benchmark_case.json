@@ -1,0 +1,80 @@
+{
+  "scope": "Archived sparse-list layout/streaming comparison in two and three dimensions; original analytical and independent reference evidence only.",
+  "criteria": {
+    "historical": "Apply original preregistration and recorded limits only; no claims are broadened.",
+    "current_acceptance": "Not evaluated by relocation.",
+    "archived_protocol_thresholds": {
+      "R1": {
+        "T1_index_equality": {
+          "test": "np.array_equal",
+          "pass": "exact"
+        },
+        "T2_sparse_vs_dense": {
+          "metric": "max|du|/u_max",
+          "pass": "<= 1e-12"
+        },
+        "T3_poiseuille_vs_analytic": {
+          "metric": "Linf_rel",
+          "pass": "<= 0.15",
+          "grids": "H in {16,32,64}"
+        },
+        "T4_taylor_green_decay": {
+          "metric": "rel error of decay exponent",
+          "pass": "<= 0.15"
+        },
+        "T5_mass_conservation": {
+          "metric": "max |sum rho - N| / N over the run",
+          "pass": "<= 1e-12"
+        },
+        "T6_aos_stride_mismatch": {
+          "metric": "max|du|/u_max when offsets use cell*Q+d",
+          "pass": "> 0.01 (i.e. the mismatch must be detectable)"
+        }
+      },
+      "R2": {
+        "physics_error": "15% (owner precision standard, all cases)",
+        "arm_equivalence": "1e-12 (float64 round-off; measured expectation ~1e-14)",
+        "index_array": "0 mismatches",
+        "layout_mismatch_control": "must exceed 1e-6 or be non-finite (i.e. detectable, not silent)",
+        "mass": "1e-12",
+        "grid_convergence": "error must decrease with resolution for the two finest grids of every refinement study"
+      }
+    }
+  },
+  "source": [
+    "development/verification/sparse_list_aos/round2_d3q19/make_report.py",
+    "development/verification/sparse_list_aos/round2_d3q19/run_r2.py",
+    "development/verification/sparse_list_aos/run_xval.py",
+    "src/tensorlbm/sparse_list_aos.py",
+    "tests/test_xval_sparse_list_aos.py"
+  ],
+  "config": [
+    "development/verification/sparse_list_aos/predeclared.json",
+    "development/verification/sparse_list_aos/round2_d3q19/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/sparse_list_aos/README.md",
+    "docs/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM.md",
+    "docs/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM-FINAL-REPORT.md",
+    "development/verification/sparse_list_aos/README.md"
+  ],
+  "reference_files": [
+    "development/verification/sparse_list_aos/predeclared.json",
+    "development/verification/sparse_list_aos/round2_d3q19/predeclared.json",
+    "docs/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM.md",
+    "docs/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM-FINAL-REPORT.md"
+  ],
+  "results": [
+    "development/verification/sparse_list_aos/results.json",
+    "development/verification/sparse_list_aos/round2_d3q19/results.json"
+  ],
+  "evidence": [
+    "development/verification/sparse_list_aos/round2_d3q19/REPORT.md",
+    "development/verification/sparse_list_aos/round2_d3q19/tables.md",
+    "development/verification/sparse_list_aos/tables.md",
+    "development/verification/sparse_list_aos/figures/poiseuille_convergence.png",
+    "development/verification/sparse_list_aos/figures/poiseuille_profile.png",
+    "development/verification/sparse_list_aos/figures/taylor_green_decay.png",
+    "docs/architecture/migrations/sparse-raster-xval-2026-11-26.json"
+  ]
+}

@@ -138,3 +138,6 @@ the relative L2 of `u_x` over fluid nodes. Case C1 detailed difference: see `fig
 on one geometry family (staircase rectangle arrays at 9.09 % solid). It is not a statement about the
 OSS phase-field physics, and the drag error is a derived quantity whose sensitivity to the link set is
 geometry-dependent.
+
+
+Repository relocation: [case index and original figures](../benchmarks/cross_validation/raster_corner_class/README.md). Original numerical evidence is unchanged.

@@ -23,6 +23,20 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(sum("pdf" in row["tutorial"] for row in records), 33)
         self.assertTrue(all(row["current_acceptance"] == "not_evaluated" for row in records))
 
+    def test_sparse_and_raster_archives_have_searchable_evidence(self):
+        for name, result, figure in (
+            ("sparse_list_aos", "round2_d3q19/results.json", "poiseuille_profile.png"),
+            ("raster_corner_class", "results.json", "fig1_fields.png"),
+        ):
+            with self.subTest(case=name):
+                (record,) = self.registry("--case", f"xval:{name}")
+                variant = record["variants"][0]
+                archive = f"development/verification/{name}"
+                self.assertIn(f"{archive}/{result}", variant["results"])
+                self.assertIn(f"{archive}/figures/{figure}", variant["evidence"])
+                self.assertIn(f"{archive}/README.md", variant["documentation"])
+                self.assertEqual(record["current_acceptance"], "not_evaluated")
+
     def test_relocated_kovasznay_runners_and_norberg_reference_are_searchable(self):
         (kovasznay,) = self.registry("--case", "benchmarks/verified/kovasznay_2d")
         directory = "benchmarks/verified/kovasznay_2d"
