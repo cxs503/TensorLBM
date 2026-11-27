@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-REPO = pathlib.Path(__file__).resolve().parents[2]
+REPO = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 from tensorlbm.validation import cylinder_dfg as cdfg
 
@@ -42,6 +42,7 @@ ax[1].set_xlabel("D [cells]"); ax[1].set_ylabel("τ (MRT)")
 ax[1].set_title("(b) τ vs resolution (Re=100 fixed, u_mean=0.0833)")
 ax[1].grid(alpha=0.3)
 fig.tight_layout()
-out = pathlib.Path(__file__).parent / "m28104_dfg_cl_amp.png"
+out = REPO / "outputs" / "historical" / "m28104" / "m28104_dfg_cl_amp.png"
+out.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(out, dpi=150)
 print(f"wrote {out}")

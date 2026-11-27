@@ -2099,15 +2099,32 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertEqual(len(set(rows.values())), 13)
         for retired in ledger["retired_second_level_directories"]:
             self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        successor = json.loads((LEDGER_PATH.parent /
+                                "m28104-dfg-concurrent-path-corrections-2026-11-28.json").read_text())
+        corrections = {row["new_path"]: row for row in successor["concurrent_path_corrections"]}
+        self.assertEqual(len(corrections), 2)
+        self.assertTrue(set(corrections) <= {r["new_path"] for r in ledger["unchanged_prior_archive"]})
         for row in ledger["entries"] + ledger["consumer_edits"] + ledger["unchanged_prior_archive"]:
             destination = REPO / row["new_path"]
-            self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+            correction = corrections.get(row["new_path"])
+            current = correction or row
+            self.assert_fingerprint(destination, current["current_sha256"], current["current_size_bytes"])
             mode, blob = subprocess.check_output(
                 ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
             ).split()[:2]
             self.assertEqual(mode, row["git_mode"])
             original = destination.read_bytes()
-            if row["byte_identical"]:
+            if correction:
+                self.assertTrue(row["byte_identical"])
+                self.assertEqual(blob, correction["current_git_blob"])
+                self.assertEqual(correction["original_git_blob"], row["original_git_blob"])
+                self.assertEqual(correction["original_sha256"], row["current_sha256"])
+                self.assertEqual(correction["size_bytes"], row["current_size_bytes"])
+                for edit in reversed(correction["path_only_edits"]):
+                    old, new = edit["old"].encode(), edit["new"].encode()
+                    self.assertEqual(original.count(new), edit["count"])
+                    original = original.replace(new, old)
+            elif row["byte_identical"]:
                 self.assertEqual(blob, row["original_git_blob"])
             else:
                 replacement = row["path_only_edit"]
@@ -2160,6 +2177,59 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertIn(f"]({target})", doc.read_text(encoding="utf-8"))
                 self.assertTrue((doc.parent / target).is_dir())
 
+
+    def test_m28104_concurrent_archive_keeps_original_evidence_and_case_status(self):
+        path = LEDGER_PATH.parent / "m28104-dfg-concurrent-path-corrections-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 7)
+        for directory in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", directory], cwd=REPO))
+        for row in ledger["entries"]:
+            destination = REPO / row["new_path"]
+            self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+            original = destination.read_bytes()
+            for edit in reversed(row.get("path_only_edits", [])):
+                old, new = edit["old"].encode(), edit["new"].encode()
+                self.assertEqual(original.count(new), edit["count"])
+                original = original.replace(new, old)
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(len(original), row["size_bytes"])
+            self.assertEqual(hashlib.sha1(f"blob {len(original)}\0".encode() + original).hexdigest(),
+                             row["original_git_blob"])
+            self.assertFalse((REPO / row["old_path"]).exists())
+        for row in ledger["unchanged_related_assets_at_migration"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                if target.startswith("https://github.com/cxs503/TensorLBM/blob/"):
+                    self.assertTrue(target.startswith(
+                        "https://github.com/cxs503/TensorLBM/blob/" + ledger["base_main"] + "/"))
+                else:
+                    self.assertTrue((index.parent / target).is_file(), target)
+        records = json.loads(subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--json"], cwd=REPO,
+        ))["cases"]
+        case = next(row for row in records if row["id"] == "benchmarks/pending/cylinder_re100_dfg")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        variant = case["variants"][0]
+        self.assertEqual(variant["archive_bucket"], "pending")
+        self.assertIn("development/audit/m28104/REPORT.md", variant["documentation"])
+        self.assertIn("development/audit/m28104/cl_cd_table.json", variant["results"])
+        self.assertIn("development/audit/m28104/m28104_dfg_cl_amp.png", variant["evidence"])
+        parity = ledger["compatibility"]["replay_parity"]
+        self.assertEqual(len(parity["outputs"]), 2)
+        self.assertTrue(all(row["before_after_byte_identical"] for row in parity["outputs"]))
+        self.assertEqual(parity["regression_tests_before"], 5)
+        self.assertEqual(parity["regression_tests_after"], 5)
+        self.assertFalse(parity["solver_invoked"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
 
     def test_cac_gravity_mission_archive_keeps_original_objects(self):
         ledger_path = LEDGER_PATH.parent / "cac-gravity-mission-archives-2026-11-27.json"

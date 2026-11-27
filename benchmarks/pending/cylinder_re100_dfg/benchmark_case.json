@@ -21,7 +21,9 @@
     "benchmarks/pending/cylinder_re100_dfg/README.md",
     "benchmarks/verified/cylinder/re100_dfg/evidence/m23014/README.md",
     "development/audit/m23014/README.md",
-    "development/audit/m23014/REPORT.md"
+    "development/audit/m23014/REPORT.md",
+    "development/audit/m28104/README.md",
+    "development/audit/m28104/REPORT.md"
   ],
   "reference_files": [
     "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md"
@@ -78,7 +80,9 @@
     "benchmarks/pending/cylinder_re100_dfg/validation_status.json",
     "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
     "development/audit/m23014/analysis.json",
-    "development/audit/m23014/h3_h4_audit.json"
+    "development/audit/m23014/h3_h4_audit.json",
+    "development/audit/m28104/cl_cd_table.json",
+    "development/audit/m28104/root_cause_verdict.json"
   ],
   "evidence": [
     "benchmarks/verified/cylinder/re100_dfg/artifacts/benchmark.json",
@@ -95,6 +99,10 @@
     "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
     "benchmarks/verified/cylinder/re100_dfg/repro.sh",
     "docs/figures/m23014_cl_series.png",
-    "docs/figures/m23014_dfg_hypotheses.png"
+    "docs/figures/m23014_dfg_hypotheses.png",
+    "development/audit/m28104/m28104_dfg_cl_amp.png",
+    "development/audit/m28104/reproduce_table.py",
+    "development/audit/m28104/root_cause_isolate.py",
+    "development/audit/m28104/make_figs.py"
   ]
 }

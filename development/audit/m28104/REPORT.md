@@ -1,8 +1,8 @@
 # m28104 · TensorLBM P0：DFG 2D 圆柱绕流升力 35% 偏差根因调查（LBM-P0-DFG）
 
 > 锚点 **LBM-P0-DFG** · 仓 TensorLBM · 分支 `agent/m28104` · 案例 `CASE-CYLINDER-DRAG-RE100`
-> 产物：`docs/m28104/reproduce_table.py`（复现表）、`docs/m28104/root_cause_isolate.py`（八候选根因隔离）、
-> `tests/test_m28104_dfg_root_cause.py`（5 条回归锁）、`docs/m28104/m28104_dfg_cl_amp.png`（收敛图）。
+> 产物：`development/audit/m28104/reproduce_table.py`（复现表）、`development/audit/m28104/root_cause_isolate.py`（八候选根因隔离）、
+> `tests/test_m28104_dfg_root_cause.py`（5 条回归锁）、`development/audit/m28104/m28104_dfg_cl_amp.png`（收敛图）。
 
 ## ① 案例介绍（物理背景/几何/参数表）
 
@@ -36,7 +36,7 @@ DFG 基准（Schäfer & Turek 1996, NNFM 48, case **2D-2**，Re=100）：直径 
 
 ## ④ 结果图
 
-`docs/m28104/m28104_dfg_cl_amp.png`（matplotlib 程序化生成，数字由冻结时序注入）：
+`development/audit/m28104/m28104_dfg_cl_amp.png`（matplotlib 程序化生成，数字由冻结时序注入）：
 - (a) C_L 幅值误差 vs 分辨率：legacy（红，+24~36%）与 fixed（绿，+17.8%→+2.8%）梯形，
   绿色带=±5% 容差，灰虚线=+15% 任务判据；
 - (b) τ vs 分辨率：定马赫加密下 τ 单调上升（0.550→0.600），与网格绑定。
