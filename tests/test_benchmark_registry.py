@@ -128,6 +128,16 @@ class BenchmarkRegistryTests(unittest.TestCase):
                 self.assertNotIn(evidence, variant["evidence"])
         self.assertEqual(case["current_acceptance"], "not_evaluated")
 
+    def test_eos_maxwell_retains_related_peng_robinson_archive(self):
+        (record,) = self.registry("--case", "benchmarks/eos_maxwell")
+        variant = record["variants"][0]
+        archive = "development/verification/peng-robinson-pseudopotential"
+        self.assertIn(f"{archive}/prereg.md", variant["reference_files"])
+        self.assertIn(f"{archive}/artifacts/results.json", variant["evidence"])
+        self.assertIn(f"{archive}/artifacts/snapshot.npz", variant["evidence"])
+        self.assertIn("benchmarks/eos_maxwell/out/results.json", variant["results"])
+        self.assertEqual(record["current_acceptance"], "not_evaluated")
+
     def test_standalone_ritter_keeps_its_gate_separate_from_matrix_case(self):
         (campaign,) = self.registry("--case", "campaign:dam_break_ritter")
         (matrix,) = self.registry("--case", "matrix:dam_break_ritter_ci")

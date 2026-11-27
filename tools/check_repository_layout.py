@@ -92,6 +92,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-R4-COEXISTENCE"),
     ("xval", "horizontal_survey_empty"),
     ("xval", "XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO"),
+    ("xval", "XVAL-LBM-PENG-ROBINSON-PSEUDOPOTENTIAL"),
+    ("xval", "XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT"),
     ("xval", "model_matrix_wall_axis"),
     ("xval", "mcmp_cross_force"),
     ("xval", "XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY"),
