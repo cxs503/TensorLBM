@@ -5,7 +5,7 @@
   "tolerance_pct": 5.0,
   "levels": {
     "D20": {
-      "series": "verified/cylinder/re100_dfg/artifacts/level_D20_u0833.series.npz",
+      "series": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0833.series.npz",
       "n_samples_total": 14000,
       "n_samples_used": 9998,
       "transient_steps_dropped": 4002,
@@ -52,7 +52,7 @@
       }
     },
     "D28": {
-      "series": "verified/cylinder/re100_dfg/artifacts/level_D28_u0833.series.npz",
+      "series": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D28_u0833.series.npz",
       "n_samples_total": 20000,
       "n_samples_used": 14398,
       "transient_steps_dropped": 5602,
@@ -99,7 +99,7 @@
       }
     },
     "D40": {
-      "series": "verified/cylinder/re100_dfg/artifacts/level_D40_u0833.series.npz",
+      "series": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.series.npz",
       "n_samples_total": 27200,
       "n_samples_used": 19197,
       "transient_steps_dropped": 8003,

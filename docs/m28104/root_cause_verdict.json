@@ -1,0 +1,125 @@
+{
+  "case": "CASE-CYLINDER-DRAG-RE100 (DFG 2D-2, Re=100)",
+  "verdicts": {
+    "C1_estimator": {
+      "mechanism": "peak-pick over whole record vs fundamental at shedding frequency",
+      "evidence": {
+        "D20": 24.50825138315542,
+        "D28": 36.04206121957847,
+        "D40": 35.07215888778159
+      },
+      "fixed_evidence": {
+        "D20": 17.85677297802435,
+        "D28": 17.749100519656878,
+        "D40": 2.8345352354138154
+      },
+      "verdict": "CONFIRMED \u2014 legacy peak-pick overstates by up to +36 %; fundamental estimator recovers the limit-cycle amplitude (D40 +2.8 %)."
+    },
+    "C2_window": {
+      "mechanism": "start-up transient inside the averaging window",
+      "evidence": {
+        "D20": 28.6,
+        "D28": 28.0,
+        "D40": 29.4
+      },
+      "verdict": "CONFIRMED \u2014 transient is 4\u201322 % of the record; excluding it is mandatory (m16827 D3)."
+    },
+    "C3_grid": {
+      "mechanism": "grid resolution (D_cells) \u2014 the residual error after C1/C2",
+      "evidence": {
+        "D20": 17.85677297802435,
+        "D28": 17.749100519656878,
+        "D40": 2.8345352354138154
+      },
+      "spans": {
+        "D20->D28": {
+          "cl_amp_span_pct": 0.09135873624127311,
+          "cd_span_pct": 1.983815302413378
+        },
+        "D28->D40": {
+          "cl_amp_span_pct": 12.666394238615222,
+          "cd_span_pct": 3.733274958120942
+        }
+      },
+      "verdict": "CONFIRMED as residual \u2014 cl_amp error drops from +17.8 % (D28) to +2.8 % (D40); the D28\u2192D40 span (14.5 %) exceeds the 3 % convergence criterion, so D\u226548 is required to close the ladder."
+    },
+    "C4_tau": {
+      "mechanism": "\u03c4 (same Re, same geometry, different u_mean)",
+      "evidence": {
+        "D20_u0833": {
+          "tau": 0.54998,
+          "cl_amp": 1.1785677297802435
+        },
+        "D20_u0600": {
+          "tau": 0.536,
+          "cl_amp": 1.1247258020607245
+        }
+      },
+      "delta_cl_amp_pct": 4.787115901570831,
+      "verdict": "MARGINAL \u2014 \u0394\u03c4=0.014 moves cl_amp by ~4 % (m23014 H2); not the driver of the +35 %."
+    },
+    "C5_boundary": {
+      "mechanism": "half-way bounce-back effective diameter D+1 (O(1/D) bias)",
+      "evidence": {
+        "D20": 1.05,
+        "D28": 1.0357142857142858,
+        "D40": 1.025
+      },
+      "verdict": "FALSIFIED as the +35 % driver \u2014 the bias is monotone O(1/D) (5 %\u21921.8 %) and cannot produce the non-monotone cl_amp error cliff (m23014 H3)."
+    },
+    "C6_anisotropy": {
+      "mechanism": "grid anisotropy (dx \u2260 dy)",
+      "evidence": {
+        "D20": {
+          "dx": 0.005,
+          "dy": 0.005
+        },
+        "D28": {
+          "dx": 0.0035714285714285718,
+          "dy": 0.0035714285714285718
+        },
+        "D40": {
+          "dx": 0.0025,
+          "dy": 0.0025
+        }
+      },
+      "verdict": "FALSIFIED \u2014 the lattice is square (dx = dy = D/10) at every level; no anisotropic cell aspect ratio."
+    },
+    "C7_collision": {
+      "mechanism": "MRT vs BGK \u2014 both recover \u03bd=(\u03c4\u22120.5)/3; MRT adds non-hydrodynamic damping (s_e=1.64, s_eps=1.54, s_q=1.7)",
+      "evidence": {
+        "D20": {
+          "tau_mrt": 0.54998,
+          "tau_bgk": 0.54998
+        },
+        "D28": {
+          "tau_mrt": 0.569972,
+          "tau_bgk": 0.569972
+        },
+        "D40": {
+          "tau_mrt": 0.59996,
+          "tau_bgk": 0.59996
+        }
+      },
+      "verdict": "NOT THE DRIVER \u2014 the case runs MRT with the standard relaxation rates; the recovered \u03bd is identical to BGK. A BGK-vs-MRT A/B at fixed \u03bd is a follow-up, not a precondition for the +35 % attribution."
+    },
+    "C8_force": {
+      "mechanism": "Ladd momentum-exchange force (F = 2\u00b7\u03a3 c_i\u00b7f_i on solid)",
+      "evidence": {
+        "D20": {
+          "cl_mean": -0.03463258966803551,
+          "cd_mean": 3.4883854389190674
+        },
+        "D28": {
+          "cl_mean": -0.035514120012521744,
+          "cd_mean": 3.410775899887085
+        },
+        "D40": {
+          "cl_mean": -0.03841505944728851,
+          "cd_mean": 3.2904927730560303
+        }
+      },
+      "verdict": "NOT THE DRIVER \u2014 mean lift \u2248 0 (|cl|/cd < 1 %) and mean drag is positive at every level; the force sign/scale is consistent with the momentum-exchange convention. cd/st/dp all land <5 % at D40, so a global force-scale error is excluded."
+    }
+  }
+}
