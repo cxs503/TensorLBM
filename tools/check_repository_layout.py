@@ -203,6 +203,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "audit_m18753"),
     ("docs", "audit_m21631"),
     ("xval", "XVAL-LBM-INSTRUCTION-DSL-TESTS-SH"),
+    ("docs", "board-audit-m15884"),
+    ("docs", "de_intel"),
     ("docs", "audit_m16237"),
     ("docs", "audit_m17596"),
     ("docs", "m23014"),
