@@ -1010,6 +1010,49 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
                 self.assertTrue((index.parent / link).is_file(), link)
 
+    def test_three_historical_audit_folders_preserve_evidence_and_case_ids(self):
+        ledger_path = LEDGER_PATH.parent / "historical-audit-docs-2026-11-27.json"
+        ledger = json.loads(ledger_path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == ledger_path.relative_to(REPO).as_posix()}
+        self.assertEqual(rows, {entry["old_path"]: entry["new_path"] for entry in ledger["entries"]})
+        self.assertEqual(len(rows), 9)
+        self.assertEqual(len(ledger["retired_second_level_directories"]), 3)
+        for path in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", path], cwd=REPO))
+        for entry in ledger["entries"] + ledger["compatibility"]["m21631_prior_archived_evidence"]:
+            self.assert_fingerprint(REPO / entry["new_path"], entry["original_sha256"], entry["size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[:2], [entry["git_mode"], entry["original_git_blob"]])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        owners = ledger["compatibility"]["case_ownership"]
+        for mission, path in owners.items():
+            output = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", path], cwd=REPO, text=True,
+            )
+            (record,) = json.loads(output)["cases"]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            (variant,) = record["variants"]
+            if mission == "m20183":
+                self.assertEqual(variant["archive_bucket"], "pending")
+                self.assertEqual(variant["results"], ["development/audit/m20183/audit_checks.json"])
+                summary = json.loads((REPO / variant["results"][0]).read_text())
+                self.assertEqual(summary["delivered_record"]["n_runs_in_dir"], 1)
+                self.assertFalse(summary["ledger_criteria"]["publication_target_3pct_met"])
+            elif mission == "m18785":
+                self.assertIn("development/audit/m18785/AUDIT_m18753.md", variant["documentation"])
+                self.assertIn("development/audit/m18785/AUDIT_m18753.md", variant["evidence"])
+            else:
+                self.assertIn(ledger["compatibility"]["m21631_case_pointer"], variant["evidence"])
+        for path in ("development/audit/m20183/README.md", "development/audit/m18785/README.md",
+                     ledger["compatibility"]["m21631_case_pointer"]):
+            index = REPO / path
+            for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / link).is_file(), link)
+
     def test_m18430_audit_tools_preserve_provenance_and_report_url(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "m18430-audit-tools-2026-11-22.json").read_text(

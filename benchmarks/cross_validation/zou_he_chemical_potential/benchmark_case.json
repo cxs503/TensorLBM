@@ -18,7 +18,7 @@
   ],
   "documentation": [
     "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
-    "docs/audit_m18753/AUDIT_m18753.md"
+    "development/audit/m18785/AUDIT_m18753.md"
   ],
   "reference_files": [
     "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
@@ -42,6 +42,6 @@
   "evidence": [
     "docs/architecture/migrations/zou-he-chemical-potential-xval-2026-11-24.json",
     "docs/oss_solutions_XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.sql",
-    "docs/audit_m18753/AUDIT_m18753.md"
+    "development/audit/m18785/AUDIT_m18753.md"
   ]
 }
