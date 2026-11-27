@@ -1355,6 +1355,62 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn('EVIDENCE_DIR / "tiers"', runner)
         self.assertIn('EVIDENCE_DIR / "logs" / "sweep.log"', runner)
 
+    def test_board_audit_and_design_script_handoff_preserves_inputs(self):
+        path = LEDGER_PATH.parent / "board-audit-and-design-script-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 5)
+        for old in manifest:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", old], cwd=REPO))
+        for row in ledger["entries"] + ledger["consumer_edits"] + ledger["unchanged_prior_archive"]:
+            destination = REPO / row["new_path"]
+            self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+            mode, blob = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", row["new_path"]], cwd=REPO, text=True,
+            ).split()[:2]
+            self.assertEqual(mode, row["git_mode"])
+            original = destination.read_bytes()
+            if row["byte_identical"]:
+                self.assertEqual(blob, row["original_git_blob"])
+            else:
+                for edit in reversed(row["path_only_replacements"]):
+                    self.assertEqual(original.count(edit["new"].encode()), edit["count"])
+                    original = original.replace(edit["new"].encode(), edit["old"].encode())
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(len(original), row["size_bytes"])
+            self.assertEqual(hashlib.sha1(f"blob {len(original)}\0".encode() + original).hexdigest(),
+                             row["original_git_blob"])
+        for row in ledger["derived_reanalysis"]:
+            self.assert_fingerprint(REPO / row["path"], row["sha256"], row["size_bytes"])
+            self.assertTrue(row["before_after_byte_identical"])
+            self.assertFalse(row["original_historical_artifact_recovered"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / target).is_file(), target)
+        for row in ledger["consumer_edits"]:
+            report = REPO / row["new_path"]
+            for target in re.findall(r"\]\(([^)]+)\)", row["path_only_replacements"][0]["new"]):
+                self.assertTrue((report.parent / target).is_file(), target)
+        registry = json.loads(subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--json"], cwd=REPO,
+        ))["cases"]
+        for owner, pointer in (
+            ("benchmarks/case_pool/mcmp_laplace",
+             "benchmarks/case_pool/mcmp_laplace/evidence/m15891/README.md"),
+            ("benchmarks/verified/mcmp_stratified_poiseuille",
+             "benchmarks/verified/mcmp_stratified_poiseuille/evidence/m15044/README.md"),
+        ):
+            variant = next((row, v) for row in registry for v in row["variants"]
+                           if v["path"] == owner)
+            self.assertEqual(variant[0]["current_acceptance"], "not_evaluated")
+            self.assertIn(pointer, variant[1]["evidence"])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_dfg_board_and_drop_design_records_preserve_originals(self):
         path = LEDGER_PATH.parent / "dfg-board-and-drop-design-records-2026-11-27.json"
         ledger = json.loads(path.read_text())

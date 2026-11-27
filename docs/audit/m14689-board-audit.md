@@ -1,5 +1,7 @@
 # Board audit — m14689 `GAP-LBM-MCMP-POISEUILLE` (TensorLBM)
 
+> Repository layout note (2026-11-28): [current archived audit entry and publication helpers](../../development/audit/m15044/README.md). The external original mission worktree is not available; historical commands below are preserved, not newly accepted.
+
 Auditor mission **m15044** · verdict_by `board-audit` · audited commit **`d0a945e2`**
 ("MCMP stratified Poiseuille R2: neutral-wetting SC wall, spurious-current diagnostic,
 five-criteria closure"), delivered tree `/srv/tensor/agent/work/m14689`.

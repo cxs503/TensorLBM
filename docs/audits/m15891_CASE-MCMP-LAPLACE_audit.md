@@ -1,5 +1,7 @@
 # m15891 交差核验：m15467 / CASE-MCMP-LAPLACE（TensorLBM 算例池）
 
+> Repository layout note (2026-11-28): [current historical-audit entry and derived reanalysis](../../development/audit/m15891/README.md); the original report below is retained. The regenerated files are not recovered historical outputs or a fresh scientific solve.
+
 审计对象：mission **m15467**（succeeded），交付提交 **e547c37c**（PR #1822，合并为 `cf959e0d`）
 被审锚点：`CASE-MCMP-LAPLACE`（2D 两组分 Shan-Chen 静止液滴 · Young–Laplace 定律 Δp = σ/R）
 审计单：mission **m15891**（board-audit，非重做）；审计分支 `agent/m15891`，基线 HEAD `53046bcc`。

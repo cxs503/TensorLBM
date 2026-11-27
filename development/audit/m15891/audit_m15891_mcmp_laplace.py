@@ -23,7 +23,7 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
+ROOT = HERE.parents[2]
 CASE = ROOT / "benchmarks" / "case_pool" / "mcmp_laplace"
 OUT = ROOT / "artifacts" / "m15891_mcmp_audit"
 FIG = ROOT / "figures"
