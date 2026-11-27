@@ -6,6 +6,8 @@ baseline list is from `bcdd5fa4`. The
 
 ## Maintained deliverables
 
+The [P482 report-helper ledger](migrations/p482-report-helper-handoff-2026-11-28.json) archives two historical report generators that referenced the frozen checkout. The stable report and original input checksums are preserved; report regeneration uses an ignored output path and no new scientific verdict is assigned.
+
 The [T4 migration ledger](migrations/t4-physics-ai-drivers-2026-11-24.json)
 places the two physics-AI campaign drivers beside their benchmark entry.
 

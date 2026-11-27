@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Generate docs/P482_N05_collision_stability_envelope.md from the campaign artefacts.
+"""Generate the historical report replay in outputs/historical/p482-n05/ from the campaign artefacts.
 
 Every number in the generated document is injected from
 ``development/legacy/TensorLBM/artifacts/p482_n05/stability_envelope.json`` and ``MANIFEST.json``
 so that the report cannot drift from the computed envelope (zero hand-copy).
 
-    PYTHONPATH=src python scripts/p482_n05_write_docs.py
+    PYTHONPATH=src python development/audit/p482-n05/p482_n05_write_docs.py
 """
 
 from __future__ import annotations
@@ -14,12 +14,12 @@ import json
 import pathlib
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
+ROOT = pathlib.Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from p482_n05_publish_report import ART, build_markdown  # noqa: E402
 
-OUT = ROOT / "docs" / "P482_N05_collision_stability_envelope.md"
+OUT = ROOT / "outputs" / "historical" / "p482-n05" / "P482_N05_collision_stability_envelope.md"
 
 HEADER = """# P482-N05 — Collision-operator stability domain: predicted vs measured exchange law
 
@@ -74,7 +74,7 @@ AUDIT = """
 PYTHONPATH=src python scripts/run_p482_n05_stability_envelope.py --stage all \\
     --out outputs/p482_n05
 PYTHONPATH=src python -m pytest tests/test_lbm_collision_stability_envelope.py -q
-PYTHONPATH=src python scripts/p482_n05_write_docs.py
+PYTHONPATH=src python development/audit/p482-n05/p482_n05_write_docs.py
 ```
 
 - 证据分级：M1/M2/M3 全部为 **REAL**（真实特征值分析与真实非线性时间积分，无 mock/硬编码）；
@@ -101,6 +101,7 @@ def main() -> int:
     )
     files += f"\n- envelope digest `{manifest['digest']}`"
     doc = header + build_markdown(env) + AUDIT.replace("__FILES__", files)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(doc, encoding="utf-8")
     print(f"wrote {OUT} ({len(doc)} chars)")
     return 0

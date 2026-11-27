@@ -4,7 +4,7 @@
 Reads the completed run under ``outputs/p482_n05/`` or the archived envelope and figure,
 builds the six-section markdown and POSTs it to ``$TENSOR_API_BASE/tensor/reports``.
 
-    PYTHONPATH=src python scripts/p482_n05_publish_report.py --mission-id 9435 [--dry-run]
+    PYTHONPATH=src python development/audit/p482-n05/p482_n05_publish_report.py --mission-id 9435 [--dry-run]
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import pathlib
 import urllib.error
 import urllib.request
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 ARCHIVED_ART = ROOT / "development/legacy/TensorLBM/artifacts/p482_n05"
 RUN_ART = ROOT / "outputs" / "p482_n05"
 ART = RUN_ART if (RUN_ART / "MANIFEST.json").is_file() else ARCHIVED_ART

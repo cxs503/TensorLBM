@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "base_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "base_feature_commit": "047615c2560182a9989c12c19036dc0c5523dfe4",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 51,
+  "docs_second_level_after": 51,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 584,
+  "entries": [
+    {
+      "old_path": "scripts/p482_n05_publish_report.py",
+      "new_path": "development/audit/p482-n05/p482_n05_publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "9b30be7e9bd7829c70314fa282059324e9e9e31c",
+      "original_sha256": "b5185cfcb884d07f1c7f0a69bfddba3f3e5c90164b41bfeb4ec58901885c0fe5",
+      "size_bytes": 19170,
+      "current_sha256": "9512bc90c423b594eb90649df5ad914923947ce899729750f586fed9f6a15b00",
+      "current_size_bytes": 19189,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "pathlib.Path(__file__).resolve().parents[1]",
+          "new": "pathlib.Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "scripts/p482_n05_publish_report.py",
+          "new": "development/audit/p482-n05/p482_n05_publish_report.py",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "scripts/p482_n05_write_docs.py",
+      "new_path": "development/audit/p482-n05/p482_n05_write_docs.py",
+      "git_mode": "100644",
+      "original_git_blob": "92ccd66f67e5c8e79912ef21e3440207383a0ce1",
+      "original_sha256": "5e2a0dbbdefc64678f98e8678277b406188125010ac0f1886a80b2822e45ea34",
+      "size_bytes": 5034,
+      "current_sha256": "2e2ae98ea7eb862b5eb3e9737ada5efc51f05fcaa6d2aa7996e17262e611faca",
+      "current_size_bytes": 5191,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "pathlib.Path(__file__).resolve().parents[1]",
+          "new": "pathlib.Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "scripts/p482_n05_write_docs.py",
+          "new": "development/audit/p482-n05/p482_n05_write_docs.py",
+          "count": 2
+        },
+        {
+          "old": "sys.path.insert(0, str(ROOT / \"scripts\"))",
+          "new": "sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))",
+          "count": 1
+        },
+        {
+          "old": "Generate docs/P482_N05_collision_stability_envelope.md from the campaign artefacts.",
+          "new": "Generate the historical report replay in outputs/historical/p482-n05/ from the campaign artefacts.",
+          "count": 1
+        },
+        {
+          "old": "OUT = ROOT / \"docs\" / \"P482_N05_collision_stability_envelope.md\"",
+          "new": "OUT = ROOT / \"outputs\" / \"historical\" / \"p482-n05\" / \"P482_N05_collision_stability_envelope.md\"",
+          "count": 1
+        },
+        {
+          "old": "    OUT.write_text(doc, encoding=\"utf-8\")",
+          "new": "    OUT.parent.mkdir(parents=True, exist_ok=True)\n    OUT.write_text(doc, encoding=\"utf-8\")",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/P482_N05_collision_stability_envelope.md",
+      "new_path": "docs/P482_N05_collision_stability_envelope.md",
+      "git_mode": "100644",
+      "original_git_blob": "76e8ecb2f1d129b014e73709c24cf6c4db64642c",
+      "original_sha256": "329779d1692b1c41aa21aa63a3173d933763d5bf1dfed7e75e21c7c97d535599",
+      "size_bytes": 15861,
+      "current_sha256": "b140d9d1ac4b7a7ae1dc944bf1d329491307b2f34fbba232f552201e343ce3ef",
+      "current_size_bytes": 16176,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/p482_n05_write_docs.py",
+          "new": "development/audit/p482-n05/p482_n05_write_docs.py",
+          "count": 1
+        },
+        {
+          "old": "# P482-N05 — Collision-operator stability domain: predicted vs measured exchange law\n",
+          "new": "# P482-N05 — Collision-operator stability domain: predicted vs measured exchange law\n\n> Repository layout note (2026-11-28): [Historical report-generation tools and input receipt](../development/audit/p482-n05/README.md). The archived renderer writes to an ignored replay directory rather than replacing this published report; the historical verdict below is not a new acceptance.\n",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "development/legacy/TensorLBM/artifacts/p482_n05/MANIFEST.json",
+      "new_path": "development/legacy/TensorLBM/artifacts/p482_n05/MANIFEST.json",
+      "git_mode": "100644",
+      "original_git_blob": "97399837173fb340d19246f24b7609cd27e7a41c",
+      "original_sha256": "4fd70e07e07dcb6baef2ba0516a74e23b542fed5404fc4feb15f26899db4476e",
+      "size_bytes": 480,
+      "current_sha256": "4fd70e07e07dcb6baef2ba0516a74e23b542fed5404fc4feb15f26899db4476e",
+      "current_size_bytes": 480,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/legacy/TensorLBM/artifacts/p482_n05/stability_envelope.json",
+      "new_path": "development/legacy/TensorLBM/artifacts/p482_n05/stability_envelope.json",
+      "git_mode": "100644",
+      "original_git_blob": "21090d4ce0f800b4efb57347518a8a86efa65f83",
+      "original_sha256": "85571724b6306408b39e88e6ac52a0c9c4e3bcc3b9573c51179e5f1de515861d",
+      "size_bytes": 86941,
+      "current_sha256": "85571724b6306408b39e88e6ac52a0c9c4e3bcc3b9573c51179e5f1de515861d",
+      "current_size_bytes": 86941,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/legacy/TensorLBM/artifacts/p482_n05/stability_planes.csv",
+      "new_path": "development/legacy/TensorLBM/artifacts/p482_n05/stability_planes.csv",
+      "git_mode": "100644",
+      "original_git_blob": "482caaf1ccf9524dfddf8459991f341322e9e648",
+      "original_sha256": "72b1829e79a73ff59e347e6266b9eb747af6570cd492e4feba844d03731c1ea2",
+      "size_bytes": 494938,
+      "current_sha256": "72b1829e79a73ff59e347e6266b9eb747af6570cd492e4feba844d03731c1ea2",
+      "current_size_bytes": 494938,
+      "byte_identical": true
+    }
+  ],
+  "source_authority": {
+    "policy": "docs/architecture/source_authority_policy.json",
+    "active_reference_count_before": 31,
+    "active_reference_count_after": 29,
+    "removed_exact_allowlist_entries": {
+      "scripts/p482_n05_publish_report.py": {
+        "matches": 1,
+        "matching_lines_sha256": "3c88d44311a521e9e48af8ff7543c28ba25e0b89c563495994b03640cf864dd8"
+      },
+      "scripts/p482_n05_write_docs.py": {
+        "matches": 3,
+        "matching_lines_sha256": "13ebd088279820d00a5f467b7caf55ad235b05404fecf88e0eb804799170d873"
+      }
+    },
+    "unchanged_frozen_tree": "f482f80c56e861d7a5c038d1b6647394edaa1ba2"
+  },
+  "compatibility": {
+    "reference_scan": "Exact old paths reviewed against actual main and six open governance heads. Two default-branch indexed searches across TensorKnowledge/TensorPhysics/TensorPlatform/TensorBench found no hits. External bookmarks are not exhaustively verifiable. The public report path and original scientific content are preserved; a reversible command/navigation edit points to the archived renderer.",
+    "navigation_indexes": [
+      "development/audit/p482-n05/README.md"
+    ],
+    "new_case_ids": 0,
+    "historical_manifest_receipt": [
+      {
+        "path": "development/legacy/TensorLBM/artifacts/p482_n05/stability_envelope.json",
+        "expected_sha256": "85571724b6306408b39e88e6ac52a0c9c4e3bcc3b9573c51179e5f1de515861d",
+        "actual_sha256": "85571724b6306408b39e88e6ac52a0c9c4e3bcc3b9573c51179e5f1de515861d",
+        "status": "match"
+      },
+      {
+        "path": "development/legacy/TensorLBM/artifacts/p482_n05/stability_envelope.png",
+        "expected_sha256": "326e268c95f38b85b6f343e4499e05075b883bd0d8b93235f4d9cde9fd0b77fc",
+        "actual_sha256": null,
+        "status": "missing"
+      },
+      {
+        "path": "development/legacy/TensorLBM/artifacts/p482_n05/stability_planes.csv",
+        "expected_sha256": "72b1829e79a73ff59e347e6266b9eb747af6570cd492e4feba844d03731c1ea2",
+        "actual_sha256": "72b1829e79a73ff59e347e6266b9eb747af6570cd492e4feba844d03731c1ea2",
+        "status": "match"
+      }
+    ],
+    "old_output_path": "docs/P482_N05_collision_stability_envelope.md",
+    "new_replay_output_path": "outputs/historical/p482-n05/P482_N05_collision_stability_envelope.md",
+    "publication": "No external API, authentication or publishing operation was invoked. Pure markdown generation from actual archived input only.",
+    "render_parity": {
+      "actual_input_root": "development/legacy/TensorLBM/artifacts/p482_n05",
+      "generated_doc_before_sha256": "329779d1692b1c41aa21aa63a3173d933763d5bf1dfed7e75e21c7c97d535599",
+      "generated_doc_after_sha256": "19aa0e212b338d0c86a81b71d79515c2b34c06cd5de9897916ccfc93db252cbb",
+      "generated_doc_after_size_bytes": 15880,
+      "reports_identical_after_reversing_only_relocated_command": true,
+      "generated_doc_before_size_bytes": 15861,
+      "payload_markdown_sha256": "a00695351ec56361c3d9f60f2c5a518f79353c24d9ca9f6e25481cab828c5a1a",
+      "payload_markdown_size_bytes": 12338,
+      "payload_markdown_byte_identical": true,
+      "help_options_and_description_match_after_path_and_whitespace_normalization": true,
+      "old_help_sha256": "62fc060817e803b32895acc367a6b2569eda9780dc0e756a2897ac188029a408",
+      "new_help_sha256": "1879c3ec483352523b5d0fcd80a77d0506d81e42f1fe6c7043545bb14e064ac9",
+      "python_version": "3.12.14",
+      "solver_invoked": false,
+      "publication_invoked": false
+    }
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

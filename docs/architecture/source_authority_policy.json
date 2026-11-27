@@ -101,14 +101,6 @@
       "matches": 2,
       "matching_lines_sha256": "1e779bbd7a3daeffd8fd1accb7ac9b883fcc81db47c3b62f9f54f554fbc7b0c0"
     },
-    "scripts/p482_n05_publish_report.py": {
-      "matches": 1,
-      "matching_lines_sha256": "3c88d44311a521e9e48af8ff7543c28ba25e0b89c563495994b03640cf864dd8"
-    },
-    "scripts/p482_n05_write_docs.py": {
-      "matches": 3,
-      "matching_lines_sha256": "13ebd088279820d00a5f467b7caf55ad235b05404fecf88e0eb804799170d873"
-    },
     "scripts/publish_audit_report_m17855.py": {
       "matches": 2,
       "matching_lines_sha256": "42effb676ffd68213b1ac4e69484b5c308368da4bfbfbc2003018bde65afdae4"

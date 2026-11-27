@@ -1527,6 +1527,60 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
             self.assertTrue((index.parent / link).is_file(), link)
 
+    def test_p482_report_helpers_keep_frozen_input_and_public_report_contract(self):
+        path = LEDGER_PATH.parent / "p482-report-helper-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 2)
+        for row in ledger["entries"] + ledger["consumer_edits"]:
+            dest = REPO / row["new_path"]
+            self.assert_fingerprint(dest, row["current_sha256"], row["current_size_bytes"])
+            original = dest.read_bytes()
+            for edit in reversed(row["path_only_edits"]):
+                old, new = edit["old"].encode(), edit["new"].encode()
+                self.assertEqual(original.count(new), edit["count"])
+                original = original.replace(new, old)
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(len(original), row["size_bytes"])
+            if row["old_path"] != row["new_path"]:
+                self.assertFalse((REPO / row["old_path"]).exists())
+        for row in ledger["unchanged_related_assets_at_migration"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        policy = json.loads((REPO / ledger["source_authority"]["policy"]).read_text())
+        for old in ledger["source_authority"]["removed_exact_allowlist_entries"]:
+            self.assertNotIn(old, policy["allowed_active_references"])
+        self.assertEqual(policy["historical_tree_oid"], ledger["source_authority"]["unchanged_frozen_tree"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / target).is_file(), target)
+        for row in ledger["entries"]:
+            found = json.loads(subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--find-asset",
+                 row["new_path"]], cwd=REPO,
+            ))["paths"]
+            self.assertIn(row["new_path"], found)
+        receipt = ledger["compatibility"]["historical_manifest_receipt"]
+        self.assertEqual(sum(row["status"] == "match" for row in receipt), 2)
+        self.assertEqual(sum(row["status"] == "missing" for row in receipt), 1)
+        for row in receipt:
+            if row["status"] == "match":
+                self.assertEqual(hashlib.sha256((REPO / row["path"]).read_bytes()).hexdigest(),
+                                 row["expected_sha256"])
+            else:
+                self.assertIsNone(row["actual_sha256"])
+        parity = ledger["compatibility"]["render_parity"]
+        self.assertTrue(parity["reports_identical_after_reversing_only_relocated_command"])
+        self.assertTrue(parity["payload_markdown_byte_identical"])
+        self.assertFalse(parity["solver_invoked"])
+        self.assertFalse(parity["publication_invoked"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+
     def test_poiseuille_sdaa_evidence_preserves_bytes_links_and_scope(self):
         ledger_path = LEDGER_PATH.parent / "poiseuille-channel-duct-pipe-sdaa-2026-11-22.json"
         entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]
