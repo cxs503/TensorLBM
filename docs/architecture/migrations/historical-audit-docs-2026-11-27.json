@@ -1,0 +1,305 @@
+{
+  "scope": "Retire three internal per-mission audit document folders; preserve nine tracked originals and current case IDs, published case reports and numerical code.",
+  "source_commit": "2bc878c2c03e46692e9edaf07a8490bae6010a51",
+  "candidate_base_commit": "153f8ee72fde6b941f21a2955d6db7d66250c157",
+  "prerequisite": "#3067 exact tested status-ledger repair candidate, not yet merged",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 81
+  },
+  "candidate_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 81
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 78
+  },
+  "retired_second_level_directories": [
+    "docs/audit-m20183",
+    "docs/audit_m18753",
+    "docs/audit_m21631"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/audit-m20183/AUDIT_m20071_GAP-DIFFLBM-SOLID-LIMIT.md",
+      "new_path": "development/audit/m20183/AUDIT_m20071_GAP-DIFFLBM-SOLID-LIMIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "903f9d5c2dd754f1828c2509b023f72d56e2b316",
+      "original_sha256": "97f222a09936954e8b523ab0484fd4c14b49157010080930c43001dad92197d2",
+      "size_bytes": 11916,
+      "current_sha256": "97f222a09936954e8b523ab0484fd4c14b49157010080930c43001dad92197d2",
+      "current_size_bytes": 11916,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit-m20183/audit_checks.json",
+      "new_path": "development/audit/m20183/audit_checks.json",
+      "git_mode": "100644",
+      "original_git_blob": "7273cae1ce4acf596c442f8ed541ab316c48a691",
+      "original_sha256": "df737f93666d598855d5cf47304a8e63da86131764f33046e961106da2ca4b23",
+      "size_bytes": 5921,
+      "current_sha256": "df737f93666d598855d5cf47304a8e63da86131764f33046e961106da2ca4b23",
+      "current_size_bytes": 5921,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit-m20183/audit_checks.py",
+      "new_path": "development/audit/m20183/audit_checks.py",
+      "git_mode": "100644",
+      "original_git_blob": "6cc7db9ebc64cc44032b2e9be676954c8f0fb170",
+      "original_sha256": "49c8dc6b07166bc773d75be8cd59e150a182a022f0b6b78a23c76e2f406b383e",
+      "size_bytes": 11127,
+      "current_sha256": "49c8dc6b07166bc773d75be8cd59e150a182a022f0b6b78a23c76e2f406b383e",
+      "current_size_bytes": 11127,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit-m20183/figures/cd_history_and_drift.png",
+      "new_path": "development/audit/m20183/figures/cd_history_and_drift.png",
+      "git_mode": "100644",
+      "original_git_blob": "1624d6cd85401631d3c638f7d29f935ef0af2e5b",
+      "original_sha256": "38df2292e39f35084060286810587c1a66337917ed4071de879891c4b1e6eb1b",
+      "size_bytes": 49167,
+      "current_sha256": "38df2292e39f35084060286810587c1a66337917ed4071de879891c4b1e6eb1b",
+      "current_size_bytes": 49167,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit-m20183/figures/cd_ref_vs_got.png",
+      "new_path": "development/audit/m20183/figures/cd_ref_vs_got.png",
+      "git_mode": "100644",
+      "original_git_blob": "9a236862e0be61334f721bdfbcd649e0aa164b63",
+      "original_sha256": "5299faa840b7bf1c0b27a0c21ef2b8df049129ca4b40c4d984e14a792f33caa9",
+      "size_bytes": 40261,
+      "current_sha256": "5299faa840b7bf1c0b27a0c21ef2b8df049129ca4b40c4d984e14a792f33caa9",
+      "current_size_bytes": 40261,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit-m20183/publish_report.py",
+      "new_path": "development/audit/m20183/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "88ecb1d5436f40a7d809ea2f5e4a36e90f43bef2",
+      "original_sha256": "da7128162be321d0d6a7235c8d8e6d859004111475244768f2574d8768527d20",
+      "size_bytes": 12226,
+      "current_sha256": "da7128162be321d0d6a7235c8d8e6d859004111475244768f2574d8768527d20",
+      "current_size_bytes": 12226,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit-m20183/verdict_m20183.sql",
+      "new_path": "development/audit/m20183/verdict_m20183.sql",
+      "git_mode": "100644",
+      "original_git_blob": "d812062494c4e1e2aa603949f43838b0c24c9e6f",
+      "original_sha256": "0be902ddfe463bb9fdae0ad4e502f67df0337ddb99862a080afea7eb0ea224c9",
+      "size_bytes": 7688,
+      "current_sha256": "0be902ddfe463bb9fdae0ad4e502f67df0337ddb99862a080afea7eb0ea224c9",
+      "current_size_bytes": 7688,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18753/AUDIT_m18753.md",
+      "new_path": "development/audit/m18785/AUDIT_m18753.md",
+      "git_mode": "100644",
+      "original_git_blob": "b4194c7986241a05bf4f41fe6240755361acd4ee",
+      "original_sha256": "c4c7fe12633d981bf8e2e6d3c44caab3289dc19701a7c6fef14c8412c712a828",
+      "size_bytes": 10900,
+      "current_sha256": "c4c7fe12633d981bf8e2e6d3c44caab3289dc19701a7c6fef14c8412c712a828",
+      "current_size_bytes": 10900,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m21631/CASE_BACKSTEP_FVM_RE100_m21548_AUDIT.md",
+      "new_path": "development/audit/m21631/CASE_BACKSTEP_FVM_RE100_m21548_AUDIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "6ad004eb14c11399fa3300b678261785e8d0a863",
+      "original_sha256": "e72e7af135b68c2cd36ff19e15eac657b72814376426efceb4ed62e1b1d77bf2",
+      "size_bytes": 10670,
+      "current_sha256": "e72e7af135b68c2cd36ff19e15eac657b72814376426efceb4ed62e1b1d77bf2",
+      "current_size_bytes": 10670,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "benchmarks/cross_validation/zou_he_chemical_potential/benchmark_case.json",
+      "new_path": "benchmarks/cross_validation/zou_he_chemical_potential/benchmark_case.json",
+      "git_mode": "100644",
+      "original_git_blob": "46d5e902b4764047e89ef0746c9cca9cc8943226",
+      "original_sha256": "6ff2765264f0dc63c25b41e6e57fe82ede797e049d64852f9a1fd63ecafee738",
+      "size_bytes": 2213,
+      "current_sha256": "b2d0bfb349294bc9fae34cbf80844fdc6ab8fd65ea1a7023c9e8e924717095fa",
+      "current_size_bytes": 2227,
+      "byte_identical": false
+    },
+    {
+      "old_path": "benchmarks/pending/difflbm_solid_limit/README.md",
+      "new_path": "benchmarks/pending/difflbm_solid_limit/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "2260aa9fe9db32a6500741a689ad911a1faf0d24",
+      "original_sha256": "86364e6a016f82de42edcac4d7c4a8e258fc46b9055bf606ca9cad37b9ea9771",
+      "size_bytes": 187,
+      "current_sha256": "98e4c7c7e2c31a9a2ec86e06f7c56fedae04ec2a2d2dfcdf4fc3a89bbd2f0490",
+      "current_size_bytes": 432,
+      "byte_identical": false
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact directory and mission filename paths checked in main; the only maintained external-to-directory exact reference was the m18753 case manifest (two fields), updated in place. Cross-repository indexed search across TensorKnowledge, TensorPhysics, TensorPlatform and TensorBench yielded no hits; not an exhaustive external URL audit. Stable formal case report URLs unchanged.",
+    "historical_inline_paths": "Frozen reports and scripts keep original path literals and execution assumptions. Use migration ledger and source revision to resolve old tracked paths. m20183 audit tools are archive-only; they require absent original audited worktree and snapshots. No publishing/SQL scripts executed.",
+    "case_ownership": {
+      "m20183": "benchmarks/pending/difflbm_solid_limit",
+      "m18785": "benchmarks/cross_validation/zou_he_chemical_potential",
+      "m21631": "benchmarks/case_pool/backward_step_armaly"
+    },
+    "m21631_prior_archived_evidence": [
+      {
+        "old_path": "development/audit/m21631/audit_repro/field.npz",
+        "new_path": "development/audit/m21631/audit_repro/field.npz",
+        "git_mode": "100644",
+        "original_git_blob": "98a9a6f2fb4dc8c65d91fbe318ba212ab3f5c9c3",
+        "original_sha256": "52137679e44b22d51868b96af7a5b0f4fd267fd6a36d05930f68428d5c495ffc",
+        "size_bytes": 72456,
+        "current_sha256": "52137679e44b22d51868b96af7a5b0f4fd267fd6a36d05930f68428d5c495ffc",
+        "current_size_bytes": 72456,
+        "byte_identical": true
+      },
+      {
+        "old_path": "development/audit/m21631/audit_repro/result.json",
+        "new_path": "development/audit/m21631/audit_repro/result.json",
+        "git_mode": "100644",
+        "original_git_blob": "d44d7c61d939a9b170459be8530b65c078f816ee",
+        "original_sha256": "55878f3b584cb1f1c853a61dbe60c7f1fe95173ab867be8ffb2eb49dd3735d66",
+        "size_bytes": 2140,
+        "current_sha256": "55878f3b584cb1f1c853a61dbe60c7f1fe95173ab867be8ffb2eb49dd3735d66",
+        "current_size_bytes": 2140,
+        "byte_identical": true
+      },
+      {
+        "old_path": "development/audit/m21631/audit_repro/smoke_result.json",
+        "new_path": "development/audit/m21631/audit_repro/smoke_result.json",
+        "git_mode": "100644",
+        "original_git_blob": "f0789be0607b3e5a6beaaef40ef9a215efffe1a0",
+        "original_sha256": "9263ce1f90dffe21cad84ed70c753eda73363e3504fb274536161d77ae2532f6",
+        "size_bytes": 2097,
+        "current_sha256": "9263ce1f90dffe21cad84ed70c753eda73363e3504fb274536161d77ae2532f6",
+        "current_size_bytes": 2097,
+        "byte_identical": true
+      },
+      {
+        "old_path": "development/audit/m21631/audit_repro/wall_shear.csv",
+        "new_path": "development/audit/m21631/audit_repro/wall_shear.csv",
+        "git_mode": "100644",
+        "original_git_blob": "0380eaed24997107d81a7c3cffdd5ce2b2f20d97",
+        "original_sha256": "633c6cfa78d8af843259ab8b1af3e73a2709fc0a4edad0056b71ebba750c0ead",
+        "size_bytes": 36230,
+        "current_sha256": "633c6cfa78d8af843259ab8b1af3e73a2709fc0a4edad0056b71ebba750c0ead",
+        "current_size_bytes": 36230,
+        "byte_identical": true
+      },
+      {
+        "old_path": "development/audit/m21631/insert_verdict_m21548.py",
+        "new_path": "development/audit/m21631/insert_verdict_m21548.py",
+        "git_mode": "100644",
+        "original_git_blob": "1cd8aca2f926f1756ccf9aeb26375dfb1989124e",
+        "original_sha256": "3c34db6456410f8ec118c480395ca48af35a88f79609dcee5864dcb98cec575e",
+        "size_bytes": 2321,
+        "current_sha256": "3c34db6456410f8ec118c480395ca48af35a88f79609dcee5864dcb98cec575e",
+        "current_size_bytes": 2321,
+        "byte_identical": true
+      },
+      {
+        "old_path": "development/audit/m21631/make_figs.py",
+        "new_path": "development/audit/m21631/make_figs.py",
+        "git_mode": "100644",
+        "original_git_blob": "168ff4ad1d2e725e397b0b29adafd1c8337fa2b0",
+        "original_sha256": "6e54eca638c06775db22635bed1eebbf7326539db4ce6427a85eb18d6bbd2491",
+        "size_bytes": 6542,
+        "current_sha256": "6e54eca638c06775db22635bed1eebbf7326539db4ce6427a85eb18d6bbd2491",
+        "current_size_bytes": 6542,
+        "byte_identical": true
+      },
+      {
+        "old_path": "development/audit/m21631/publish_report.py",
+        "new_path": "development/audit/m21631/publish_report.py",
+        "git_mode": "100644",
+        "original_git_blob": "09a18e9d0b0a338d445f3045d69cf84b398185aa",
+        "original_sha256": "7cf04300210df3ed9f33c32d0aa74d4cf0b46dbc361d9dc4a69c6fc22837fa2d",
+        "size_bytes": 7598,
+        "current_sha256": "7cf04300210df3ed9f33c32d0aa74d4cf0b46dbc361d9dc4a69c6fc22837fa2d",
+        "current_size_bytes": 7598,
+        "byte_identical": true
+      },
+      {
+        "old_path": "development/audit/m21631/verdict_evidence_m21548.json",
+        "new_path": "development/audit/m21631/verdict_evidence_m21548.json",
+        "git_mode": "100644",
+        "original_git_blob": "841dda3f8e1d0271912a6e131e9db95dbb844ff3",
+        "original_sha256": "48ff2dfeea4ede9ff61f154bc1af8535f011422b4ab18b3b53eb4172d604dd08",
+        "size_bytes": 12876,
+        "current_sha256": "48ff2dfeea4ede9ff61f154bc1af8535f011422b4ab18b3b53eb4172d604dd08",
+        "current_size_bytes": 12876,
+        "byte_identical": true
+      }
+    ],
+    "m21631_prior_ledger": "docs/architecture/migrations/audit-root-retirement-2026-11-21.json",
+    "m21631_case_pointer": "benchmarks/case_pool/backward_step_armaly/evidence/m21631/README.md"
+  },
+  "evidence_gaps": {
+    "unresolved_historical_paths": [
+      "docs/audit-m20183/refs/m20071",
+      "artifacts/GAP-DIFFLBM-SOLID-LIMIT/runs/amplitude_D20_s1.json",
+      "artifacts/audit_m18753/repro"
+    ],
+    "scope": "Not tracked at source commit or recovered by path history inspection of fetched refs. Missing historical snapshots are not reconstructed or replaced. The m20183 historical audited delivery had 1/14 run arms; D1 and D2 were not measured."
+  },
+  "science": {
+    "m20183_archived_scope": "L2 / honest-FAIL; only one historical arm, D1/D2 not measured; original report says audited branch had not merged at audit time.",
+    "m20183_delivered_arm_count": 1,
+    "m20183_expected_arm_count": 14,
+    "m21631_archived_scope": "L1, request changes; original delivery lacked full case run artifacts. The existing audit smoke/repro assets are distinct evidence and not a current accepted benchmark.",
+    "m18785_archived_scope": "Retain independent audit as original report; no claim of fresh passing channel calculation.",
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated"
+  }
+}

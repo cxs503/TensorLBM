@@ -1,0 +1,34 @@
+{
+  "scope": "Existing pending solid-interface limit case; the m20183 audit is an archived partial-delivery record, not a result of the current runner. Only one of fourteen historical arms was delivered and D1/D2 were unmeasured. No fresh acceptance.",
+  "criteria": {
+    "D1_drag_change_pct_lte": 5,
+    "D2_deviation_from_hardwall_pct_lte": 10,
+    "source": "Original historical audit criteria; no thresholds changed.",
+    "publication_target_pct": 3
+  },
+  "source": [
+    "benchmarks/pending/difflbm_solid_limit/campaign.py",
+    "benchmarks/pending/difflbm_solid_limit/run_case.py",
+    "benchmarks/pending/difflbm_solid_limit/summarize.py",
+    "benchmarks/pending/difflbm_solid_limit/repro.sh"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/pending/difflbm_solid_limit/README.md",
+    "docs/GAP-DIFFLBM-SOLID-LIMIT.md",
+    "development/audit/m20183/README.md",
+    "development/audit/m20183/AUDIT_m20071_GAP-DIFFLBM-SOLID-LIMIT.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "development/audit/m20183/audit_checks.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/historical-audit-docs-2026-11-27.json",
+    "development/audit/m20183/verdict_m20183.sql",
+    "development/audit/m20183/figures/cd_history_and_drift.png",
+    "development/audit/m20183/figures/cd_ref_vs_got.png",
+    "development/audit/m20183/audit_checks.py",
+    "development/audit/m20183/publish_report.py"
+  ]
+}

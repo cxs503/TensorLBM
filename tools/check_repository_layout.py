@@ -170,6 +170,9 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT"),
     ("xval", "gitlab_ci_staged_gates"),
     ("docs", "tk-e2e"),
+    ("docs", "audit-m20183"),
+    ("docs", "audit_m18753"),
+    ("docs", "audit_m21631"),
     ("xval", "XVAL-LBM-INSTRUCTION-DSL-TESTS-SH"),
 }
 
