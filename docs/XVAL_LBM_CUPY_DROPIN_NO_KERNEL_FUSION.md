@@ -1,5 +1,7 @@
 # XVAL: TensorLBM vs ebinan92/Fingering_dynamics — cupy drop-in, no kernel fusion
 
+> Repository migration note: current archived campaign files are at [development/verification/cupy_dropin_no_kernel_fusion](../development/verification/cupy_dropin_no_kernel_fusion/). Historical results remain tied to the recorded original revision; they are not a new scientific acceptance. Five linked figures are byte-extracted from the original tracked report payload.
+
 **Anchor**: `XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION`  
 **Mission**: m17979 (round-1 rework of m17724)  **Generated**: 2026-11-13T10:50:23+00:00 from `artifacts/run_main.json`  **Repo HEAD**: `216dd8bf`
 
@@ -71,11 +73,11 @@ Reproduce:
 
 ```bash
 # full study (~5 min, CPU, float64)
-python xval/cupy_dropin_no_kernel_fusion/run_xval.py
+python development/verification/cupy_dropin_no_kernel_fusion/run_xval.py
 # invariants
 python -m pytest tests/test_free_energy_soy_cupy_dropin.py -q
 # report from artefacts
-python xval/cupy_dropin_no_kernel_fusion/make_report.py
+python development/verification/cupy_dropin_no_kernel_fusion/make_report.py
 ```
 
 Host: loongarch64, python 3.11.6, numpy 2.4.6, torch 2.7.1, CUDA available: False; OSS checkout `/tmp/Fingering_dynamics/lattice_boltzmann/fingering_periodic.py` sha256 `d3789463b1b63ee154d5a653ea5f0f605a89bec30feb443810461d5c0ac11f72`.
@@ -137,23 +139,23 @@ Band over the last third of the run (TensorLBM NumPy): min -0.40 %, max +0.85 %,
 
 ## ④ Figures
 
-![fig1_laplace_convergence.png](../xval/cupy_dropin_no_kernel_fusion/figures/fig1_laplace_convergence.png)
+![fig1_laplace_convergence.png](../development/verification/cupy_dropin_no_kernel_fusion/figures/fig1_laplace_convergence.png)
 
 *fig1_laplace_convergence.png* — Laplace pressure $\Delta p(t)$ for the three arms vs the analytic $\sigma/R$ (dashed) and the $\pm15\%$ band.
 
-![fig2_fields.png](../xval/cupy_dropin_no_kernel_fusion/figures/fig2_fields.png)
+![fig2_fields.png](../development/verification/cupy_dropin_no_kernel_fusion/figures/fig2_fields.png)
 
 *fig2_fields.png* — TensorLBM torch arm at the final step: order parameter $\psi$ (left) and pressure $p=\rho/3+\psi\mu$ (right), 60x60 periodic box, $R=15$.
 
-![fig3_error_vs_radius.png](../xval/cupy_dropin_no_kernel_fusion/figures/fig3_error_vs_radius.png)
+![fig3_error_vs_radius.png](../development/verification/cupy_dropin_no_kernel_fusion/figures/fig3_error_vs_radius.png)
 
 *fig3_error_vs_radius.png* — Diffuse-interface error vs droplet radius: TensorLBM NumPy backend and the executed OSS reference.
 
-![fig4_sensitivity.png](../xval/cupy_dropin_no_kernel_fusion/figures/fig4_sensitivity.png)
+![fig4_sensitivity.png](../development/verification/cupy_dropin_no_kernel_fusion/figures/fig4_sensitivity.png)
 
 *fig4_sensitivity.png* — Parameter sensitivity of the measured Laplace jump (numeric sweeps).
 
-![fig5_cost.png](../xval/cupy_dropin_no_kernel_fusion/figures/fig5_cost.png)
+![fig5_cost.png](../development/verification/cupy_dropin_no_kernel_fusion/figures/fig5_cost.png)
 
 *fig5_cost.png* — Cost of the no-kernel-fusion practice: wall time and array-op calls per lattice step.
 

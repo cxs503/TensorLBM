@@ -1,5 +1,7 @@
 # 交差审计：m17979 · XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION（TensorLBM）
 
+> Repository migration note: current archived campaign files are at [development/verification/cupy_dropin_no_kernel_fusion](../development/verification/cupy_dropin_no_kernel_fusion/). Historical results remain tied to the recorded original revision; they are not a new scientific acceptance.
+
 - **审计单**: m18084（任务榜交差核验，非重做）· verdict_by=`board-audit`
 - **被审对象**: m17979（返修轮，`succeeded`，owner auto-approve `TP_AUTO_APPROVE_DEV_ACCEPTANCE`）
 - **上游对象**: m17724 同名锚点（台账 verdict #659 曾判 L2，`gate_state=reopened`）
@@ -88,7 +90,7 @@
 # 1) 测试
 cd /srv/tensor/agent/work/m17979 && python -m pytest tests/test_free_energy_soy_cupy_dropin.py -q   # 14 passed in 30.05s
 # 2) 入口冒烟（不污染交付工件）
-python xval/cupy_dropin_no_kernel_fusion/run_xval.py --quick --out-dir /tmp/xval_quick_out --fig-dir /tmp/xval_quick_fig
+python development/verification/cupy_dropin_no_kernel_fusion/run_xval.py --quick --out-dir /tmp/xval_quick_out --fig-dir /tmp/xval_quick_fig
 # 3) 收敛延长探针（本审计产物）
 cd /srv/tensor/agent/work/m18084 && SOY_SRC=/srv/tensor/agent/work/m17979/src python artifacts/audit_m18084/conv_probe.py \
   > artifacts/audit_m18084/convergence_probe.json

@@ -1,0 +1,309 @@
+{
+  "source_commit": "881e15324d7439edfec5c0c580d36024e68d90a5",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 40
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO",
+    "xval/cupy_dropin_no_kernel_fusion"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/analyze.py",
+      "new_path": "development/verification/ppermute_periodic_halo/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "cae69eb3de306e5af520c7154c096d828e3b6d60",
+      "size_bytes": 7784,
+      "original_sha256": "b833ed602317e9cdda903b36b13ee24187aea6f27fe889d6db63e87cf256de5c",
+      "new_sha256": "b833ed602317e9cdda903b36b13ee24187aea6f27fe889d6db63e87cf256de5c"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/arms.py",
+      "new_path": "development/verification/ppermute_periodic_halo/arms.py",
+      "git_mode": "100644",
+      "original_git_blob": "4232ec25db1e9eb6188370ab7152ba5aa88daedf",
+      "size_bytes": 13714,
+      "original_sha256": "362e23b57ed0cc65aad57860c4ac04fb054fc2d85f5c956baf0563417a9888c2",
+      "new_sha256": "362e23b57ed0cc65aad57860c4ac04fb054fc2d85f5c956baf0563417a9888c2"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/got_worker.py",
+      "new_path": "development/verification/ppermute_periodic_halo/got_worker.py",
+      "git_mode": "100644",
+      "original_git_blob": "d776e7145a16e6dc7e2424ef1fb760a0a93d114f",
+      "size_bytes": 3682,
+      "original_sha256": "a1328c534c1db8b00751239e142c955ee0d99f8fa53376c4efe64662775a8819",
+      "new_sha256": "a1328c534c1db8b00751239e142c955ee0d99f8fa53376c4efe64662775a8819"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/jax_shim.py",
+      "new_path": "development/verification/ppermute_periodic_halo/jax_shim.py",
+      "git_mode": "100644",
+      "original_git_blob": "5839f5424b149f738215367abc2f6bed91742069",
+      "size_bytes": 6199,
+      "original_sha256": "1626f47d5c2ef17ff588e8b4765a303d5183c064ee75f50ccd14891e5437a173",
+      "new_sha256": "1626f47d5c2ef17ff588e8b4765a303d5183c064ee75f50ccd14891e5437a173"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/predeclared.json",
+      "new_path": "development/verification/ppermute_periodic_halo/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "b743a9d9a2bcbfa62ef6472db815d96f013df4c1",
+      "size_bytes": 7148,
+      "original_sha256": "c12e4f018c7b1f4cf2473d4ac44f65398bb93d9f08914791ff11068b7485ef9b",
+      "new_sha256": "c12e4f018c7b1f4cf2473d4ac44f65398bb93d9f08914791ff11068b7485ef9b"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/LICENSE.vivsim",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/LICENSE.vivsim",
+      "git_mode": "100644",
+      "original_git_blob": "ecacc17ddba362ccc6c7f62e02c8933f0d93d75a",
+      "size_bytes": 1068,
+      "original_sha256": "2d5689fbcffc357d43e00a638bb0e2efa6668796f7ead9451fe4e5ea80f1af73",
+      "new_sha256": "2d5689fbcffc357d43e00a638bb0e2efa6668796f7ead9451fe4e5ea80f1af73"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/vivsim/__init__.py",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/vivsim/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size_bytes": 0,
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "new_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/vivsim/lbm/__init__.py",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/vivsim/lbm/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "9139927c4ba1a8be65d2e855f0b3c3f14c70fc2c",
+      "size_bytes": 146,
+      "original_sha256": "f9a015bc228acbd873de215e3956886b9f9f46c917bfd6dac15dcb369eae4ab9",
+      "new_sha256": "f9a015bc228acbd873de215e3956886b9f9f46c917bfd6dac15dcb369eae4ab9"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/vivsim/lbm/basic.py",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/vivsim/lbm/basic.py",
+      "git_mode": "100644",
+      "original_git_blob": "052fc0e3ef5990fcc51245502d98b504ad489f67",
+      "size_bytes": 6913,
+      "original_sha256": "406d19a26f9b0e281e910ad8fa2215c080e784c74c21597f13d4b68aaffae06a",
+      "new_sha256": "406d19a26f9b0e281e910ad8fa2215c080e784c74c21597f13d4b68aaffae06a"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/vivsim/lbm/lattice.py",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/vivsim/lbm/lattice.py",
+      "git_mode": "100644",
+      "original_git_blob": "50b91905e6c5372d94f9832bd19254ffce273435",
+      "size_bytes": 3351,
+      "original_sha256": "028430db509490659ed96101295abc559605d1386e1e4ae5994397bb8d36ac68",
+      "new_sha256": "028430db509490659ed96101295abc559605d1386e1e4ae5994397bb8d36ac68"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/vivsim/multidevice.py",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/vivsim/multidevice.py",
+      "git_mode": "100644",
+      "original_git_blob": "9d8f9cec8ac63629de50ad4cad48da710668417f",
+      "size_bytes": 1709,
+      "original_sha256": "2f4e95dfc71a843011d861ac43b08c42c90b1c1e0570eb2faa596d2c51d16a34",
+      "new_sha256": "2f4e95dfc71a843011d861ac43b08c42c90b1c1e0570eb2faa596d2c51d16a34"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/vivsim/multidevice_fixed.py",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/vivsim/multidevice_fixed.py",
+      "git_mode": "100644",
+      "original_git_blob": "66811bab03e607293977f3093c243a88b95f4050",
+      "size_bytes": 2097,
+      "original_sha256": "390cbc2866f99485b7b865d5fe0d50ce8ac9ff78ca0c7a1d551eb8ff80848553",
+      "new_sha256": "390cbc2866f99485b7b865d5fe0d50ce8ac9ff78ca0c7a1d551eb8ff80848553"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ref/vivsim/multidevice_plane_fixed.py",
+      "new_path": "development/verification/ppermute_periodic_halo/ref/vivsim/multidevice_plane_fixed.py",
+      "git_mode": "100644",
+      "original_git_blob": "11a451b4e709b355151a08d32b5c051495f69ca0",
+      "size_bytes": 2149,
+      "original_sha256": "e09109d7160a6083f0a451f36f11dad4960c0ff4e2dafb4c3c6676e23d714255",
+      "new_sha256": "e09109d7160a6083f0a451f36f11dad4960c0ff4e2dafb4c3c6676e23d714255"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/run_xval.py",
+      "new_path": "development/verification/ppermute_periodic_halo/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "3bcb2c626be39d51a9f00addc4b15309327e2595",
+      "size_bytes": 8018,
+      "original_sha256": "430a8c362dbb5bc575cb2c8664a442250a64c0067e438fb2a0bf93b2268ab3ad",
+      "new_sha256": "24de4d4add667205609027355bb22920a8912ffc5e13aa60609af712acc61fc5"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/EVIDENCE.json",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/EVIDENCE.json",
+      "git_mode": "100644",
+      "original_git_blob": "557e8f0d6b4754ed4e07df3e1c0aec3ff7a9178d",
+      "size_bytes": 7144,
+      "original_sha256": "13afc257b0af7bfe4e98c1c1014f97114e2911059a7c0e0ffa2fbd5eaf2e3140",
+      "new_sha256": "13afc257b0af7bfe4e98c1c1014f97114e2911059a7c0e0ffa2fbd5eaf2e3140"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/README.md",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "40cc52c559637c055b7b279726135e99c521dd5a",
+      "size_bytes": 1649,
+      "original_sha256": "7c4f06fb597ae3d4ef2d2a15e535c7bf2c0654fdd4deaaa6370a17c79238efd3",
+      "new_sha256": "fcd6d5ed3a80da7ab5144441a656199f07da4e3c2f9991ca08c25483ac882f75"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/artifacts/dp_history.csv",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/dp_history.csv",
+      "git_mode": "100644",
+      "original_git_blob": "f5eb6e3434595f842d1256fc2b3e940b2fc5e42b",
+      "size_bytes": 3657,
+      "original_sha256": "94f7d896e206066f91c1f33aaf90940b95b18266de91a7d1bd378a297cac2c64",
+      "new_sha256": "94f7d896e206066f91c1f33aaf90940b95b18266de91a7d1bd378a297cac2c64"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+      "git_mode": "100644",
+      "original_git_blob": "de4d70f51c7131d1073bf1077dd0bd60ae9eab69",
+      "size_bytes": 420480,
+      "original_sha256": "d629d758fb0e073caa643415aee46c24ca84e9930f41e163743dfcb4f7023e91",
+      "new_sha256": "d629d758fb0e073caa643415aee46c24ca84e9930f41e163743dfcb4f7023e91"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/artifacts/run_main.json",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/run_main.json",
+      "git_mode": "100644",
+      "original_git_blob": "8ed03068bbfe18871248e98ba34f6e81d77f551c",
+      "size_bytes": 427532,
+      "original_sha256": "140ac82543201588a0fe30154d62dd2ed31665e2bf879b86e9bd34b33425e1cc",
+      "new_sha256": "140ac82543201588a0fe30154d62dd2ed31665e2bf879b86e9bd34b33425e1cc"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/emit_evidence.py",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/emit_evidence.py",
+      "git_mode": "100644",
+      "original_git_blob": "b19003947e987e1fd4b89f0daae9fc1b640be388",
+      "size_bytes": 9279,
+      "original_sha256": "a3736e28da1650ff7e040e046918fa261c08f1e68e52fc11f37cf055c5076222",
+      "new_sha256": "33716785550199efbd3c5a9fb754fc6aad25507ee9852c05ee14292c81bf5b3d"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/make_report.py",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "139261f246634fe03b39f221e76dca73f1c4a313",
+      "size_bytes": 22812,
+      "original_sha256": "a4ca9967efa05f026af49bf6dfedd5099b4bd56ed8ed2626457c7a69baa0d63e",
+      "new_sha256": "084df454c39b54e5ee613ccbb9e993de92887532448e6582021765fa7b8f59e3"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/oss_adapter.py",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/oss_adapter.py",
+      "git_mode": "100644",
+      "original_git_blob": "2b611e7ad33f65a4206455940f587e4ae85d11c1",
+      "size_bytes": 8535,
+      "original_sha256": "61fd94b8e66ab7522fa5419ff1ee1a7eb475682f19dcfc01496c61161fd4cf04",
+      "new_sha256": "61fd94b8e66ab7522fa5419ff1ee1a7eb475682f19dcfc01496c61161fd4cf04"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/predeclared.json",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "290f956fbb52c7599c65b490ad58d6cb667098c0",
+      "size_bytes": 5661,
+      "original_sha256": "43ff7c1f6da4ea6120a5b779366b2131f2cb806edb930a7393a009462b2502e9",
+      "new_sha256": "43ff7c1f6da4ea6120a5b779366b2131f2cb806edb930a7393a009462b2502e9"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/publish_report.py",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "d9bac21082d9a08c541bdcf3294d6190b8216f59",
+      "size_bytes": 963,
+      "original_sha256": "6f5a5cb8a989112eef3155fbe5e44a3a98d6e1d3a2e09e454eb35542f1af662c",
+      "new_sha256": "7fb6c9dfbf3a93652746579af2c48bbe06fc77a78991f99448f6c824af9c9997"
+    },
+    {
+      "old_path": "xval/cupy_dropin_no_kernel_fusion/run_xval.py",
+      "new_path": "development/verification/cupy_dropin_no_kernel_fusion/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "dc19d07e29c7b25a64a90c6dd952d16e9ec654d5",
+      "size_bytes": 17851,
+      "original_sha256": "4e81829e4ad9de19be58900b0e47252f74b1f7a3225fb9803db7ed1ee86c3f9e",
+      "new_sha256": "9eb3af97bc66c110daddb30e34e4fb4d1bbf386e54b42e832af4a6e3a8b19550"
+    }
+  ],
+  "recovered_figures": [
+    {
+      "path": "development/verification/cupy_dropin_no_kernel_fusion/figures/fig1_laplace_convergence.png",
+      "source_payload": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+      "source_payload_original_git_blob": "de4d70f51c7131d1073bf1077dd0bd60ae9eab69",
+      "source_payload_sha256": "d629d758fb0e073caa643415aee46c24ca84e9930f41e163743dfcb4f7023e91",
+      "figure_key": "fig1_laplace_convergence.png",
+      "size_bytes": 85331,
+      "sha256": "d9e430b321d9377568aabcf78d720123898d60bd008ff721be99cb77d357f452"
+    },
+    {
+      "path": "development/verification/cupy_dropin_no_kernel_fusion/figures/fig2_fields.png",
+      "source_payload": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+      "source_payload_original_git_blob": "de4d70f51c7131d1073bf1077dd0bd60ae9eab69",
+      "source_payload_sha256": "d629d758fb0e073caa643415aee46c24ca84e9930f41e163743dfcb4f7023e91",
+      "figure_key": "fig2_fields.png",
+      "size_bytes": 74005,
+      "sha256": "62851e9e47dec15413919fc5f7826aba21a802ce4ab3ab0bf48070a00883dc54"
+    },
+    {
+      "path": "development/verification/cupy_dropin_no_kernel_fusion/figures/fig3_error_vs_radius.png",
+      "source_payload": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+      "source_payload_original_git_blob": "de4d70f51c7131d1073bf1077dd0bd60ae9eab69",
+      "source_payload_sha256": "d629d758fb0e073caa643415aee46c24ca84e9930f41e163743dfcb4f7023e91",
+      "figure_key": "fig3_error_vs_radius.png",
+      "size_bytes": 47857,
+      "sha256": "de6ee4de778180cbf1160c735c08cd31d88996797683f7e1a205135c0ce7e888"
+    },
+    {
+      "path": "development/verification/cupy_dropin_no_kernel_fusion/figures/fig4_sensitivity.png",
+      "source_payload": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+      "source_payload_original_git_blob": "de4d70f51c7131d1073bf1077dd0bd60ae9eab69",
+      "source_payload_sha256": "d629d758fb0e073caa643415aee46c24ca84e9930f41e163743dfcb4f7023e91",
+      "figure_key": "fig4_sensitivity.png",
+      "size_bytes": 48720,
+      "sha256": "932228fd5961af5ebf834e995c719ce7e0d5dc56c1d0dc30fb17a18d7ac2279c"
+    },
+    {
+      "path": "development/verification/cupy_dropin_no_kernel_fusion/figures/fig5_cost.png",
+      "source_payload": "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+      "source_payload_original_git_blob": "de4d70f51c7131d1073bf1077dd0bd60ae9eab69",
+      "source_payload_sha256": "d629d758fb0e073caa643415aee46c24ca84e9930f41e163743dfcb4f7023e91",
+      "figure_key": "fig5_cost.png",
+      "size_bytes": 46141,
+      "sha256": "4c81f3a713d4eee7feb84643c170cf1e8d51b3eb0df44826964de4d307568f76"
+    }
+  ],
+  "verification": [
+    "Before: python -m pytest -q tests/test_parallel_ppermute_halo.py -> 27 passed; python -m pytest -q tests/test_free_energy_soy_cupy_dropin.py -> 13 passed, one skipped (external OSS checkout). After both cohorts: 40 passed, one skipped in 11.56 s. Actual production CPU tests, no archive shim execution, no GPU or external reference claim.",
+    "CuPy runner --help before and after, relocated tree compileall passed. Historical halo old runner not executed because retained shim not used for current validation. Maintained tools/xval_ppermute_halo/run_xval.py unchanged.",
+    "All 25 original Git blob/destination SHA-256 checks verified; eight archive navigation links resolved. Five restored PNGs exact byte content of original tracked report_payload.json entries. Rebuilding report from frozen observations emitted five PNGs with exactly the original hashes. Original payload and published report restored after test; committed report only updates paths and migration note.",
+    "Added a permanent report migration test for original payload checksum, PNG byte equality, SHA-256 and published link. 88 governance tests pass; 227 registry entries, 35 tutorial cases, 33 PDF and 33 Word manuals; zero hard status-ledger violations and 16 pre-existing soft violations. Existing aggregate Ruff 3021 findings 2198 unformatted against 3023/2195 unchanged; #3048 required. No relaxed baseline."
+  ],
+  "reference_scan": "Scanned normal and split paths in tracked code, tests, workflows, tools, docs, archived audits. Only live test external-reference path moves; maintained halo tool and solver remain intact. Original audit worktree paths and JSON verdicts are frozen. Current CLI and report-generator paths updated; no publication or maturity API invoked.",
+  "compatibility": "Three published report URLs preserved. Five historical embedded figures restored from exact original payload; no synthetic data or plot regeneration. Old Git paths available at source_commit. No solver changes. Retired-directory guard prevents reintroduction.",
+  "scientific_scope": "Relocation only. Prior halo shim retained byte-for-byte but not used for this validation. Actual production CPU tests only, no external/GPU comparison or full numerical campaign. Historical verdict not current acceptance.",
+  "remaining_blockers": [
+    "External OSS checkout absent; test reports skip. Triton/GPU and actual JAX multi-device execution not available; do not claim those gates passed.",
+    "Legacy halo campaign contains historical shim and no tracked full result tree; keep audit and current tools distinct.",
+    "External publication and maturity-gate all deferred, old evidence JSON remains frozen."
+  ],
+  "file_counts": {
+    "moved": 25,
+    "byte_identical": 19,
+    "path_or_navigation_only": 6,
+    "recovered_embedded_images": 5
+  }
+}

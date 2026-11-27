@@ -7,9 +7,9 @@ callers must grep-hit inside the repo, benchmark must carry ref/got numbers).
 This script derives that bundle directly from the run artefact, so the evidence can
 never drift from the numbers:
 
-    python xval/cupy_dropin_no_kernel_fusion/emit_evidence.py
+    python development/verification/cupy_dropin_no_kernel_fusion/emit_evidence.py
 
-Writes ``xval/cupy_dropin_no_kernel_fusion/EVIDENCE.json``.
+Writes ``development/verification/cupy_dropin_no_kernel_fusion/EVIDENCE.json``.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 REL = lambda p: str(Path(p).relative_to(REPO))  # noqa: E731
 
 
@@ -55,19 +55,19 @@ def main() -> int:
         "impl_files": [
             "src/tensorlbm/multiphase_soy_dropin.py",
             "src/tensorlbm/multiphase_static_droplet.py",
-            "xval/cupy_dropin_no_kernel_fusion/oss_adapter.py",
+            "development/verification/cupy_dropin_no_kernel_fusion/oss_adapter.py",
         ],
-        "entry": "xval/cupy_dropin_no_kernel_fusion/run_xval.py",
-        "entry_cli": "python xval/cupy_dropin_no_kernel_fusion/run_xval.py --steps 2000",
+        "entry": "development/verification/cupy_dropin_no_kernel_fusion/run_xval.py",
+        "entry_cli": "python development/verification/cupy_dropin_no_kernel_fusion/run_xval.py --steps 2000",
         "run_artifacts": [
-            "xval/cupy_dropin_no_kernel_fusion/artifacts/run_main.json",
-            "xval/cupy_dropin_no_kernel_fusion/artifacts/dp_history.csv",
-            "xval/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
-            "xval/cupy_dropin_no_kernel_fusion/figures/fig1_laplace_convergence.png",
-            "xval/cupy_dropin_no_kernel_fusion/figures/fig2_fields.png",
-            "xval/cupy_dropin_no_kernel_fusion/figures/fig3_error_vs_radius.png",
-            "xval/cupy_dropin_no_kernel_fusion/figures/fig4_sensitivity.png",
-            "xval/cupy_dropin_no_kernel_fusion/figures/fig5_cost.png",
+            "development/verification/cupy_dropin_no_kernel_fusion/artifacts/run_main.json",
+            "development/verification/cupy_dropin_no_kernel_fusion/artifacts/dp_history.csv",
+            "development/verification/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+            "development/verification/cupy_dropin_no_kernel_fusion/figures/fig1_laplace_convergence.png",
+            "development/verification/cupy_dropin_no_kernel_fusion/figures/fig2_fields.png",
+            "development/verification/cupy_dropin_no_kernel_fusion/figures/fig3_error_vs_radius.png",
+            "development/verification/cupy_dropin_no_kernel_fusion/figures/fig4_sensitivity.png",
+            "development/verification/cupy_dropin_no_kernel_fusion/figures/fig5_cost.png",
             "docs/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md",
         ],
         "integration_callers": [
@@ -123,8 +123,8 @@ def main() -> int:
             "host": run["host"],
         },
         "repro_cmd": (
-            "python xval/cupy_dropin_no_kernel_fusion/run_xval.py --steps 2000 "
-            "&& python xval/cupy_dropin_no_kernel_fusion/make_report.py "
+            "python development/verification/cupy_dropin_no_kernel_fusion/run_xval.py --steps 2000 "
+            "&& python development/verification/cupy_dropin_no_kernel_fusion/make_report.py "
             "&& python -m pytest tests/test_free_energy_soy_cupy_dropin.py -q"
         ),
         # the gate checks that every listed path *exists*: point at the generated

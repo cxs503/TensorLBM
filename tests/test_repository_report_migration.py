@@ -7,6 +7,7 @@ provenance; it does not validate the scientific claims in the archived reports.
 from __future__ import annotations
 
 import ast
+import base64
 
 import csv
 import hashlib
@@ -198,6 +199,25 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     resolved = (path.parent / unquote(parsed.path)).resolve()
                     self.assertTrue(resolved.is_relative_to(REPO))
                     self.assertTrue(resolved.exists(), f"Missing link: {name} -> {target}")
+
+    def test_cupy_archived_figures_match_original_payload_and_public_links(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "halo-cupy-archives-2026-11-26.json").read_text(encoding="utf-8")
+        )
+        report = REPO / "docs/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md"
+        self.assertEqual(len(ledger["recovered_figures"]), 5)
+        for row in ledger["recovered_figures"]:
+            with self.subTest(figure=row["figure_key"]):
+                payload_path = REPO / row["source_payload"]
+                self.assertEqual(hashlib.sha256(payload_path.read_bytes()).hexdigest(),
+                                 row["source_payload_sha256"])
+                payload = json.loads(payload_path.read_text(encoding="utf-8"))
+                (item,) = [obj for obj in payload["figures"] if obj["name"] == row["figure_key"]]
+                decoded = base64.b64decode(item["png_base64"], validate=True)
+                figure = REPO / row["path"]
+                self.assertEqual(figure.read_bytes(), decoded)
+                self.assertEqual(hashlib.sha256(decoded).hexdigest(), row["sha256"])
+                self.assertIn(f"../{row['path']}", report.read_text(encoding="utf-8"))
 
     def test_retired_figure_root_preserves_historical_assets(self):
         ledger_path = LEDGER_PATH.parent / "figures-root-retirement-2026-11-21.json"
