@@ -1,0 +1,80 @@
+{
+  "scope": "Partial byte-exact recovery only. Retain the original XVAL directory. No current scientific acceptance and do not merge this incomplete working branch.",
+  "source_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "source_provenance": {
+    "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/PROVENANCE.json",
+    "sha256": "5259dc3eca93cf1633adcf00e3e53bb7f6449d3020b033cd3775467f890bd95f",
+    "git_blob": "08cf6c445387be5d771a972172383db27db97619"
+  },
+  "source_data": {
+    "result_json": {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/result.json",
+      "sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb",
+      "fresh_copy_sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb"
+    },
+    "field_snapshot": {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/field_snapshot_R20.json",
+      "sha256": "6aff6bbd8f6adac0fe4adc03c8067b817dbbffab4d9e3cc13710c3fc8c6c8440",
+      "fresh_recomputed_sha256": "b2298deaece560a7ce9344f1dc6b1bf8d53e08b50005966a6ec80eca2d3effa6",
+      "note": "Fresh current-source field differs from original numerical snapshot. Do not replace the original."
+    }
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.15.0+cpu",
+    "numpy": "2.3.5",
+    "matplotlib": "3.10.8",
+    "mode": "real existing renderer run in isolated disposable copy; no mocks; original tracked result and provenance not overwritten"
+  },
+  "entries": [
+    {
+      "original_path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig1_droplet_field.png",
+      "original_stamped_sha256": "7afdf08a58a2cf8d7bf52f32b259edfb875eff3b3cbc8e04b4707e6bfa7bbb57",
+      "original_stamped_size_bytes": 125395,
+      "fresh_render_sha256": "7902edb577c6ce9edd465adbec4bc4207599ed020834050c6f6cedd45e5c6f4e",
+      "fresh_render_size_bytes": 125389,
+      "exact_original_bytes_reconstructed": false,
+      "candidate_path": null
+    },
+    {
+      "original_path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig2_laplace_fit.png",
+      "original_stamped_sha256": "c5443a1e609f7e7122c56ca32350fb6f861e932c4317ef6e2588be9e13a24950",
+      "original_stamped_size_bytes": 82146,
+      "fresh_render_sha256": "30a3eb6994a8e1c403ab38efe14206203485310a4ac4589e45bbfa290dd7d164",
+      "fresh_render_size_bytes": 82149,
+      "exact_original_bytes_reconstructed": false,
+      "candidate_path": null
+    },
+    {
+      "original_path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig3_sigma_vs_R.png",
+      "original_stamped_sha256": "54d4c0d30784c3cd00c09cd60b51a9f07d82da096f9a32c28abf5ce0aa69a540",
+      "original_stamped_size_bytes": 50947,
+      "fresh_render_sha256": "54d4c0d30784c3cd00c09cd60b51a9f07d82da096f9a32c28abf5ce0aa69a540",
+      "fresh_render_size_bytes": 50947,
+      "exact_original_bytes_reconstructed": true,
+      "candidate_path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig3_sigma_vs_R.png"
+    },
+    {
+      "original_path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig4_sensitivity.png",
+      "original_stamped_sha256": "ebbc7b63e4ac26b476ed27ad93431fc26ff7f950492d272f8ada0c43c7e28402",
+      "original_stamped_size_bytes": 79500,
+      "fresh_render_sha256": "ebbc7b63e4ac26b476ed27ad93431fc26ff7f950492d272f8ada0c43c7e28402",
+      "fresh_render_size_bytes": 79500,
+      "exact_original_bytes_reconstructed": true,
+      "candidate_path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig4_sensitivity.png"
+    }
+  ],
+  "actual_main_figure_test": "5 passed, 3 failed; four cited originals absent. Checked all actual-main blobs of the four exact expected sizes (0 candidates) and fetched Git history exact paths (no matches).",
+  "blocking": "Two fresh render digests differ from original provenance. Do not transplant their bytes or restamp original provenance. Full figure test remains blocked pending exact recovery. No XVAL directory migration.",
+  "science": {
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false,
+    "algorithm_changed": false
+  },
+  "candidate_checks": {
+    "repository_layout": "passed",
+    "benchmark_registry": "249 entries, passed",
+    "targeted_figure_tests": "5 passed, 3 failed (the other two original PNGs still absent)",
+    "merge_eligible": false
+  }
+}
