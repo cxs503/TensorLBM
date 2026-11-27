@@ -1,6 +1,6 @@
 """Board-audit invariants for the m17013 claim (anchor KPI-LBM-VERIFIED-CAPS).
 
-This test file is the executable form of ``docs/audit_m17013/AUDIT_m17013.md``.
+This test file is the executable form of ``development/audit/m17085/AUDIT_m17013.md``.
 It does not re-audit TensorLBM physics; it pins the three facts the audit rests
 on, so that any future change that would invalidate the verdict breaks a test
 instead of silently rotting:
