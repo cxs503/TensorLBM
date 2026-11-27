@@ -1,0 +1,191 @@
+{
+  "scope": "Move two loose xval files to the existing formal phasefield_mcmp_poiseuille campaign; retain its existing case ID and original evidence; decode four original PNGs.",
+  "source_commit": "c06cb1c28ece2a024545e34c12a2a644a505ae3c",
+  "candidate_base_commit": "d8ffcb90a6957e3b36676102220cbb9ae64acd18",
+  "prerequisite": "#3048 exact candidate, not yet merged.",
+  "root_directories_before": [
+    ".github",
+    "BB",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "root_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "retired_paths": [
+    "xval/xval_phasefield_mcmp_poiseuille.py",
+    "xval/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 42,
+      "after": 42
+    }
+  },
+  "xval_loose_files": {
+    "before": 20,
+    "after": 18
+  },
+  "entries": [
+    {
+      "old_path": "xval/xval_phasefield_mcmp_poiseuille.py",
+      "new_path": "benchmarks/phasefield_mcmp_poiseuille/reference/round1.py",
+      "git_mode": "100644",
+      "original_git_blob": "2805eae5ea6f17ae9e0b218c668cc358ae5df6fc",
+      "original_sha256": "e45b17e9136b0a26ace6e34d1f50bafb793f660469ee1034591332466a752c5c",
+      "original_size_bytes": 34104,
+      "current_sha256": "19e7f1c85450b8f2553e2a6b31434a95f163a4e14ef98550c21d754e4458e43d",
+      "current_size_bytes": 34820,
+      "byte_identical": false,
+      "reason": "Output-root path adaptation and Ruff formatting required on entry to the maintained benchmark lint scope; AST unchanged by formatting."
+    },
+    {
+      "old_path": "xval/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md",
+      "new_path": "benchmarks/phasefield_mcmp_poiseuille/reference/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md",
+      "git_mode": "100644",
+      "original_git_blob": "49345cfb0809f83d38db722b9b213c6a72ca3192",
+      "original_sha256": "705a3bd38c8b7b4becb06234377687ddeac6a88a6d904628a8040df019ce06b4",
+      "original_size_bytes": 3050,
+      "current_sha256": "3fbedccb50c52d45b64015290bbbfaadc8682f3949815f06db5273997e3f9b89",
+      "current_size_bytes": 3012,
+      "byte_identical": false
+    }
+  ],
+  "updated_consumers": [
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/README.md",
+      "original_sha256": "2d3338ba920939dc33f4f4d4100c2a330d9de2233146865c251adf24f9e5d3c5",
+      "current_sha256": "4b6458d6bbf04421554b1f5a2661afa0d15eb10ac50756fa6ada737b9dced8b7",
+      "reason": "Update case-owned link or exact downstream path. Source package change is docstring-only."
+    },
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/benchmark_case.json",
+      "original_sha256": "aeb08db8cf68898c52a75c6228e38ecb256f7facb63c3c3685ce2cee2361a68f",
+      "current_sha256": "1f721c5354b0272159e40dc60e1535c651ccf068d77dc653cd6269d6a4baa1fc",
+      "reason": "Update case-owned link or exact downstream path. Source package change is docstring-only."
+    },
+    {
+      "path": "scripts/xval_phasefield_mcmp_poiseuille_r2.py",
+      "original_sha256": "fe43f9766f12d81584452b2590830c02755b0ba9d6965bc6afa01f8c636e6e51",
+      "current_sha256": "d302263153670329f5df36bee1c6a0713ad66c694a7b41bc636cb52048014320",
+      "reason": "Update case-owned link or exact downstream path. Source package change is docstring-only."
+    },
+    {
+      "path": "src/tensorlbm/phasefield/soy_two_phase.py",
+      "original_sha256": "cf7f8f5a46dcd42d0725d63cea080d97235501320ead97411cbc64d6f8f05322",
+      "current_sha256": "fd6306f8a27ddcf1bafd6c5a8316012a5cfbf1dc5b908b9963f4f5eab4eb09d2",
+      "reason": "Update case-owned link or exact downstream path. Source package change is docstring-only."
+    },
+    {
+      "path": "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD-R2-WALLS.md",
+      "original_sha256": "44c79c6379494eea92fe737041011c5b80afe467a05fd5dc61193fb0a5a1c534",
+      "current_sha256": "1866d021b8d0d88b8c270375941d56b78f173b85d566960148b1f9ff0940e0fc",
+      "reason": "Update case-owned link or exact downstream path. Source package change is docstring-only."
+    }
+  ],
+  "retained_original_assets": [
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures_b64.json",
+      "sha256": "d6c2b3c2b23699dc02680dba6815e7e644684e5b42023eb644ccb5893aa85dfd",
+      "git_blob": "9f2577870bf7df1cb80ec5ee585770d857b6e0cc",
+      "verification": "Unchanged original tracked object."
+    },
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json",
+      "sha256": "86fa2256516699c27d3b8df618ca08d5ba88a5905cca9b30541d39183a30bf48",
+      "git_blob": "9c55731ce845044d9908f45394bba2da66f6ad0f",
+      "verification": "Unchanged original tracked object."
+    },
+    {
+      "path": "development/audit/m18190/AUDIT_M18190.md",
+      "sha256": "09f3e185d010ee1d2962811c8fe3b7ed688ef6eff7d98050b595b1863bca1dca",
+      "git_blob": "df3ccee3ac275c2ebc040c3cfaaf49e4c3ae70bd",
+      "verification": "Unchanged original tracked object."
+    },
+    {
+      "path": "development/audit/m18190/verdict_m18190.sql",
+      "sha256": "0b7410d0d29da8540e048baf881d530f371904e7767760500ee68b710725b16b",
+      "git_blob": "1799fc8a5ae491f585f8aa3cc5fa0fe12d7d3b41",
+      "verification": "Unchanged original tracked object."
+    }
+  ],
+  "decoded_original_figures": [
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig1_velocity_profile.png",
+      "sha256": "9aa0a2121590861b6f5562f5d76adf98c58b78205a23ac7e12965d668a4ed5cf",
+      "size_bytes": 95516,
+      "origin": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures_b64.json",
+      "origin_key": "fig1_velocity_profile.png",
+      "origin_sha256": "d6c2b3c2b23699dc02680dba6815e7e644684e5b42023eb644ccb5893aa85dfd",
+      "verification": "Byte-exact decoding of existing committed base64 PNG, verified by Pillow; not a new render or scientific result."
+    },
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig2_psi_profile.png",
+      "sha256": "e6c0345da502884b235759ab7ab6c71710540b00e87b6343ae3f4ddba850a490",
+      "size_bytes": 60858,
+      "origin": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures_b64.json",
+      "origin_key": "fig2_psi_profile.png",
+      "origin_sha256": "d6c2b3c2b23699dc02680dba6815e7e644684e5b42023eb644ccb5893aa85dfd",
+      "verification": "Byte-exact decoding of existing committed base64 PNG, verified by Pillow; not a new render or scientific result."
+    },
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig3_convergence.png",
+      "sha256": "4efb412a0a751043f6a61a5bccf5d06ebd6afb6d1f9863ce12481ba17584377f",
+      "size_bytes": 49619,
+      "origin": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures_b64.json",
+      "origin_key": "fig3_convergence.png",
+      "origin_sha256": "d6c2b3c2b23699dc02680dba6815e7e644684e5b42023eb644ccb5893aa85dfd",
+      "verification": "Byte-exact decoding of existing committed base64 PNG, verified by Pillow; not a new render or scientific result."
+    },
+    {
+      "path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures/fig4_sensitivity.png",
+      "sha256": "188c7379de69d560f028f3a317a120e42b51653d9eb85fd9e3fb364751dc473c",
+      "size_bytes": 83702,
+      "origin": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures_b64.json",
+      "origin_key": "fig4_sensitivity.png",
+      "origin_sha256": "d6c2b3c2b23699dc02680dba6815e7e644684e5b42023eb644ccb5893aa85dfd",
+      "verification": "Byte-exact decoding of existing committed base64 PNG, verified by Pillow; not a new render or scientific result."
+    }
+  ],
+  "registry": {
+    "path": "benchmarks/phasefield_mcmp_poiseuille/benchmark_case.json",
+    "id": "campaign:phasefield_mcmp_poiseuille",
+    "new_case": false
+  },
+  "compatibility": {
+    "round2_loader": "scripts/xval_phasefield_mcmp_poiseuille_r2.py::_load_round1 now resolves the relocated file; actual imports before/after and identical analytical output with recorded case configuration.",
+    "output_paths": "R1 output path still outputs/phasefield_mcmp_poiseuille; R2 output remains runs/phasefield_mcmp_poiseuille_r2.",
+    "formal_source": "AST excluding only the module docstring of src/tensorlbm/phasefield/soy_two_phase.py is byte-equivalent structurally to current main; no executable source changes.",
+    "immutable_history": "Original audit and SQL are preserved byte-identically, including historical old paths and verdicts, no external publication."
+  },
+  "validation": {
+    "before": "13 targeted tests passed, actual Round 2 loader reads original Round 1.",
+    "after": "13 existing + 1 new real import/reference test passed; exact prior and relocated analytical result JSON matches; all four PNG bytes exactly decode committed base64 input.; moving the reference into benchmark lint scope required Ruff formatting, verified identical AST before/after formatting",
+    "current_scientific_acceptance": "not_evaluated",
+    "full_replay": "not performed; no mocks or new scientific result claims."
+  },
+  "remain": {
+    "round2_driver": "Keep existing scripts/xval_phasefield_mcmp_poiseuille_r2.py and scripts/render_phasefield_mcmp_poiseuille_r2_doc.py pending full Round 2 evidence recovery; historical runs/phasefield_mcmp_poiseuille_r2/results.json is absent from main. Current loader compatibility was verified, full Round 2 render not claimed.",
+    "other_xval_roots": "No directory falsely marked retired; other campaigns with missing original runtime inputs remain in place."
+  }
+}

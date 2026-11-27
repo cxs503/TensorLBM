@@ -233,7 +233,7 @@ def arm_bc(subset=None) -> dict:
 
 def _load_round1():
     spec = importlib.util.spec_from_file_location(
-        "r1_phasefield", ROOT / "xval" / "xval_phasefield_mcmp_poiseuille.py")
+        "r1_phasefield", ROOT / "benchmarks" / "phasefield_mcmp_poiseuille" / "reference" / "round1.py")
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod          # dataclasses need a registered module
     spec.loader.exec_module(mod)

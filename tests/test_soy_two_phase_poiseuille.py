@@ -207,3 +207,33 @@ def test_ma_number_is_small_in_the_graded_cases():
         sim.step()
     u_max = max(abs(v) for v in (sim.velocity_profile().tolist()))
     assert u_max / math.sqrt(CS2) < 0.1
+
+
+def test_round1_archive_binding_preserves_committed_reference():
+    """The actual R2 loader resolves the relocated R1 reference, without a solver run."""
+    import importlib.util
+    import json
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    script = root / "scripts/xval_phasefield_mcmp_poiseuille_r2.py"
+    spec = importlib.util.spec_from_file_location("phasefield_round2_pathcheck", script)
+    assert spec is not None and spec.loader is not None
+    round2 = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = round2
+    try:
+        spec.loader.exec_module(round2)
+        round1 = round2._load_round1()
+        case = root / "benchmarks/phasefield_mcmp_poiseuille"
+        assert Path(round1.__file__).resolve() == case / "reference/round1.py"
+        data = json.loads((case / "evidence/m18190/xval_poiseuille_results.json").read_text())
+        c = data["config"]
+        result = round1.analytical_stratified_poiseuille(
+            c["ny"], c["H"], c["h"], c["Gx"], c["nu"], c["nu"]
+        )
+        assert result["u_max"] == pytest.approx(data["soy_pytorch"]["analytical_u_max"])
+        assert result["Q_total"] == pytest.approx(data["soy_pytorch"]["analytical_Q_total"])
+        assert round2.OUT == root / "runs/phasefield_mcmp_poiseuille_r2"
+    finally:
+        sys.modules.pop(spec.name, None)

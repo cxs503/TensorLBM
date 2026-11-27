@@ -4,7 +4,7 @@ viscosity-contrast capable, with measured diagnostics.
 Round 2 of anchor ``XVAL-LBM-PHASEFIELD-MCMP-POISEUILLE``
 (OSS counterpart: ``ebinan92/Fingering_dynamics`` phasefield-mcmp-poiseuille).
 
-Why a second module next to ``xval/xval_phasefield_mcmp_poiseuille.py``
+Why a second module next to ``benchmarks/phasefield_mcmp_poiseuille/reference/round1.py``
 ----------------------------------------------------------------------
 The round-1 cross-validation reproduced the OSS free-energy scheme and matched a
 *piecewise-parabolic* layered Poiseuille profile to 3.7--7.2 %.  Reviewing that

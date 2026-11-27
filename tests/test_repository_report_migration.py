@@ -1269,6 +1269,37 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 report = (REPO / item["published_report"]).read_text(encoding="utf-8")
                 self.assertIn(f"](../{item['new_path']})", report)
 
+    def test_phasefield_case_relocation_preserves_original_figures_and_provenance(self):
+        import base64
+
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "phasefield-mcmp-published-case-2026-11-27.json").read_text()
+        )
+        self.assertEqual(len(ledger["entries"]), 2)
+        self.assertEqual(len(ledger["decoded_original_figures"]), 4)
+        for entry in ledger["entries"]:
+            self.assertFalse((REPO / entry["old_path"]).exists())
+            p = REPO / entry["new_path"]
+            self.assertEqual(hashlib.sha256(p.read_bytes()).hexdigest(), entry["current_sha256"])
+            self.assertEqual(
+                subprocess.check_output(["git", "ls-files", "-s", "--", entry["new_path"]],
+                                        cwd=REPO, text=True).split()[0], entry["git_mode"])
+        for asset in ledger["retained_original_assets"]:
+            self.assertEqual(hashlib.sha256((REPO / asset["path"]).read_bytes()).hexdigest(),
+                             asset["sha256"])
+        for figure in ledger["decoded_original_figures"]:
+            original = json.loads((REPO / figure["origin"]).read_text(encoding="utf-8"))
+            p = REPO / figure["path"]
+            self.assertEqual(p.read_bytes(),
+                             base64.b64decode(original[figure["origin_key"]], validate=True))
+            self.assertEqual(hashlib.sha256(p.read_bytes()).hexdigest(), figure["sha256"])
+        for consumer in ledger["updated_consumers"]:
+            self.assertEqual(
+                hashlib.sha256((REPO / consumer["path"]).read_bytes()).hexdigest(),
+                consumer["current_sha256"])
+        self.assertFalse(ledger["registry"]["new_case"])
+        self.assertEqual(ledger["validation"]["current_scientific_acceptance"], "not_evaluated")
+
     def test_blasius_development_runner_is_archived_not_a_second_case(self):
         ledger_path = (
             LEDGER_PATH.parent / "blasius-dev-runner-retirement-2026-11-22.json"

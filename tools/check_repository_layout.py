@@ -46,6 +46,8 @@ RETIRED_ROOT_DIRECTORIES = {
     "tmp",
 }
 RETIRED_FILES = {
+    "xval/xval_phasefield_mcmp_poiseuille.py",
+    "xval/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md",
     "scripts/xval_cudaphasefield_not_pseudopot.py",
     "scripts/audit_m17668_figure.py",
     "scripts/audit_m17668_report.py",
