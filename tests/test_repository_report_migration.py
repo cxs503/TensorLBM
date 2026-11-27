@@ -1654,6 +1654,61 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         )
         self.assertNotIn(item["old_path"], policy["allowed_active_references"])
 
+    def test_oracle_and_norberg_audit_archives_preserve_case_evidence(self):
+        path = LEDGER_PATH.parent / "oracle-and-square-cylinder-audit-docs-2026-11-27.json"
+        ledger = json.loads(path.read_text())
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                    if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(len(rows), 26)
+        self.assertEqual(rows, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(ledger["retired_second_level_directories"]), 3)
+        for retired in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", retired], cwd=REPO))
+        self.assertEqual(len(ledger["prior_archived_evidence"]), 18)
+        for entry in ledger["entries"] + ledger["prior_archived_evidence"]:
+            self.assert_fingerprint(REPO / entry["new_path"], entry["original_sha256"], entry["size_bytes"])
+            index = subprocess.check_output(
+                ["git", "ls-files", "-s", "--", entry["new_path"]], cwd=REPO, text=True,
+            ).split()
+            self.assertEqual(index[:2], [entry["git_mode"], entry["original_git_blob"]])
+        frozen = REPO / "development/audit/m18218/evidence_snapshot"
+        for line in (frozen / "SHA256SUMS.txt").read_text().splitlines():
+            expected, name = line.split(maxsplit=1)
+            self.assertEqual(hashlib.sha256((frozen / name).read_bytes()).hexdigest(), expected)
+        self.assertEqual(len((frozen / "SHA256SUMS.txt").read_text().splitlines()), 11)
+        compat = ledger["compatibility"]
+        manifest = json.loads((REPO / compat["oracle_manifest_path"]).read_text())
+        self.assertEqual({k: v for k, v in manifest.items() if k not in ("documentation", "evidence")},
+                         compat["oracle_protected_fields"])
+        mapping = compat["oracle_documentation_mapping"]
+        self.assertEqual(manifest["documentation"], [mapping.get(p, p) for p in compat["oracle_old_docs"]])
+        self.assertEqual(manifest["evidence"][:len(compat["oracle_old_evidence"])], compat["oracle_old_evidence"])
+        for mission, owner in compat["case_ownership"].items():
+            raw = subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--case", owner["id"]], cwd=REPO, text=True,
+            )
+            (record,) = json.loads(raw)["cases"]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            (variant,) = record["variants"]
+            self.assertEqual(variant["path"], owner["path"])
+            if mission == "m16351":
+                self.assertEqual(variant["archive_bucket"], "pending")
+                self.assertIn(owner["pointer"], variant["evidence"])
+                self.assertEqual(variant["results"], [])
+            else:
+                self.assertIn(owner["audit_index"], variant["evidence"])
+                for entry in ledger["entries"] + ledger["prior_archived_evidence"]:
+                    if entry["new_path"].startswith(f"development/audit/{mission}/"):
+                        self.assertIn(entry["new_path"], variant["evidence"])
+                self.assertEqual(variant["results"], compat["oracle_protected_fields"]["results"])
+        for name in compat["navigation_indexes"]:
+            index = REPO / name
+            for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / link).is_file(), link)
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+
     def test_hotpatch_records_keep_provenance_and_manual_navigation(self):
         ledger_path = LEDGER_PATH.parent / "hotpatch-mission-records-2026-11-22.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

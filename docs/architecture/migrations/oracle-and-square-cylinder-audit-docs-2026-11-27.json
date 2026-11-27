@@ -1,0 +1,683 @@
+{
+  "scope": "Retire three internal historical audit folders and consolidate their existing archive ownership; retain the original benchmark criteria, results, case IDs and public reports.",
+  "source_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "candidate_base_commit": "c54c8ba8d46b4bd43b17c9ec45afce551c4b46a7",
+  "actual_main_before": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 72
+  },
+  "candidate_after": {
+    "top_level_directories": [
+      ".github",
+      "app",
+      "benchmarks",
+      "development",
+      "docs",
+      "examples",
+      "models",
+      "scripts",
+      "src",
+      "tests",
+      "tools",
+      "xval"
+    ],
+    "docs_second_level_count": 69
+  },
+  "retired_second_level_directories": [
+    "docs/audit_m18218",
+    "docs/audit_m20976",
+    "docs/board_audit_m16351"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/audit_m18218/AUDIT_m18218_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS.md",
+      "new_path": "development/audit/m18218/AUDIT_m18218_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS.md",
+      "git_mode": "100644",
+      "original_git_blob": "dbab639d2e9122833a2c3d17f5aa29c17511f48d",
+      "original_sha256": "69e0535fe8210fb5c430e6f9e40685687df46cab6eabc9880506596ffc5d81da",
+      "size_bytes": 8760,
+      "current_sha256": "69e0535fe8210fb5c430e6f9e40685687df46cab6eabc9880506596ffc5d81da",
+      "current_size_bytes": 8760,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/SHA256SUMS.txt",
+      "new_path": "development/audit/m18218/evidence_snapshot/SHA256SUMS.txt",
+      "git_mode": "100644",
+      "original_git_blob": "a703ac6487b654e5a95cdb58878dcda56ba8387b",
+      "original_sha256": "20934a2cab97fb3389be6debf8cfeae4342008b6d33545007529338486e678f9",
+      "size_bytes": 1014,
+      "current_sha256": "20934a2cab97fb3389be6debf8cfeae4342008b6d33545007529338486e678f9",
+      "current_size_bytes": 1014,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/artifacts/fig_front_vs_mm.png",
+      "new_path": "development/audit/m18218/evidence_snapshot/artifacts/fig_front_vs_mm.png",
+      "git_mode": "100644",
+      "original_git_blob": "edd8cd777a0f18c56d4644396144e3df852cff1e",
+      "original_sha256": "3b0c531e54507e7dd60a472e9703775186afeb772c9424a38af6cdf304127007",
+      "size_bytes": 135119,
+      "current_sha256": "3b0c531e54507e7dd60a472e9703775186afeb772c9424a38af6cdf304127007",
+      "current_size_bytes": 135119,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/artifacts/numbers.md",
+      "new_path": "development/audit/m18218/evidence_snapshot/artifacts/numbers.md",
+      "git_mode": "100644",
+      "original_git_blob": "ff415be658e0e448415cca21634c491cc5c3569d",
+      "original_sha256": "cfd617167bcdecd3bd0938d689e06212c9a3bc353b4f79e097b2c6d756d4bc1a",
+      "size_bytes": 1493,
+      "current_sha256": "cfd617167bcdecd3bd0938d689e06212c9a3bc353b4f79e097b2c6d756d4bc1a",
+      "current_size_bytes": 1493,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/artifacts/port_fidelity_a16.json",
+      "new_path": "development/audit/m18218/evidence_snapshot/artifacts/port_fidelity_a16.json",
+      "git_mode": "100644",
+      "original_git_blob": "d08fe8b1fb301ca3970b926a708526e680d44829",
+      "original_sha256": "3a86369c049b42790e24748487b78b9f7a247f145561dc8f85e8cdbb6bdcb0b9",
+      "size_bytes": 1157,
+      "current_sha256": "3a86369c049b42790e24748487b78b9f7a247f145561dc8f85e8cdbb6bdcb0b9",
+      "current_size_bytes": 1157,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/artifacts/xval_results.json",
+      "new_path": "development/audit/m18218/evidence_snapshot/artifacts/xval_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "e486d474b5d6a25c39a843ad501d58017cad7345",
+      "original_sha256": "96faf22841b84664a1540e856673085ae15f10acaf0cfbc9201340779dc8bb43",
+      "size_bytes": 2083922,
+      "current_sha256": "96faf22841b84664a1540e856673085ae15f10acaf0cfbc9201340779dc8bb43",
+      "current_size_bytes": 2083922,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/code/DIFF_OSS_VS_TENSORLBM.md",
+      "new_path": "development/audit/m18218/evidence_snapshot/code/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "cf9be25a0a53cf56e39c7e589541a71261df4ea0",
+      "original_sha256": "351b25bb67f2078a71754f9431a02f881a232d1811672b311b95341e1f72aa4f",
+      "size_bytes": 7390,
+      "current_sha256": "351b25bb67f2078a71754f9431a02f881a232d1811672b311b95341e1f72aa4f",
+      "current_size_bytes": 7390,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/code/make_figures.py",
+      "new_path": "development/audit/m18218/evidence_snapshot/code/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "1e4163d08160e174f10b424574b30f9c4792c031",
+      "original_sha256": "d40d845cd8148faab01c251f39a44e774cb38077bb5fd335fb73af04578e03d7",
+      "size_bytes": 11066,
+      "current_sha256": "d40d845cd8148faab01c251f39a44e774cb38077bb5fd335fb73af04578e03d7",
+      "current_size_bytes": 11066,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/code/oss_oracle_port.py",
+      "new_path": "development/audit/m18218/evidence_snapshot/code/oss_oracle_port.py",
+      "git_mode": "100644",
+      "original_git_blob": "5719fb23e31f2106f29ba1af869801d21a2c3c77",
+      "original_sha256": "7423817077212ea23d40f31d72fb024d79c4f9402108e1e518c7dedba1aac639",
+      "size_bytes": 23624,
+      "current_sha256": "7423817077212ea23d40f31d72fb024d79c4f9402108e1e518c7dedba1aac639",
+      "current_size_bytes": 23624,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/code/oss_original.py",
+      "new_path": "development/audit/m18218/evidence_snapshot/code/oss_original.py",
+      "git_mode": "100644",
+      "original_git_blob": "e635c59dcddbe64cc3b4440392ebc519bee4a43c",
+      "original_sha256": "d79ca6e5f477b3389813abc0981890ec1ae3c14cbad8eda4e219a58aa2a51eb7",
+      "size_bytes": 6621,
+      "current_sha256": "d79ca6e5f477b3389813abc0981890ec1ae3c14cbad8eda4e219a58aa2a51eb7",
+      "current_size_bytes": 6621,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/code/port_fidelity.py",
+      "new_path": "development/audit/m18218/evidence_snapshot/code/port_fidelity.py",
+      "git_mode": "100644",
+      "original_git_blob": "dce5d708e52ce39beb45082603e9a5528e0bd605",
+      "original_sha256": "22155d7555dd83ac9ce05cce015b9e54055bfbca71e7f6fa5815f1c80413d8e4",
+      "size_bytes": 5495,
+      "current_sha256": "22155d7555dd83ac9ce05cce015b9e54055bfbca71e7f6fa5815f1c80413d8e4",
+      "current_size_bytes": 5495,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/code/run_xval.py",
+      "new_path": "development/audit/m18218/evidence_snapshot/code/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "1c4107467138a80f3c1b4d85be6836146e50c03f",
+      "original_sha256": "a984da544ccfcbc245ffd67626d114036e7f1b32027e3cec54656058a98d920f",
+      "size_bytes": 21345,
+      "current_sha256": "a984da544ccfcbc245ffd67626d114036e7f1b32027e3cec54656058a98d920f",
+      "current_size_bytes": 21345,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/evidence_snapshot/code/test_xval_oracle_minimal_d2q9_fs.py",
+      "new_path": "development/audit/m18218/evidence_snapshot/code/test_xval_oracle_minimal_d2q9_fs.py",
+      "git_mode": "100644",
+      "original_git_blob": "a8124459328faf5138c9a2b5263833675bfadb7d",
+      "original_sha256": "f2de29a5686ada139499b539bff107b7b4385bd1f13e9347fccfe818d35af7af",
+      "size_bytes": 3474,
+      "current_sha256": "f2de29a5686ada139499b539bff107b7b4385bd1f13e9347fccfe818d35af7af",
+      "current_size_bytes": 3474,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/fig_m18218_diagnostics.png",
+      "new_path": "development/audit/m18218/fig_m18218_diagnostics.png",
+      "git_mode": "100644",
+      "original_git_blob": "910048dc76d3d99adb7672ba86e1df4ea17da92a",
+      "original_sha256": "5cea12ffa8225e1048f8d6a145b74a8afc948094c949e6e3d8302547939a0c3b",
+      "size_bytes": 113447,
+      "current_sha256": "5cea12ffa8225e1048f8d6a145b74a8afc948094c949e6e3d8302547939a0c3b",
+      "current_size_bytes": 113447,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/fig_m18218_front_vs_mm.png",
+      "new_path": "development/audit/m18218/fig_m18218_front_vs_mm.png",
+      "git_mode": "100644",
+      "original_git_blob": "cabf545dc275ea7048035bd48c98605616e8fc1e",
+      "original_sha256": "0a980bc2c0db67cdb11a4fc3e61bbb21217a1c5faf7a541f1cd67156cadf5e6b",
+      "size_bytes": 146916,
+      "current_sha256": "0a980bc2c0db67cdb11a4fc3e61bbb21217a1c5faf7a541f1cd67156cadf5e6b",
+      "current_size_bytes": 146916,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/make_audit_figures.py",
+      "new_path": "development/audit/m18218/make_audit_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "ed00643866added5cfaf6428f3b7d38ea6aa7064",
+      "original_sha256": "796562c4d4b134c6dec5b57cb5225c994a7cdce053bf26b3eabc82fa9cc8f8de",
+      "size_bytes": 6017,
+      "current_sha256": "796562c4d4b134c6dec5b57cb5225c994a7cdce053bf26b3eabc82fa9cc8f8de",
+      "current_size_bytes": 6017,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/publish_report.py",
+      "new_path": "development/audit/m18218/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "c8b4d6dbf0cfaeec2272712a0ed35414aa1e50f4",
+      "original_sha256": "3d8707ff24ac115c51d7b01b8a77a6e35e359d9b08c136ff521a1ffa27a85538",
+      "size_bytes": 2426,
+      "current_sha256": "3d8707ff24ac115c51d7b01b8a77a6e35e359d9b08c136ff521a1ffa27a85538",
+      "current_size_bytes": 2426,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/repro_check.py",
+      "new_path": "development/audit/m18218/repro_check.py",
+      "git_mode": "100644",
+      "original_git_blob": "61a918e7a84da58b2689a45a8043482164fe891a",
+      "original_sha256": "4160f72feffda781cb8a492023250a8194f7926a1522beeb85826d40e69912cf",
+      "size_bytes": 2202,
+      "current_sha256": "4160f72feffda781cb8a492023250a8194f7926a1522beeb85826d40e69912cf",
+      "current_size_bytes": 2202,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m18218/repro_results.json",
+      "new_path": "development/audit/m18218/repro_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "0f8883872b2d6e001584ecc96be1c6b5a35f8b10",
+      "original_sha256": "d179978c79935a44fee0f41f1d6720e71b8c256887f2f571278f1857d9fe4176",
+      "size_bytes": 4598,
+      "current_sha256": "d179978c79935a44fee0f41f1d6720e71b8c256887f2f571278f1857d9fe4176",
+      "current_size_bytes": 4598,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/audit_m20976/AUDIT_m20976_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2.md",
+      "new_path": "development/audit/m20976/AUDIT_m20976_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2.md",
+      "git_mode": "100644",
+      "original_git_blob": "887f37e24d03da33ffa9dc6d94b5154f8e3f72c9",
+      "original_sha256": "7a5122f7cb67ef6c1eee6687ab3d672880f42b8cf845edb13864ff2c2f2a3874",
+      "size_bytes": 10824,
+      "current_sha256": "7a5122f7cb67ef6c1eee6687ab3d672880f42b8cf845edb13864ff2c2f2a3874",
+      "current_size_bytes": 10824,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit_m16351/M16351_BOARD_AUDIT.md",
+      "new_path": "development/audit/m16351/M16351_BOARD_AUDIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "c4474354f8300a3471ee5c4113d0d643f8d76455",
+      "original_sha256": "96dca4440f2f4198ba2e824ba36cb7dd16e01c8ee6a678bf584ac5c48aaa910f",
+      "size_bytes": 10350,
+      "current_sha256": "96dca4440f2f4198ba2e824ba36cb7dd16e01c8ee6a678bf584ac5c48aaa910f",
+      "current_size_bytes": 10350,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit_m16351/figs/fig1_force_traces.png",
+      "new_path": "development/audit/m16351/figs/fig1_force_traces.png",
+      "git_mode": "100644",
+      "original_git_blob": "d5d22c5a2d890f6b93e97f01216c636fe79daeb3",
+      "original_sha256": "576997ee97156de51612464709bc2e02e0a05c376f4b5f150a2986ac4303c3cb",
+      "size_bytes": 87268,
+      "current_sha256": "576997ee97156de51612464709bc2e02e0a05c376f4b5f150a2986ac4303c3cb",
+      "current_size_bytes": 87268,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit_m16351/figs/fig2_cl_spectrum.png",
+      "new_path": "development/audit/m16351/figs/fig2_cl_spectrum.png",
+      "git_mode": "100644",
+      "original_git_blob": "4758b2421624de1b47f97b0c4af504d024fd3980",
+      "original_sha256": "1213b9f294dcb85b5e3c8f7801cb0ab4fdb34414b68abb84f7eee0f42c53a02d",
+      "size_bytes": 94214,
+      "current_sha256": "1213b9f294dcb85b5e3c8f7801cb0ab4fdb34414b68abb84f7eee0f42c53a02d",
+      "current_size_bytes": 94214,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit_m16351/figs/fig3_ref_vs_got.png",
+      "new_path": "development/audit/m16351/figs/fig3_ref_vs_got.png",
+      "git_mode": "100644",
+      "original_git_blob": "a314d5e39d8679ad6bb210352d593133f19acf3c",
+      "original_sha256": "c5ff987fc2be1d886f012f5332eeb227e7f4eb4d35848094679b61162776a964",
+      "size_bytes": 72247,
+      "current_sha256": "c5ff987fc2be1d886f012f5332eeb227e7f4eb4d35848094679b61162776a964",
+      "current_size_bytes": 72247,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit_m16351/figs/fig4_vorticity.png",
+      "new_path": "development/audit/m16351/figs/fig4_vorticity.png",
+      "git_mode": "100644",
+      "original_git_blob": "9f474c50dcbe302fef44c6d4872796bc68a093af",
+      "original_sha256": "aa52e70d1e902ba2168486593e5fb75e7dbf12fe1cc35351cfbaf33194fae6d0",
+      "size_bytes": 51713,
+      "current_sha256": "aa52e70d1e902ba2168486593e5fb75e7dbf12fe1cc35351cfbaf33194fae6d0",
+      "current_size_bytes": 51713,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit_m16351/m16351_verdict.sql",
+      "new_path": "development/audit/m16351/m16351_verdict.sql",
+      "git_mode": "100644",
+      "original_git_blob": "48f2a4c0422dad033a019d28d84834d66dbefced",
+      "original_sha256": "d77fc55bf59f7e5ad1c7a6282f003325b7f1de789d4b2c57f6bd697d7d04e132",
+      "size_bytes": 3575,
+      "current_sha256": "d77fc55bf59f7e5ad1c7a6282f003325b7f1de789d4b2c57f6bd697d7d04e132",
+      "current_size_bytes": 3575,
+      "byte_identical": true
+    }
+  ],
+  "prior_archived_evidence": [
+    {
+      "old_path": "development/audit/m18218/verdict_m18218.sql",
+      "new_path": "development/audit/m18218/verdict_m18218.sql",
+      "git_mode": "100644",
+      "original_git_blob": "9f0555e048d13e8b6cc7f15a09c3f2df292408de",
+      "original_sha256": "febd2067dacde032b9931145a9c8fef29d2be75a6f6b610e97ad55931fe68d81",
+      "size_bytes": 10077,
+      "current_sha256": "febd2067dacde032b9931145a9c8fef29d2be75a6f6b610e97ad55931fe68d81",
+      "current_size_bytes": 10077,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/build_verdict.py",
+      "new_path": "development/audit/m20976/build_verdict.py",
+      "git_mode": "100644",
+      "original_git_blob": "2ec6dfa92c38f1e6ebbdaed208557ffd159f5f28",
+      "original_sha256": "40cf1cc456c5ffdc1c28d435d5527ba20162864267425d9e5485c16b636848b3",
+      "size_bytes": 12099,
+      "current_sha256": "40cf1cc456c5ffdc1c28d435d5527ba20162864267425d9e5485c16b636848b3",
+      "current_size_bytes": 12099,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/evidence/fit_and_richardson.json",
+      "new_path": "development/audit/m20976/evidence/fit_and_richardson.json",
+      "git_mode": "100644",
+      "original_git_blob": "e6946ed88e25457218d16ca2151534f71d33face",
+      "original_sha256": "d728b1ccea9d8a28e5eb582e58b64dc2a32f213a4f9f7ceb18135d7f8cfcf496",
+      "size_bytes": 1243,
+      "current_sha256": "d728b1ccea9d8a28e5eb582e58b64dc2a32f213a4f9f7ceb18135d7f8cfcf496",
+      "current_size_bytes": 1243,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/evidence/job_log_recovery.json",
+      "new_path": "development/audit/m20976/evidence/job_log_recovery.json",
+      "git_mode": "100644",
+      "original_git_blob": "c2797f79fbf6e45c932724aaacbd418922fd9034",
+      "original_sha256": "bdf423ec7e082a18aa05beaac1c858eeb137ceccc62626f5366831b46e095b8c",
+      "size_bytes": 2254,
+      "current_sha256": "bdf423ec7e082a18aa05beaac1c858eeb137ceccc62626f5366831b46e095b8c",
+      "current_size_bytes": 2254,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/evidence/snapshot_a16_T0.5.json",
+      "new_path": "development/audit/m20976/evidence/snapshot_a16_T0.5.json",
+      "git_mode": "100644",
+      "original_git_blob": "3cb1a6106abdc93e88ed70d88a1df5938a5de97a",
+      "original_sha256": "d235c8d3a27efdcc6f1c4723680c72e976211a560a03ed7ee9d86df5377054ef",
+      "size_bytes": 155,
+      "current_sha256": "d235c8d3a27efdcc6f1c4723680c72e976211a560a03ed7ee9d86df5377054ef",
+      "current_size_bytes": 155,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/evidence/verdict_evidence.json",
+      "new_path": "development/audit/m20976/evidence/verdict_evidence.json",
+      "git_mode": "100644",
+      "original_git_blob": "deba12cbf6e0aa48759d980deb770754432bc0ba",
+      "original_sha256": "ec6a03b71459f25bca4912fc37ca11e2dc2a730396b5d70e2aeb41b619e1ee7e",
+      "size_bytes": 10260,
+      "current_sha256": "ec6a03b71459f25bca4912fc37ca11e2dc2a730396b5d70e2aeb41b619e1ee7e",
+      "current_size_bytes": 10260,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/fit_from_artifact.py",
+      "new_path": "development/audit/m20976/fit_from_artifact.py",
+      "git_mode": "100644",
+      "original_git_blob": "2c7a760e496d715f4d767b8a578fd27b0677bd92",
+      "original_sha256": "d925cb5bf0ae12f513489db583c7eb459d4715416f36fddff82eb7253bd6e097",
+      "size_bytes": 3207,
+      "current_sha256": "d925cb5bf0ae12f513489db583c7eb459d4715416f36fddff82eb7253bd6e097",
+      "current_size_bytes": 3207,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/parse_job_logs.py",
+      "new_path": "development/audit/m20976/parse_job_logs.py",
+      "git_mode": "100644",
+      "original_git_blob": "43e307a4045ea93752cd261b2cc2deefd2f2ef80",
+      "original_sha256": "2ad6f5e5a43bf61aca796cd6cc90af14e67fadae4b939f69f29c2ecc4f0ff6fc",
+      "size_bytes": 5240,
+      "current_sha256": "2ad6f5e5a43bf61aca796cd6cc90af14e67fadae4b939f69f29c2ecc4f0ff6fc",
+      "current_size_bytes": 5240,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/publish_report.py",
+      "new_path": "development/audit/m20976/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "b99c065507503f4e7e36386e81d3e3cc29f8b51e",
+      "original_sha256": "d028ab588ace732937ed39d37af86cf7f366892a51c0d7bb51851c3b47a9c77b",
+      "size_bytes": 11965,
+      "current_sha256": "d028ab588ace732937ed39d37af86cf7f366892a51c0d7bb51851c3b47a9c77b",
+      "current_size_bytes": 11965,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/repro/R2_RESOLUTION.md",
+      "new_path": "development/audit/m20976/repro/R2_RESOLUTION.md",
+      "git_mode": "100644",
+      "original_git_blob": "bdc4b78684627a4c403efd130c32d9f8e97e8f73",
+      "original_sha256": "f045184443a558e58d40792b58db931a87b12bd05c80b31511cf103425299191",
+      "size_bytes": 6350,
+      "current_sha256": "f045184443a558e58d40792b58db931a87b12bd05c80b31511cf103425299191",
+      "current_size_bytes": 6350,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/repro/collect_job_stdout.py",
+      "new_path": "development/audit/m20976/repro/collect_job_stdout.py",
+      "git_mode": "100644",
+      "original_git_blob": "300113002f74e9b5a3456bd436b4bb0983f85a0a",
+      "original_sha256": "c0c61821ad879cf35efb61bca00242e01a92e42b094f88890b08e1dac9564ad0",
+      "size_bytes": 3631,
+      "current_sha256": "c0c61821ad879cf35efb61bca00242e01a92e42b094f88890b08e1dac9564ad0",
+      "current_size_bytes": 3631,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/repro/r2_cj3032_maxima.json",
+      "new_path": "development/audit/m20976/repro/r2_cj3032_maxima.json",
+      "git_mode": "100644",
+      "original_git_blob": "e25a7a30f675ad589aa7f93a82409b4625caaded",
+      "original_sha256": "302f59e2a0e32601493fe55acdcc2c2f4e5ec5c6f886a967a038a2d7f859f5d2",
+      "size_bytes": 2503,
+      "current_sha256": "302f59e2a0e32601493fe55acdcc2c2f4e5ec5c6f886a967a038a2d7f859f5d2",
+      "current_size_bytes": 2503,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/repro/resolution_study.py",
+      "new_path": "development/audit/m20976/repro/resolution_study.py",
+      "git_mode": "100644",
+      "original_git_blob": "0cdbedc73ce2659e67376b936f6c32f7e9044bff",
+      "original_sha256": "54decd9e1e6b860716616e42bf43805791a576b4b652d68b7cebc4b8c1cc23a0",
+      "size_bytes": 33575,
+      "current_sha256": "54decd9e1e6b860716616e42bf43805791a576b4b652d68b7cebc4b8c1cc23a0",
+      "current_size_bytes": 33575,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/verdict_m20976.sql",
+      "new_path": "development/audit/m20976/verdict_m20976.sql",
+      "git_mode": "100644",
+      "original_git_blob": "70414cc65c2424bc38c8c19dea65194fdfe5c5ae",
+      "original_sha256": "af36fa073f2a9a5d76c3d75347ea37cf0abb18ca5b59cfec98fd9746a0f44881",
+      "size_bytes": 10455,
+      "current_sha256": "af36fa073f2a9a5d76c3d75347ea37cf0abb18ca5b59cfec98fd9746a0f44881",
+      "current_size_bytes": 10455,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m20976/verify_r2.py",
+      "new_path": "development/audit/m20976/verify_r2.py",
+      "git_mode": "100644",
+      "original_git_blob": "7936815fa943ec5afe50df4520c7bcf5bbaa2054",
+      "original_sha256": "042f60f5816c855f0dca6b9de210a9ae84f138fbbe277a5881be8e50c3e2c1c6",
+      "size_bytes": 3139,
+      "current_sha256": "042f60f5816c855f0dca6b9de210a9ae84f138fbbe277a5881be8e50c3e2c1c6",
+      "current_size_bytes": 3139,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m16351/tools/m16351_board_audit.py",
+      "new_path": "development/audit/m16351/tools/m16351_board_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "fe59d1b704f37a83bcd5820b118a6c2409d7ac79",
+      "original_sha256": "447401ab2d679a4ddcc96204147e8b79dda982ac753760ec39479f45e891796c",
+      "size_bytes": 16143,
+      "current_sha256": "447401ab2d679a4ddcc96204147e8b79dda982ac753760ec39479f45e891796c",
+      "current_size_bytes": 16143,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m16351/tools/m16351_figures.py",
+      "new_path": "development/audit/m16351/tools/m16351_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "8f77898300882a517c0fb3e1e7fc99f1c24add74",
+      "original_sha256": "373f75b18db373b5b498ff44238bc40beb11ff12a7e30c0db3473d577852b840",
+      "size_bytes": 6745,
+      "current_sha256": "373f75b18db373b5b498ff44238bc40beb11ff12a7e30c0db3473d577852b840",
+      "current_size_bytes": 6745,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/m16351/tools/m16351_report.py",
+      "new_path": "development/audit/m16351/tools/m16351_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "f486e164f4a6b3bb03b7d9b0b285acc1da5c0b09",
+      "original_sha256": "37b509691f42111a2136ad091409ec86c22c2290d41bf359a9106fc8975d58cc",
+      "size_bytes": 10866,
+      "current_sha256": "37b509691f42111a2136ad091409ec86c22c2290d41bf359a9106fc8975d58cc",
+      "current_size_bytes": 10866,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "benchmarks/xval_oracle_minimal_d2q9_fs/benchmark_case.json",
+      "new_path": "benchmarks/xval_oracle_minimal_d2q9_fs/benchmark_case.json",
+      "git_mode": "100644",
+      "original_git_blob": "0bbc238a3188342a6bffe70a295d41f576efdf8a",
+      "original_sha256": "8b35fbc8528adf2d236f6d280fd8113d5f1b35841b8121456ebdc6e3dc4e7caf",
+      "size_bytes": 6760,
+      "current_sha256": "ed64c280e5b8eabfb8d28161f112292846a605ac8dd9924f59b07f31351550f5",
+      "current_size_bytes": 9081,
+      "byte_identical": false
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact main-tree references: oracle manifest documentation fields updated; remaining historical path literals are in archived prior verdict/build scripts and case-specific figure/report scripts retained unchanged. Indexed searches for each audit folder across TensorKnowledge, TensorPhysics, TensorPlatform, TensorBench returned no hits; external URLs not exhaustively checked.",
+    "dependencies": "Original worktrees and some ignored run/cluster files absent, historical audit runners not executed. Frozen m20976 verdict builder and m16351 report/figure tools retain historical paths; no active consumers found. Published case reports unchanged. Original m18218 SHA256SUMS verified against archived copy.",
+    "case_ownership": {
+      "m18218": {
+        "id": "campaign:xval_oracle_minimal_d2q9_fs",
+        "path": "benchmarks/xval_oracle_minimal_d2q9_fs",
+        "audit_index": "development/audit/m18218/README.md"
+      },
+      "m20976": {
+        "id": "campaign:xval_oracle_minimal_d2q9_fs",
+        "path": "benchmarks/xval_oracle_minimal_d2q9_fs",
+        "audit_index": "development/audit/m20976/README.md"
+      },
+      "m16351": {
+        "id": "benchmarks/pending/square_cylinder_norberg",
+        "path": "benchmarks/pending/square_cylinder_norberg",
+        "audit_index": "development/audit/m16351/README.md",
+        "pointer": "benchmarks/pending/square_cylinder_norberg/evidence/m16351/README.md"
+      }
+    },
+    "navigation_indexes": [
+      "development/audit/m18218/README.md",
+      "development/audit/m20976/README.md",
+      "development/audit/m16351/README.md",
+      "benchmarks/pending/square_cylinder_norberg/evidence/m16351/README.md"
+    ],
+    "published_paths": [
+      "docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md",
+      "docs/XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2_RESOLUTION.md"
+    ],
+    "oracle_manifest_path": "benchmarks/xval_oracle_minimal_d2q9_fs/benchmark_case.json",
+    "oracle_old_docs": [
+      "docs/XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2_RESOLUTION.md",
+      "docs/XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R3_M21017.md",
+      "docs/XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R4_RE_CONFOUND.md",
+      "docs/reports/REPORT_XVAL_LBM_MASS_EXCHANGE_SELECTOR.md",
+      "docs/audit_m18218/AUDIT_m18218_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS.md",
+      "docs/audit_m20976/AUDIT_m20976_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2.md"
+    ],
+    "oracle_old_evidence": [
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/DIFF_OSS_VS_TENSORLBM.md",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/numbers.md",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/port_fidelity_a16.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/r2_cj3032_maxima.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/r3_a16_summary.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/r3_ladder.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/re_analysis.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/re_numbers.md",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/recovered_cj3126_tau_sweep.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/resolution_analysis.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/resolution_numbers.md",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/runs_r3/tensorlbm_koerner_a16_tau1.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/runs_r3/tensorlbm_koerner_a24_tau1.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/runs_r3/tensorlbm_koerner_a32_tau1.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/runs_r3/tensorlbm_koerner_a48_tau1.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/runs_r3/tensorlbm_koerner_a64_tau1.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/smoke_r3.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/xval_results.json",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/collect_job_stdout.py",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/make_figures.py",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/make_figures_r2.py",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_original.py",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/port_fidelity.py",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/publish_r2_report.py",
+      "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/re_confound.py",
+      "development/verification/mass_exchange_selector/DIFF_OSS_VS_TENSORLBM_MASS_EXCHANGE_SELECTOR.md",
+      "development/verification/mass_exchange_selector/artifacts/analysis.json",
+      "development/verification/mass_exchange_selector/artifacts/differential.json",
+      "development/verification/mass_exchange_selector/artifacts/fidelity.json",
+      "development/verification/mass_exchange_selector/artifacts/fidelity_both.json",
+      "development/verification/mass_exchange_selector/artifacts/numbers.md",
+      "development/verification/mass_exchange_selector/artifacts/runs.json",
+      "development/verification/mass_exchange_selector/artifacts/states_A_repo_a16.npz",
+      "development/verification/mass_exchange_selector/artifacts/states_B_ossFixed_a16.npz",
+      "development/verification/mass_exchange_selector/make_figures.py",
+      "development/verification/mass_exchange_selector/oss_selector.py",
+      "development/verification/mass_exchange_selector/publish_report.py",
+      "development/verification/mass_exchange_selector/repo_selector.py",
+      "development/verification/mass_exchange_selector/run_xval.py",
+      "development/verification/thuerey_vof_mass_exchange/REPORT.md",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_koerner_a24.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_koerner_a32.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_oss_a24.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_oss_a32.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_pair_symmetric_a24.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_pair_symmetric_a32.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_repo_a24.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_repo_a24_tau0.8.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/db_repo_a32.json",
+      "development/verification/thuerey_vof_mass_exchange/artifacts/operator_audit.json",
+      "development/verification/thuerey_vof_mass_exchange/make_report.py",
+      "development/verification/thuerey_vof_mass_exchange/predeclared.json",
+      "development/verification/thuerey_vof_mass_exchange/replays/2026-11-26-operator-audit.json",
+      "development/verification/thuerey_vof_mass_exchange/report_payload.json",
+      "development/verification/thuerey_vof_mass_exchange/run_dambreak_xval.py",
+      "development/verification/thuerey_vof_mass_exchange/run_operator_audit.py",
+      "docs/architecture/migrations/free-surface-evidence-2026-11-26.json"
+    ],
+    "oracle_protected_fields": {
+      "scope": "D2Q9 free-surface dam break against Martin & Moyce (1952). Frozen R1–R4 studies and two related historical mass-exchange campaigns are linked as supporting evidence, not additional current acceptance claims.",
+      "criteria": {
+        "protocol": "benchmarks/xval_oracle_minimal_d2q9_fs/run.py",
+        "metric": "max absolute relative error of Z_sub0.05 against Martin & Moyce 1952",
+        "threshold_pct": 15.0,
+        "current_relocation_replay": "CI tier a=16, T<=1: 20.378% (failed). Full-tier acceptance not evaluated by this migration."
+      },
+      "source": [
+        "benchmarks/xval_oracle_minimal_d2q9_fs/run.py",
+        "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py",
+        "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/run_xval.py",
+        "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_oracle_port.py",
+        "src/tensorlbm/free_surface_lbm_2d.py"
+      ],
+      "config": [
+        "benchmarks/xval_oracle_minimal_d2q9_fs/run.py",
+        "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py"
+      ],
+      "reference_files": [
+        "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
+        "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json"
+      ],
+      "results": [
+        "benchmarks/xval_oracle_minimal_d2q9_fs/result.json",
+        "benchmarks/xval_oracle_minimal_d2q9_fs/replays/2026-11-26-ci-tier.json"
+      ]
+    },
+    "oracle_documentation_mapping": {
+      "docs/audit_m18218/AUDIT_m18218_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS.md": "development/audit/m18218/AUDIT_m18218_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS.md",
+      "docs/audit_m20976/AUDIT_m20976_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2.md": "development/audit/m20976/AUDIT_m20976_XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2.md"
+    }
+  },
+  "science": {
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated",
+    "algorithm_changed": false,
+    "historical_scope": "Retain oracle historical failures and 15% criterion; existing 20.378% CI-tier relocation replay remains failed, not newly evaluated. Norberg historic L2 and St failure remain; pending case no current numeric result."
+  }
+}
