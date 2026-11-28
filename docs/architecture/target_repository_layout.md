@@ -123,6 +123,8 @@ The [m15884 board and intelligence design ledger](migrations/dfg-board-and-drop-
 
 The [historical campaign report script handoff ledger](migrations/historical-campaign-report-script-handoff-2026-11-28.json) archives seven one-off report helpers and registers original paths, compatible CLI help and missing historical inputs while keeping published reports stable.
 
+The [offline figure-helper ledger](migrations/offline-figure-helper-handoff-2026-11-28.json) archives four independent historical figure generators under development, retains published report URLs and records byte-identical before/after output without assigning new scientific acceptance.
+
 The [Ghia W26 tool ledger](migrations/ghia-w26-tool-retirement-2026-11-23.json)
 places anchor extraction, analytic checks and report utilities beside the Ghia
 reference data. The archived register keeps its original provenance.

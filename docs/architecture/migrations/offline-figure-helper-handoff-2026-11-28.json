@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "base_main": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+  "base_tree": "acdb63dc4483cfdbc6a9e321336fb9b22dbc8834",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "scripts_tracked_before": 557,
+  "scripts_tracked_after": 553,
+  "retired_top_level_directories": [],
+  "entries": [
+    {
+      "old_path": "scripts/gen_verification_figures.py",
+      "new_path": "development/verification/historical_figure_helpers/gen_verification_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "038488f1f4576acf21396f2b6efd60efad7ea2f0",
+      "original_sha256": "01f965f5bcc25947514e88fbf1fa6f3c985d7274d6d6c1c36d5b97694fce2ca6",
+      "size_bytes": 4460,
+      "current_sha256": "6fc0313c1971773bb027a6430690d05af44e54d78a13f59d002b619b3ec4e093",
+      "current_size_bytes": 4472,
+      "current_git_blob": "61e76e5b119e24364f50d50085c1b60c1dae15cd",
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "os.path.join(os.path.dirname(__file__), '..', 'src')",
+          "new": "os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src')",
+          "count": 1
+        }
+      ],
+      "output_parity": {
+        "status": "passed",
+        "before_returncode": 0,
+        "after_returncode": 0,
+        "file_count": 4,
+        "files_before": {
+          "figures/growth_rate_vs_ra.png": {
+            "sha256": "1427141e88b0db44c57d16445cb281a0b72b4296c26777367bcf1ee7890cc385",
+            "size_bytes": 58731
+          },
+          "figures/marginal_curve.png": {
+            "sha256": "298ad55141e297ed163ef7f98c00b6e51cf01a653e7087867ee0799d1735969b",
+            "size_bytes": 80093
+          },
+          "figures/nu_convergence.png": {
+            "sha256": "3643f283c5f776c1e773f97baadadfdc9983d8158867085bfbd6f203f153b5b2",
+            "size_bytes": 51984
+          },
+          "figures/nu_vs_ra_dhc.png": {
+            "sha256": "a8cb7b43aa6aed9b70b7d5ac4ab6ff2c9a98dd27232a192e647bdbbdca4357a5",
+            "size_bytes": 57702
+          }
+        },
+        "files_after": {
+          "figures/growth_rate_vs_ra.png": {
+            "sha256": "1427141e88b0db44c57d16445cb281a0b72b4296c26777367bcf1ee7890cc385",
+            "size_bytes": 58731
+          },
+          "figures/marginal_curve.png": {
+            "sha256": "298ad55141e297ed163ef7f98c00b6e51cf01a653e7087867ee0799d1735969b",
+            "size_bytes": 80093
+          },
+          "figures/nu_convergence.png": {
+            "sha256": "3643f283c5f776c1e773f97baadadfdc9983d8158867085bfbd6f203f153b5b2",
+            "size_bytes": 51984
+          },
+          "figures/nu_vs_ra_dhc.png": {
+            "sha256": "a8cb7b43aa6aed9b70b7d5ac4ab6ff2c9a98dd27232a192e647bdbbdca4357a5",
+            "size_bytes": 57702
+          }
+        },
+        "stdout_sha256": "6b4200e56241f988ee82d59e5321de7484224190b10e52774bb4208673cc1804",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_identical": true,
+        "stderr_identical": true
+      }
+    },
+    {
+      "old_path": "scripts/generate_von_neumann_figures.py",
+      "new_path": "development/verification/historical_figure_helpers/generate_von_neumann_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "63d4d756e4183369552c3c4892dd824e945e96f4",
+      "original_sha256": "4a68c69175dbcc1478e4adc592022d5451364bdcbaaae4f663ec1a384842a343",
+      "size_bytes": 7437,
+      "current_sha256": "4a68c69175dbcc1478e4adc592022d5451364bdcbaaae4f663ec1a384842a343",
+      "current_size_bytes": 7437,
+      "current_git_blob": "63d4d756e4183369552c3c4892dd824e945e96f4",
+      "byte_identical": true,
+      "path_only_edits": [],
+      "output_parity": {
+        "status": "passed",
+        "before_returncode": 0,
+        "after_returncode": 0,
+        "file_count": 3,
+        "files_before": {
+          "artifacts/von_neumann_dispersion.png": {
+            "sha256": "f9ebc09c6a6dcc3b0df30465c86c697e5a679e2a4718f128f37d67c17831b039",
+            "size_bytes": 283694
+          },
+          "artifacts/von_neumann_isotropy.png": {
+            "sha256": "5be864143e28006e83b23a6a8640bd42c60ca338ef0f28327e01a581b95bd3d4",
+            "size_bytes": 55011
+          },
+          "artifacts/von_neumann_stability.png": {
+            "sha256": "5475eae25587a97f6ed6887f394a6aeceec638545af99c711c4085dc63ebff42",
+            "size_bytes": 97335
+          }
+        },
+        "files_after": {
+          "artifacts/von_neumann_dispersion.png": {
+            "sha256": "f9ebc09c6a6dcc3b0df30465c86c697e5a679e2a4718f128f37d67c17831b039",
+            "size_bytes": 283694
+          },
+          "artifacts/von_neumann_isotropy.png": {
+            "sha256": "5be864143e28006e83b23a6a8640bd42c60ca338ef0f28327e01a581b95bd3d4",
+            "size_bytes": 55011
+          },
+          "artifacts/von_neumann_stability.png": {
+            "sha256": "5475eae25587a97f6ed6887f394a6aeceec638545af99c711c4085dc63ebff42",
+            "size_bytes": 97335
+          }
+        },
+        "stdout_sha256": "281bd82da8baeff760a9e0ca67a6269d5d82a7d4d0077f9c8240cb9fe1f5a54f",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_identical": true,
+        "stderr_identical": true
+      }
+    },
+    {
+      "old_path": "scripts/generate_wetting_figures.py",
+      "new_path": "development/verification/historical_figure_helpers/generate_wetting_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "bf5806d56d312568c13470aa5d81144d5f3dbc14",
+      "original_sha256": "6cfdb896bd5708b25ed2f67461fbec09b374d0b2a77a33c56803cb0fbd426e1a",
+      "size_bytes": 6141,
+      "current_sha256": "5af3f7f725b82e0700e43fa0a4ee2d52a1b21d15ebe7a2b6179671db7f574eff",
+      "current_size_bytes": 6153,
+      "current_git_blob": "09be1e7be7187212cb437c25b215bcfc08e9f557",
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "os.path.join(os.path.dirname(__file__), \"..\", \"src\")",
+          "new": "os.path.join(os.path.dirname(__file__), \"..\", \"..\", \"..\", \"src\")",
+          "count": 1
+        }
+      ],
+      "output_parity": {
+        "status": "passed",
+        "before_returncode": 0,
+        "after_returncode": 0,
+        "file_count": 5,
+        "files_before": {
+          "capillary_rise.png": {
+            "sha256": "b467f4acb0ccb61ec144281b322cd6b0e46b239b9e0750e417968e83e18fb94a",
+            "size_bytes": 58420
+          },
+          "cassie_baxter_wenzel.png": {
+            "sha256": "02a5f4cb417a08eea2b2e979f045127e5d3d38a845c407d3e78e8525915784aa",
+            "size_bytes": 157543
+          },
+          "cox_voinov.png": {
+            "sha256": "afdcf999d11cff545f622ff5c4299cbb12d76287185a3543a78ea774b692cb36",
+            "size_bytes": 54684
+          },
+          "droplet_spreading.png": {
+            "sha256": "cd2ca451a465c34a4571a0ebf4232b0ac11bc2ff30c6b34cb9b3995d712f701b",
+            "size_bytes": 67890
+          },
+          "mkt_velocity.png": {
+            "sha256": "11eeb4208fd4e23d577584a8be6cbd52a942fbcbf87cc207091c5dd89047cf30",
+            "size_bytes": 61257
+          }
+        },
+        "files_after": {
+          "capillary_rise.png": {
+            "sha256": "b467f4acb0ccb61ec144281b322cd6b0e46b239b9e0750e417968e83e18fb94a",
+            "size_bytes": 58420
+          },
+          "cassie_baxter_wenzel.png": {
+            "sha256": "02a5f4cb417a08eea2b2e979f045127e5d3d38a845c407d3e78e8525915784aa",
+            "size_bytes": 157543
+          },
+          "cox_voinov.png": {
+            "sha256": "afdcf999d11cff545f622ff5c4299cbb12d76287185a3543a78ea774b692cb36",
+            "size_bytes": 54684
+          },
+          "droplet_spreading.png": {
+            "sha256": "cd2ca451a465c34a4571a0ebf4232b0ac11bc2ff30c6b34cb9b3995d712f701b",
+            "size_bytes": 67890
+          },
+          "mkt_velocity.png": {
+            "sha256": "11eeb4208fd4e23d577584a8be6cbd52a942fbcbf87cc207091c5dd89047cf30",
+            "size_bytes": 61257
+          }
+        },
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_identical": true,
+        "stderr_identical": true
+      }
+    },
+    {
+      "old_path": "scripts/gen_yield_stress_figures.py",
+      "new_path": "development/verification/historical_figure_helpers/gen_yield_stress_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "0f7ddc422e2936abb5674216a5a7b8ac013df487",
+      "original_sha256": "ac4236375d81c6efe25216c59b5bfc922ee852ea26da0ba59d7fccdad5409235",
+      "size_bytes": 3815,
+      "current_sha256": "ac4236375d81c6efe25216c59b5bfc922ee852ea26da0ba59d7fccdad5409235",
+      "current_size_bytes": 3815,
+      "current_git_blob": "0f7ddc422e2936abb5674216a5a7b8ac013df487",
+      "byte_identical": true,
+      "path_only_edits": [],
+      "output_parity": {
+        "status": "passed",
+        "before_returncode": 0,
+        "after_returncode": 0,
+        "file_count": 2,
+        "files_before": {
+          "figures/couette.png": {
+            "sha256": "8ebad940327a8f5a167fe1225eadbabb716f70c02d6b90046c62928461f7d1b9",
+            "size_bytes": 45935
+          },
+          "figures/poiseuille.png": {
+            "sha256": "5e6776dba579b0b5fa09d1210b33e40911f775e203d25f298d26f09b975f63d3",
+            "size_bytes": 77578
+          }
+        },
+        "files_after": {
+          "figures/couette.png": {
+            "sha256": "8ebad940327a8f5a167fe1225eadbabb716f70c02d6b90046c62928461f7d1b9",
+            "size_bytes": 45935
+          },
+          "figures/poiseuille.png": {
+            "sha256": "5e6776dba579b0b5fa09d1210b33e40911f775e203d25f298d26f09b975f63d3",
+            "size_bytes": 77578
+          }
+        },
+        "stdout_sha256": "08be4680d4dcdfeb4d2076ca1fe1b94a18c05efb279e51ae6f4652024e8addc9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_identical": true,
+        "stderr_identical": true
+      }
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/reports/report_p96w2n04.md",
+      "new_path": "docs/reports/report_p96w2n04.md",
+      "git_mode": "100644",
+      "original_git_blob": "5b56b146a7fb0f7c66ea7abfeba2606c4487f293",
+      "original_sha256": "9e9cb829c8de87ec6cf5dad8812ab5f95f01a4fb1dd5912627461aa2fa9ed412",
+      "size_bytes": 5142,
+      "current_sha256": "f79f24c87e704cbdc6c5597646d4050c2e9dbf5d64268a62076aa2dbf10dbba0",
+      "current_size_bytes": 5271,
+      "current_git_blob": "2d4531d71d9f36d298c0fc9b5de3fc7d2aaa28cc",
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "`scripts/gen_verification_figures.py`",
+          "new": "[development/verification/historical_figure_helpers/gen_verification_figures.py](../../development/verification/historical_figure_helpers/gen_verification_figures.py)",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/von_neumann_report.md",
+      "new_path": "docs/von_neumann_report.md",
+      "git_mode": "100644",
+      "original_git_blob": "fa04e0eb2c64e650b6b72ca2e4a6bc4f46253589",
+      "original_sha256": "ac11f66578b15ba20e70d68252cf1376c5580556f8dbc5a8f86ac8c1775f34bc",
+      "size_bytes": 10095,
+      "current_sha256": "8be20e416ecc1c01967cd648a62b0bae1bfd1a965baed458dca19c25c2d81615",
+      "current_size_bytes": 10225,
+      "current_git_blob": "fae6a136ea6bd83888442c3692b84f939207b34d",
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "`scripts/generate_von_neumann_figures.py`",
+          "new": "[development/verification/historical_figure_helpers/generate_von_neumann_figures.py](../development/verification/historical_figure_helpers/generate_von_neumann_figures.py)",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "compatibility": {
+    "scope": "Offline historical figure generation; four scripts moved as one isolated batch, not maintained launchers. Two actual path-only source-root adjustments; two exact byte-identical moves. No external publication or network was invoked.",
+    "environment": {
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "numpy": "2.5.5",
+      "matplotlib": "3.11.2",
+      "machine": "x86_64",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MPLBACKEND": "Agg"
+    },
+    "commands": "From separate scratch working directories, execute both old and new paths with identical real installed dependencies and PYTHONPATH pointing to the exact canonical source of main. For wetting invoke generate_all() via runpy and decode the returned base64 PNG bytes. No mocks. Compare all stdout, stderr and file bytes. No output files copied into the repository.",
+    "output_files_byte_identical": 14,
+    "published_paths_stable": [
+      "docs/reports/report_p96w2n04.md",
+      "docs/von_neumann_report.md"
+    ],
+    "notes": [
+      "Thermal helper renders historical precomputed/reference values; parity is only figure compatibility, not a new science test.",
+      "Von Neumann helper performs existing linear-stability calculations; wetting helper returns existing formula figures; yield-stress helper executes existing small figure-producing solver runs. Output byte parity is not a scientific acceptance result.",
+      "No new benchmark IDs are introduced; these historic helpers are not asserted to be evidence for unrelated current benchmark records.",
+      "Other scripts and xval remain because their active consumers or missing data and complete runtime gates have not been resolved."
+    ]
+  },
+  "science": {
+    "algorithm_changed": false,
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated"
+  }
+}

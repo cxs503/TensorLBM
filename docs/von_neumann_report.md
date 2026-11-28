@@ -290,7 +290,7 @@ This analysis establishes a solid foundation for further LBM development and app
 - `artifacts/von_neumann_dispersion.png`: Dispersion relation figures
 - `artifacts/von_neumann_stability.png`: Stability analysis figures
 - `artifacts/von_neumann_isotropy.png`: Isotropy validation figure
-- `scripts/generate_von_neumann_figures.py`: Figure generation script
+- [development/verification/historical_figure_helpers/generate_von_neumann_figures.py](../development/verification/historical_figure_helpers/generate_von_neumann_figures.py): Figure generation script
 
 ### Test Results
 
