@@ -1,0 +1,1169 @@
+{
+  "schema_version": 1,
+  "base_main": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+  "base_tree": "acdb63dc4483cfdbc6a9e321336fb9b22dbc8834",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "scripts_tracked_before": 557,
+  "scripts_tracked_after": 555,
+  "retired_top_level_directories": [],
+  "entries": [
+    {
+      "old_path": "scripts/plot_lbm_weakly_compressible.py",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py",
+      "git_mode": "100644",
+      "original_git_blob": "22a155a946e428e5168ffbed52a8b62209d423e7",
+      "original_sha256": "8ac6b89b56f0f59d4cd560a564656feec9ea0854c22d3c91419dd551e7d3a2c0",
+      "size_bytes": 25547,
+      "current_git_blob": "d428676e5700a7000a30738f83b13e7989cc7273",
+      "current_sha256": "f4a10a5598769ab71da045096b55d70ed370672ef7a4802a251517f4f5ae29d5",
+      "current_size_bytes": 26735,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/plot_lbm_weakly_compressible.py",
+          "new": "benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py",
+          "count": 3
+        },
+        {
+          "old": "import json\nfrom pathlib",
+          "new": "import json\nimport os\nfrom pathlib",
+          "count": 1
+        },
+        {
+          "old": "ROOT = Path(__file__).resolve().parents[1]",
+          "new": "ROOT = Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "def build_docs(res: dict, gates: dict, figs: dict[str, Path]) -> str:",
+          "new": "def build_docs(res: dict, gates: dict, figs: dict[str, Path], docs_dir: Path = DOCS) -> str:",
+          "count": 1
+        },
+        {
+          "old": "A(f\"![{name}]({path.name})\")",
+          "new": "A(f\"![{name}]({Path(os.path.relpath(path, docs_dir)).as_posix()})\")",
+          "count": 1
+        },
+        {
+          "old": "md = build_docs(res, gates, figs)",
+          "new": "md = build_docs(res, gates, figs, docs)",
+          "count": 1
+        }
+      ],
+      "format_only_reverse_splices": [
+        {
+          "after_start": 61,
+          "after_lines": [
+            "    ax[0].loglog(\n",
+            "        mas[keep], d_pc[keep], \"o-\", label=\"pressure-driven channel (compressible signature)\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    ax[0].loglog(mas[keep], d_pc[keep], \"o-\", label=\"pressure-driven channel (compressible signature)\")\n"
+          ]
+        },
+        {
+          "after_start": 73,
+          "after_lines": [
+            "    ax[0].set_title(\n",
+            "        f\"differential profile error, fitted exponent = {_fmt(diff['exponent_diff'], 3)}\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    ax[0].set_title(f\"differential profile error, fitted exponent = {_fmt(diff['exponent_diff'], 3)}\")\n"
+          ]
+        },
+        {
+          "after_start": 144,
+          "after_lines": [
+            "            mas[ok],\n",
+            "            dev[ok][-1] * (mas[ok] / mas[ok][-1]) ** 2.0,\n",
+            "            \"k:\",\n",
+            "            lw=1,\n",
+            "            label=\"slope 2 reference\",\n"
+          ],
+          "before_lines": [
+            "            mas[ok], dev[ok][-1] * (mas[ok] / mas[ok][-1]) ** 2.0, \"k:\", lw=1, label=\"slope 2 reference\"\n"
+          ]
+        },
+        {
+          "after_start": 169,
+          "after_lines": [
+            "        ax[0].plot(\n",
+            "            prof / prof.max(), np.arange(prof.size) + 1, label=f\"Ma={_fmt(r['mach_measured'], 2)}\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        ax[0].plot(prof / prof.max(), np.arange(prof.size) + 1, label=f\"Ma={_fmt(r['mach_measured'], 2)}\")\n"
+          ]
+        },
+        {
+          "after_start": 186,
+          "after_lines": [
+            "        ax[1].plot(\n",
+            "            (u - u_ref) * 1e3, np.arange(u.size) + 1, label=f\"Ma={_fmt(r['mach_measured'], 2)}\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        ax[1].plot((u - u_ref) * 1e3, np.arange(u.size) + 1, label=f\"Ma={_fmt(r['mach_measured'], 2)}\")\n"
+          ]
+        },
+        {
+          "after_start": 221,
+          "after_lines": [
+            "    A(\n",
+            "        \"> 本页由 `benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py` 从 \"\n",
+            "        \"`benchmarks/verified/lbm_weakly_compressible/{result,gates}.json` 自动生成，\"\n",
+            "        \"文中所有数字均为程序化注入（零手抄）。\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"> 本页由 `benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py` 从 \"\n",
+            "      \"`benchmarks/verified/lbm_weakly_compressible/{result,gates}.json` 自动生成，\"\n",
+            "      \"文中所有数字均为程序化注入（零手抄）。\")\n"
+          ]
+        },
+        {
+          "after_start": 229,
+          "after_lines": [
+            "    A(\n",
+            "        \"LBM 用 `p = c_s^2 rho`（`c_s^2 = 1/3`）代替不可压压力泊松方程，因此它求解的是\"\n",
+            "        \"**弱可压缩** Navier–Stokes 极限：所有结果相对不可压解都存在 `O(Ma^2)` 误差，\"\n",
+            "        \"`Ma = u_ref/c_s -> 0` 时才收敛到不可压解。本节点把「误差律本身」做成机器可裁的验证面，\"\n",
+            "        \"而不是再测一个单马赫数算例。\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"LBM 用 `p = c_s^2 rho`（`c_s^2 = 1/3`）代替不可压压力泊松方程，因此它求解的是\"\n",
+            "      \"**弱可压缩** Navier–Stokes 极限：所有结果相对不可压解都存在 `O(Ma^2)` 误差，\"\n",
+            "      \"`Ma = u_ref/c_s -> 0` 时才收敛到不可压解。本节点把「误差律本身」做成机器可裁的验证面，\"\n",
+            "      \"而不是再测一个单马赫数算例。\")\n"
+          ]
+        },
+        {
+          "after_start": 238,
+          "after_lines": [
+            "    A(\n",
+            "        \"| 压力驱动槽道 | ny=33, nx=96，半程反弹壁，发展型速度入口 + 压力出口 | \"\n",
+            "        f\"nu = {_fmt(pc[0]['nu'], 4)} 固定，tau = {_fmt(pc[0]['tau'], 4)}，Ma ∈ {[round(float(r['mach']), 3) for r in pc]} | C1/C3/C6 |\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"| 体力驱动槽道（周期） | ny=33, nx=32，流向周期，Guo 体力 | 同一 nu，Ma 同上 | C1 阴性对照 |\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"| 压力驱动槽道 | ny=33, nx=96，半程反弹壁，发展型速度入口 + 压力出口 | \"\n",
+            "      f\"nu = {_fmt(pc[0]['nu'], 4)} 固定，tau = {_fmt(pc[0]['tau'], 4)}，Ma ∈ {[round(float(r['mach']),3) for r in pc]} | C1/C3/C6 |\")\n",
+            "    A(\"| 体力驱动槽道（周期） | ny=33, nx=32，流向周期，Guo 体力 | 同一 nu，Ma 同上 | C1 阴性对照 |\")\n"
+          ]
+        },
+        {
+          "after_start": 246,
+          "after_lines": [
+            "    A(\n",
+            "        f\"| Re=100 圆柱 | D={_fmt(ccase.get('diameter', float('nan')), 3)}, \"\n",
+            "        f\"{ccase.get('nx')}×{ccase.get('ny')}，阻塞比 {_fmt(float(ccase.get('diameter', 1)) / (float(ccase.get('ny', 2)) - 1), 3)}，\"\n",
+            "        f\"闭合 {ccase.get('bc')} + {ccase.get('collision')} | Ma ∈ \"\n",
+            "        f\"{[round(float(r['mach']), 3) for r in cyl]}，nu 随 Ma 变化 | C2/C5/C7 |\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"| Re=100 圆柱 | D={_fmt(ccase.get('diameter', float('nan')), 3)}, \"\n",
+            "      f\"{ccase.get('nx')}×{ccase.get('ny')}，阻塞比 {_fmt(float(ccase.get('diameter', 1)) / (float(ccase.get('ny', 2)) - 1), 3)}，\"\n",
+            "      f\"闭合 {ccase.get('bc')} + {ccase.get('collision')} | Ma ∈ \"\n",
+            "      f\"{[round(float(r['mach']),3) for r in cyl]}，nu 随 Ma 变化 | C2/C5/C7 |\")\n"
+          ]
+        },
+        {
+          "after_start": 255,
+          "after_lines": [
+            "        A(\n",
+            "            f\"> 圆柱 Ma = {missing} 未产出记录（低 Ma 角落 tau→1/2 导致发散，见 §5），\"\n",
+            "            \"按 honest 原则不补造、不替代。\"\n",
+            "        )\n",
+            "    A(\n",
+            "        \"| 声学激励槽道 | ny=33, nx=96 | Ma = \"\n",
+            "        f\"{_fmt(acoustic.get('mach', float('nan')), 3)}，密度脉冲幅值 {_fmt(acoustic.get('pulse_amplitude', float('nan')), 3)} | C4/C8 |\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "        A(f\"> 圆柱 Ma = {missing} 未产出记录（低 Ma 角落 tau→1/2 导致发散，见 §5），\"\n",
+            "          \"按 honest 原则不补造、不替代。\")\n",
+            "    A(\"| 声学激励槽道 | ny=33, nx=96 | Ma = \"\n",
+            "      f\"{_fmt(acoustic.get('mach', float('nan')), 3)}，密度脉冲幅值 {_fmt(acoustic.get('pulse_amplitude', float('nan')), 3)} | C4/C8 |\")\n"
+          ]
+        },
+        {
+          "after_start": 266,
+          "after_lines": [
+            "    A(\n",
+            "        \"* 求解器：`src/tensorlbm/weak_compressibility.py` 的 float64 NumPy D2Q9（BGK/TRT、Guo 体力、\"\n",
+            "        \"半程反弹、Zou–He 入口/出口与零梯度外推闭合）。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* 扫描与后处理：`src/tensorlbm/verification/weakly_compressible.py`\"\n",
+            "        \"（压力泊松参考解、差分 Ma 标度诊断、水动力系数 Mach 无关性、Ma_max 适用域门、产物写出）。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* **关键实验设计**：固定 `nu`（因此 `tau` 与离散误差底噪固定）后改变 `Ma`，\"\n",
+            "        \"用「相对最低 Ma 的差分剖面误差」`||u(Ma)-u(Ma_ref)||_inf/u_max` 作为 C1 判据量 —— \"\n",
+            "        \"绝对误差在 H=32 下被约 7% 的壁面滑移/离散底噪支配（\"\n",
+            "        f\"实测 Ma=0.01 绝对误差 {_fmt(pc[0]['err_inf'], 3)}），差分把它精确消去。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* 阴性对照：体力驱动周期槽道稳态密度严格均匀，三阶平衡态项恒为零，\"\n",
+            "        \"按构造**不可能**出现 `O(Ma^2)` 剖面信号；它用来证明 C1 诊断测的是可压缩性而不是任意数值伪迹。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* 压力场判据（C6）：在与 LBM 相同的网格上解不可压压力泊松问题\"\n",
+            "        \"`lap(p)=0`、入口/出口 Dirichlet、壁面 `dp/dy=0`（SOR，收敛残差 < 1e-10），\"\n",
+            "        \"入口压力由**动量平衡** `p_in = p_out + rho_0 a L` 给出（不是用测得的入口压力，否则 R² 恒为 1）。\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"* 求解器：`src/tensorlbm/weak_compressibility.py` 的 float64 NumPy D2Q9（BGK/TRT、Guo 体力、\"\n",
+            "      \"半程反弹、Zou–He 入口/出口与零梯度外推闭合）。\")\n",
+            "    A(\"* 扫描与后处理：`src/tensorlbm/verification/weakly_compressible.py`\"\n",
+            "      \"（压力泊松参考解、差分 Ma 标度诊断、水动力系数 Mach 无关性、Ma_max 适用域门、产物写出）。\")\n",
+            "    A(\"* **关键实验设计**：固定 `nu`（因此 `tau` 与离散误差底噪固定）后改变 `Ma`，\"\n",
+            "      \"用「相对最低 Ma 的差分剖面误差」`||u(Ma)-u(Ma_ref)||_inf/u_max` 作为 C1 判据量 —— \"\n",
+            "      \"绝对误差在 H=32 下被约 7% 的壁面滑移/离散底噪支配（\"\n",
+            "      f\"实测 Ma=0.01 绝对误差 {_fmt(pc[0]['err_inf'], 3)}），差分把它精确消去。\")\n",
+            "    A(\"* 阴性对照：体力驱动周期槽道稳态密度严格均匀，三阶平衡态项恒为零，\"\n",
+            "      \"按构造**不可能**出现 `O(Ma^2)` 剖面信号；它用来证明 C1 诊断测的是可压缩性而不是任意数值伪迹。\")\n",
+            "    A(\"* 压力场判据（C6）：在与 LBM 相同的网格上解不可压压力泊松问题\"\n",
+            "      \"`lap(p)=0`、入口/出口 Dirichlet、壁面 `dp/dy=0`（SOR，收敛残差 < 1e-10），\"\n",
+            "      \"入口压力由**动量平衡** `p_in = p_out + rho_0 a L` 给出（不是用测得的入口压力，否则 R² 恒为 1）。\")\n"
+          ]
+        },
+        {
+          "after_start": 298,
+          "after_lines": [
+            "        A(\n",
+            "            f\"| {_fmt(r['mach_measured'], 3)} | {_fmt(diff['diff_err_inf'][i], 3)} | \"\n",
+            "            f\"{_fmt(r['err_inf'], 3)} | {_fmt(diff['drho_over_rho0'][i], 3)} | \"\n",
+            "            f\"{_fmt(ctrl['diff_err_inf'][j], 3)} |\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        A(f\"| {_fmt(r['mach_measured'], 3)} | {_fmt(diff['diff_err_inf'][i], 3)} | \"\n",
+            "          f\"{_fmt(r['err_inf'], 3)} | {_fmt(diff['drho_over_rho0'][i], 3)} | \"\n",
+            "          f\"{_fmt(ctrl['diff_err_inf'][j], 3)} |\")\n"
+          ]
+        },
+        {
+          "after_start": 304,
+          "after_lines": [
+            "    A(\n",
+            "        f\"* 拟合指数（差分误差，log–log）：**{_fmt(diff['exponent_diff'], 4)}**\"\n",
+            "        f\"（判据 2.0 ± 0.2；R² = {_fmt(diff.get('fit_diff_err', {}).get('r2_excess', float('nan')), 4)}）\"\n",
+            "    )\n",
+            "    A(\n",
+            "        f\"* 密度波动指数：**{_fmt(diff.get('fit_drho', {}).get('exponent_plain', float('nan')), 4)}**（判据 2.0 ± 0.2）\"\n",
+            "    )\n",
+            "    A(\n",
+            "        f\"* 阴性对照（体力槽道）最大差分误差 {_fmt(float(np.nanmax(ctrl['diff_err_inf'])), 3)}，\"\n",
+            "        f\"与压力驱动通道相差 {_fmt(float(np.nanmax(diff['diff_err_inf']) / max(float(np.nanmax(ctrl['diff_err_inf'])), 1e-300)), 3)} 倍\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"* 拟合指数（差分误差，log–log）：**{_fmt(diff['exponent_diff'], 4)}**\"\n",
+            "      f\"（判据 2.0 ± 0.2；R² = {_fmt(diff.get('fit_diff_err', {}).get('r2_excess', float('nan')), 4)}）\")\n",
+            "    A(f\"* 密度波动指数：**{_fmt(diff.get('fit_drho', {}).get('exponent_plain', float('nan')), 4)}**（判据 2.0 ± 0.2）\")\n",
+            "    A(f\"* 阴性对照（体力槽道）最大差分误差 {_fmt(float(np.nanmax(ctrl['diff_err_inf'])), 3)}，\"\n",
+            "      f\"与压力驱动通道相差 {_fmt(float(np.nanmax(diff['diff_err_inf']) / max(float(np.nanmax(ctrl['diff_err_inf'])), 1e-300)), 3)} 倍\")\n"
+          ]
+        },
+        {
+          "after_start": 324,
+          "after_lines": [
+            "        A(\n",
+            "            f\"| {_fmt(r['mach_measured'], 3)} | {_fmt(cyl_steady.get(m, float('nan')), 3)} | \"\n",
+            "            f\"{_fmt(r['max_abs_dev_over_cs2'], 3)} |\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        A(f\"| {_fmt(r['mach_measured'], 3)} | {_fmt(cyl_steady.get(m, float('nan')), 3)} | \"\n",
+            "          f\"{_fmt(r['max_abs_dev_over_cs2'], 3)} |\")\n"
+          ]
+        },
+        {
+          "after_start": 329,
+          "after_lines": [
+            "    A(\n",
+            "        \"> 压力驱动槽道的**总**密度变化由外加静压梯度支配（固定 nu 时 ∝ Ma），\"\n",
+            "        \"它不是可压缩性误差；C3 因此锚定在圆柱稳态滞止压升与 C6 的压力泊松偏差上。\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"> 压力驱动槽道的**总**密度变化由外加静压梯度支配（固定 nu 时 ∝ Ma），\"\n",
+            "      \"它不是可压缩性误差；C3 因此锚定在圆柱稳态滞止压升与 C6 的压力泊松偏差上。\")\n"
+          ]
+        },
+        {
+          "after_start": 343,
+          "after_lines": [
+            "        A(\n",
+            "            f\"| {_fmt(c['mach'], 3)} | {_fmt(c['st'], 4)} | {_fmt(c['cd'], 4)} | {_fmt(c['cl_amplitude'], 3)} | \"\n",
+            "            f\"{_fmt(c['cd_rel_error'], 3)} | {_fmt(c['st_error'], 4)} | {c['cd_ok']} | {c['st_ok']} | {c['cl_saturated']} |\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        A(f\"| {_fmt(c['mach'], 3)} | {_fmt(c['st'], 4)} | {_fmt(c['cd'], 4)} | {_fmt(c['cl_amplitude'], 3)} | \"\n",
+            "          f\"{_fmt(c['cd_rel_error'], 3)} | {_fmt(c['st_error'], 4)} | {c['cd_ok']} | {c['st_ok']} | {c['cl_saturated']} |\")\n"
+          ]
+        },
+        {
+          "after_start": 349,
+          "after_lines": [
+            "    A(\n",
+            "        \"| Ma | tau | steps | converged | St | St(FFT) | C_D | C_L 幅值 | drho_final | 相对 St 偏差 |\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"| Ma | tau | steps | converged | St | St(FFT) | C_D | C_L 幅值 | drho_final | 相对 St 偏差 |\")\n"
+          ]
+        },
+        {
+          "after_start": 357,
+          "after_lines": [
+            "        A(\n",
+            "            f\"| {_fmt(r['mach'], 3)} | {_fmt(r['tau'], 4)} | {r['steps']} | {r['converged']} | \"\n",
+            "            f\"{_fmt(r.get('st', float('nan')), 4)} | {_fmt(r.get('st_fft', float('nan')), 4)} | \"\n",
+            "            f\"{_fmt(r.get('cd_mean', float('nan')), 4)} | {_fmt(r.get('cl_amplitude', float('nan')), 4)} | \"\n",
+            "            f\"{_fmt(r.get('drho_final', float('nan')), 3)} | {rel} |\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        A(f\"| {_fmt(r['mach'], 3)} | {_fmt(r['tau'], 4)} | {r['steps']} | {r['converged']} | \"\n",
+            "          f\"{_fmt(r.get('st', float('nan')), 4)} | {_fmt(r.get('st_fft', float('nan')), 4)} | \"\n",
+            "          f\"{_fmt(r.get('cd_mean', float('nan')), 4)} | {_fmt(r.get('cl_amplitude', float('nan')), 4)} | \"\n",
+            "          f\"{_fmt(r.get('drho_final', float('nan')), 3)} | {rel} |\")\n"
+          ]
+        },
+        {
+          "after_start": 365,
+          "after_lines": [
+            "    A(\n",
+            "        f\"* `Ma -> 0` 最小二乘外推（固定指数 2）：St0 = {_fmt(z.get('st0', float('nan')), 4)}，\"\n",
+            "        f\"C_D0 = {_fmt(z.get('cd0', float('nan')), 4)}，C_L0 = {_fmt(z.get('cl0', float('nan')), 4)}\"\n",
+            "    )\n",
+            "    A(\n",
+            "        f\"* 相对最低可用 Ma 的 St 最大偏差：{_fmt(ind.get('max_rel_st_low_ma', float('nan')), 3)}\"\n",
+            "        f\"（判据 ≤ 0.01）\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"* `Ma -> 0` 最小二乘外推（固定指数 2）：St0 = {_fmt(z.get('st0', float('nan')), 4)}，\"\n",
+            "      f\"C_D0 = {_fmt(z.get('cd0', float('nan')), 4)}，C_L0 = {_fmt(z.get('cl0', float('nan')), 4)}\")\n",
+            "    A(f\"* 相对最低可用 Ma 的 St 最大偏差：{_fmt(ind.get('max_rel_st_low_ma', float('nan')), 3)}\"\n",
+            "      f\"（判据 ≤ 0.01）\")\n"
+          ]
+        },
+        {
+          "after_start": 376,
+          "after_lines": [
+            "    A(\n",
+            "        f\"* 适用域门 C7：Ma_max = {_fmt(ind.get('ma_max', float('nan')), 3)}\"\n",
+            "        f\"（1% 水动力误差带宽，阈值 {_fmt(ind.get('boundary_threshold', float('nan')), 3)}），\"\n",
+            "        f\"越界 Ma = {ind.get('ma_boundary_exceeded_at')}\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"* 适用域门 C7：Ma_max = {_fmt(ind.get('ma_max', float('nan')), 3)}\"\n",
+            "      f\"（1% 水动力误差带宽，阈值 {_fmt(ind.get('boundary_threshold', float('nan')), 3)}），\"\n",
+            "      f\"越界 Ma = {ind.get('ma_boundary_exceeded_at')}\")\n"
+          ]
+        },
+        {
+          "after_start": 387,
+          "after_lines": [
+            "        A(\n",
+            "            f\"| {_fmt(r['mach_measured'], 3)} | {_fmt(r['r2'], 5)} | {_fmt(r['max_abs_dev'], 3)} | \"\n",
+            "            f\"{_fmt(r['max_abs_dev_over_cs2'], 3)} | {_fmt(r['max_abs_dev_over_dynamic_pressure'], 3)} | \"\n",
+            "            f\"{r['poisson']['iterations']} |\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        A(f\"| {_fmt(r['mach_measured'], 3)} | {_fmt(r['r2'], 5)} | {_fmt(r['max_abs_dev'], 3)} | \"\n",
+            "          f\"{_fmt(r['max_abs_dev_over_cs2'], 3)} | {_fmt(r['max_abs_dev_over_dynamic_pressure'], 3)} | \"\n",
+            "          f\"{r['poisson']['iterations']} |\")\n"
+          ]
+        },
+        {
+          "after_start": 393,
+          "after_lines": [
+            "    A(\n",
+            "        f\"* 偏差随 Ma 的拟合指数：**{_fmt(c6.get('fit_dev_vs_ma', {}).get('exponent_plain', float('nan')), 3)}**\"\n",
+            "        \"（期望 2.0 ± 0.4 = `O(Ma^2)`）\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"* 偏差随 Ma 的拟合指数：**{_fmt(c6.get('fit_dev_vs_ma', {}).get('exponent_plain', float('nan')), 3)}**\"\n",
+            "      \"（期望 2.0 ± 0.4 = `O(Ma^2)`）\")\n"
+          ]
+        },
+        {
+          "after_start": 403,
+          "after_lines": [
+            "        A(\n",
+            "            f\"* 标准 LBM 声学带幅值：{_fmt(acoustic.get('standard', {}).get('drho_acoustic_amplitude', float('nan')), 3)}；\"\n",
+            "            f\"滤波后：{_fmt(acoustic.get('filtered', {}).get('drho_acoustic_amplitude', float('nan')), 3)}；\"\n",
+            "            f\"抑制倍数 {_fmt(acoustic.get('suppression_factor', float('nan')), 4)}\"\n",
+            "        )\n",
+            "        A(\n",
+            "            f\"* 目标 δρ/ρ₀ ≤ {_fmt(acoustic.get('target_filtered_drho', float('nan')), 3)}：\"\n",
+            "            f\"声学带判据 `pass_acoustic_band = {acoustic.get('pass_acoustic_band')}`；\"\n",
+            "            f\"字面总密度判据 `pass_literal_total_drho = {acoustic.get('pass_literal_total_drho')}`\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        A(f\"* 标准 LBM 声学带幅值：{_fmt(acoustic.get('standard', {}).get('drho_acoustic_amplitude', float('nan')), 3)}；\"\n",
+            "          f\"滤波后：{_fmt(acoustic.get('filtered', {}).get('drho_acoustic_amplitude', float('nan')), 3)}；\"\n",
+            "          f\"抑制倍数 {_fmt(acoustic.get('suppression_factor', float('nan')), 4)}\")\n",
+            "        A(f\"* 目标 δρ/ρ₀ ≤ {_fmt(acoustic.get('target_filtered_drho', float('nan')), 3)}：\"\n",
+            "          f\"声学带判据 `pass_acoustic_band = {acoustic.get('pass_acoustic_band')}`；\"\n",
+            "          f\"字面总密度判据 `pass_literal_total_drho = {acoustic.get('pass_literal_total_drho')}`\")\n"
+          ]
+        },
+        {
+          "after_start": 440,
+          "after_lines": [
+            "    A(\n",
+            "        \"* **低 Ma 角落的刚度（本节点最硬的限制）**：固定 Re 与直径时 \"\n",
+            "        \"`nu = Ma c_s D / Re`，故 `tau = 0.5 + 3 Ma c_s D / Re`；本算例 `Ma=0.01` 给出 `tau = 0.5014`。\"\n",
+            "        \"实测三种组合：Zou–He + BGK 与 Zou–He + 正则化 都在 ~800–1500 步内发散；\"\n",
+            "        \"零梯度外推 + 正则化 能活下来（本次 11085 步无发散），但 8 个对流时间内**涡脱落完全没发展起来**\"\n",
+            "        \"（C_L 幅值 0.014 vs 饱和值 ~0.3），由噪声过零估出的 St 是 9.86 这种无意义值。\"\n",
+            "        \"要在这个 Ma 拿到 `tau >= 0.55`，直径需 `D ~ nu Re/(Ma c_s) ~ 290` 直径（≈ 10^5 格），\"\n",
+            "        \"远超本单算力。因此 C2 的字面测点（Ma=0.01）标 `NOT_MEASURABLE`，不用任何代理替代。\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"* **低 Ma 角落的刚度（本节点最硬的限制）**：固定 Re 与直径时 \"\n",
+            "      \"`nu = Ma c_s D / Re`，故 `tau = 0.5 + 3 Ma c_s D / Re`；本算例 `Ma=0.01` 给出 `tau = 0.5014`。\"\n",
+            "      \"实测三种组合：Zou–He + BGK 与 Zou–He + 正则化 都在 ~800–1500 步内发散；\"\n",
+            "      \"零梯度外推 + 正则化 能活下来（本次 11085 步无发散），但 8 个对流时间内**涡脱落完全没发展起来**\"\n",
+            "      \"（C_L 幅值 0.014 vs 饱和值 ~0.3），由噪声过零估出的 St 是 9.86 这种无意义值。\"\n",
+            "      \"要在这个 Ma 拿到 `tau >= 0.55`，直径需 `D ~ nu Re/(Ma c_s) ~ 290` 直径（≈ 10^5 格），\"\n",
+            "      \"远超本单算力。因此 C2 的字面测点（Ma=0.01）标 `NOT_MEASURABLE`，不用任何代理替代。\")\n"
+          ]
+        },
+        {
+          "after_start": 451,
+          "after_lines": [
+            "    A(\n",
+            "        \"* **圆柱仪器未通过验证（C0）**：同一驱动给出 `C_D = \"\n",
+            "        f\"{_fmt(min(cd_list) if cd_list else float('nan'), 3)}–\"\n",
+            "        f\"{_fmt(max(cd_list) if cd_list else float('nan'), 3)}`，\"\n",
+            "        \"比 Braza 1986 的 1.35 高 57%–78%；`C_L` 幅值只有 \"\n",
+            "        f\"{_fmt(min(cl_list) if cl_list else float('nan'), 3)}–{_fmt(max(cl_list) if cl_list else float('nan'), 3)}\"\n",
+            "        \"（Re=100 应 >=0.3，说明升力远未饱和），`Ma=0.1` 还给出 St=0.45 的离群值。**根因未查明**\"\n",
+            "        \"（候选：零梯度外推入口的有效动压偏低、动量交换力归一化口径、D=8 分辨率不足以解析边界层）。\"\n",
+            "        \"结论：该配置不能用于「水动力系数随 Ma 变化」级别的判据，C2/C5/C7 因此标 `NOT_SUPPORTED`，\"\n",
+            "        \"而不是给一个好看的相对差。正确路线是复用本仓已验证的 \"\n",
+            "        \"`benchmarks/verified/cylinder/re100` 引擎（far-field BC + 下游 sponge + MRT，Cd=1.329 / St=0.166），\"\n",
+            "        \"它在本机（无 GPU、128 核满载）跑 6 万步需数小时，超出本单预算。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* **绝对剖面误差不可用于 C1**：H=32 下离散底噪 ~7%，比 `O(Ma^2)` 项大 1–2 个量级；\"\n",
+            "        \"必须用固定 nu 的差分诊断（阴性对照相差 10^5 倍，证明差分诊断测的确实是压力梯度带来的可压缩性效应）。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* **实测标度不是纯二次**：差分误差的局部斜率随 Ma 单调上升 \"\n",
+            "        f\"({[round(d['slope'], 2) for d in gates['c1_poiseuille_ma2_scaling']['local_slopes']]})，\"\n",
+            "        \"全域拟合 1.56，只有最高一对 Ma（0.2 -> 0.3）达到 2.15。也就是说 `O(Ma^2)` 渐近区在 \"\n",
+            "        \"0.01–0.3 区间内**没有**被观测到，低 Ma 端存在低一阶的混入项 —— 这是本单的负面物理结论\"\n",
+            "        \"（来源未查明，候选：固定 nu 下压力水平 ∝ Ma，可压缩性修正与压力水平耦合）。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* **C4 字面判据不可达**：压力驱动槽道里存在 `O(Ma)` 的稳态水动力压力场（物理量，\"\n",
+            "        \"幅值远大于 1e-5），任何只压声学带的滤波都不能把它压到 1e-5；因此 C4 的低马赫预处理读法标 \"\n",
+            "        \"`NOT_SUPPORTED`（C8 诚实门），并单独报告后处理滤波的实测抑制倍数\"\n",
+            "        \"（滤波引起的剖面改变量 \"\n",
+            "        f\"{_fmt(acoustic.get('profile_change_rel', float('nan')), 3)}，不污染物理场）。\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* **C6 的泊松解在充分发展槽道里是线性的**：该算例检验的是「LBM 压力场是否满足不可压动量平衡」，\"\n",
+            "        \"不是二维复杂压力场重构（后者需要投影法求解器，本仓不存在）；R² 只在 Ma <= 0.1 成立\"\n",
+            "        f\"（{_fmt(gates['c6_pressure_poisson']['r2'][:3], 5)}），Ma >= 0.2 掉到 \"\n",
+            "        f\"{_fmt(gates['c6_pressure_poisson']['r2'][3:], 5)}。\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"* **圆柱仪器未通过验证（C0）**：同一驱动给出 `C_D = \"\n",
+            "      f\"{_fmt(min(cd_list) if cd_list else float('nan'), 3)}–\"\n",
+            "      f\"{_fmt(max(cd_list) if cd_list else float('nan'), 3)}`，\"\n",
+            "      \"比 Braza 1986 的 1.35 高 57%–78%；`C_L` 幅值只有 \"\n",
+            "      f\"{_fmt(min(cl_list) if cl_list else float('nan'), 3)}–{_fmt(max(cl_list) if cl_list else float('nan'), 3)}\"\n",
+            "      \"（Re=100 应 >=0.3，说明升力远未饱和），`Ma=0.1` 还给出 St=0.45 的离群值。**根因未查明**\"\n",
+            "      \"（候选：零梯度外推入口的有效动压偏低、动量交换力归一化口径、D=8 分辨率不足以解析边界层）。\"\n",
+            "      \"结论：该配置不能用于「水动力系数随 Ma 变化」级别的判据，C2/C5/C7 因此标 `NOT_SUPPORTED`，\"\n",
+            "      \"而不是给一个好看的相对差。正确路线是复用本仓已验证的 \"\n",
+            "      \"`benchmarks/verified/cylinder/re100` 引擎（far-field BC + 下游 sponge + MRT，Cd=1.329 / St=0.166），\"\n",
+            "      \"它在本机（无 GPU、128 核满载）跑 6 万步需数小时，超出本单预算。\")\n",
+            "    A(\"* **绝对剖面误差不可用于 C1**：H=32 下离散底噪 ~7%，比 `O(Ma^2)` 项大 1–2 个量级；\"\n",
+            "      \"必须用固定 nu 的差分诊断（阴性对照相差 10^5 倍，证明差分诊断测的确实是压力梯度带来的可压缩性效应）。\")\n",
+            "    A(\"* **实测标度不是纯二次**：差分误差的局部斜率随 Ma 单调上升 \"\n",
+            "      f\"({[round(d['slope'], 2) for d in gates['c1_poiseuille_ma2_scaling']['local_slopes']]})，\"\n",
+            "      \"全域拟合 1.56，只有最高一对 Ma（0.2 -> 0.3）达到 2.15。也就是说 `O(Ma^2)` 渐近区在 \"\n",
+            "      \"0.01–0.3 区间内**没有**被观测到，低 Ma 端存在低一阶的混入项 —— 这是本单的负面物理结论\"\n",
+            "      \"（来源未查明，候选：固定 nu 下压力水平 ∝ Ma，可压缩性修正与压力水平耦合）。\")\n",
+            "    A(\"* **C4 字面判据不可达**：压力驱动槽道里存在 `O(Ma)` 的稳态水动力压力场（物理量，\"\n",
+            "      \"幅值远大于 1e-5），任何只压声学带的滤波都不能把它压到 1e-5；因此 C4 的低马赫预处理读法标 \"\n",
+            "      \"`NOT_SUPPORTED`（C8 诚实门），并单独报告后处理滤波的实测抑制倍数\"\n",
+            "      \"（滤波引起的剖面改变量 \"\n",
+            "      f\"{_fmt(acoustic.get('profile_change_rel', float('nan')), 3)}，不污染物理场）。\")\n",
+            "    A(\"* **C6 的泊松解在充分发展槽道里是线性的**：该算例检验的是「LBM 压力场是否满足不可压动量平衡」，\"\n",
+            "      \"不是二维复杂压力场重构（后者需要投影法求解器，本仓不存在）；R² 只在 Ma <= 0.1 成立\"\n",
+            "      f\"（{_fmt(gates['c6_pressure_poisson']['r2'][:3], 5)}），Ma >= 0.2 掉到 \"\n",
+            "      f\"{_fmt(gates['c6_pressure_poisson']['r2'][3:], 5)}。\")\n"
+          ]
+        },
+        {
+          "after_start": 495,
+          "after_lines": [
+            "    A(\n",
+            "        f\"| C1 标度指数 | 理论 2.0（`O(Ma^2)`） | 实测 {_fmt(c1_gate['exponent'], 3)}\"\n",
+            "        f\"（偏差 {dev_c1 * 100:.0f}%） | {'是' if dev_c1 < 0.03 else '否'} |\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"| C1 标度指数 | 理论 2.0（`O(Ma^2)`） | 实测 {_fmt(c1_gate['exponent'], 3)}\"\n",
+            "      f\"（偏差 {dev_c1 * 100:.0f}%） | {'是' if dev_c1 < 0.03 else '否'} |\")\n"
+          ]
+        },
+        {
+          "after_start": 502,
+          "after_lines": [
+            "        A(\n",
+            "            f\"| St（Re=100） | Braza 1986: 0.164–0.165 | 实测 {_fmt(min(st_vals), 3)}–{_fmt(max(st_vals), 3)}\"\n",
+            "            f\"（最差 {worst_st * 100:.0f}%） | {'是' if worst_st < 0.03 else '否'} |\"\n",
+            "        )\n"
+          ],
+          "before_lines": [
+            "        A(f\"| St（Re=100） | Braza 1986: 0.164–0.165 | 实测 {_fmt(min(st_vals), 3)}–{_fmt(max(st_vals), 3)}\"\n",
+            "          f\"（最差 {worst_st * 100:.0f}%） | {'是' if worst_st < 0.03 else '否'} |\")\n"
+          ]
+        },
+        {
+          "after_start": 508,
+          "after_lines": [
+            "        A(\n",
+            "            f\"| C_D（Re=100） | Braza 1986: 1.35±0.05 | 实测 {_fmt(min(cd_list), 3)}–{_fmt(max(cd_list), 3)}\"\n",
+            "            f\"（最差 {worst_cd * 100:.0f}%） | {'是' if worst_cd < 0.03 else '否'} |\"\n",
+            "        )\n",
+            "    A(\n",
+            "        f\"| 压力场（C6） | 不可压压力泊松解 | R² 最低 {_fmt(c6['min_r2'], 5)}；偏差阶 \"\n",
+            "        f\"{_fmt(c6.get('fit_dev_vs_ma', {}).get('exponent_plain', float('nan')), 3)}（目标 2） | 否 |\"\n",
+            "    )\n",
+            "    A(\n",
+            "        f\"| 声学滤波（C4） | δρ/ρ₀ <= 1e-5 | 滤波后 \"\n",
+            "        f\"{_fmt(acoustic.get('filtered', {}).get('drho_acoustic_amplitude', float('nan')), 3)}\"\n",
+            "        f\"（抑制 {_fmt(acoustic.get('suppression_factor_whole_record', float('nan')), 3)} 倍） | 是 |\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "        A(f\"| C_D（Re=100） | Braza 1986: 1.35±0.05 | 实测 {_fmt(min(cd_list), 3)}–{_fmt(max(cd_list), 3)}\"\n",
+            "          f\"（最差 {worst_cd * 100:.0f}%） | {'是' if worst_cd < 0.03 else '否'} |\")\n",
+            "    A(f\"| 压力场（C6） | 不可压压力泊松解 | R² 最低 {_fmt(c6['min_r2'], 5)}；偏差阶 \"\n",
+            "      f\"{_fmt(c6.get('fit_dev_vs_ma', {}).get('exponent_plain', float('nan')), 3)}（目标 2） | 否 |\")\n",
+            "    A(f\"| 声学滤波（C4） | δρ/ρ₀ <= 1e-5 | 滤波后 \"\n",
+            "      f\"{_fmt(acoustic.get('filtered', {}).get('drho_acoustic_amplitude', float('nan')), 3)}\"\n",
+            "      f\"（抑制 {_fmt(acoustic.get('suppression_factor_whole_record', float('nan')), 3)} 倍） | 是 |\")\n"
+          ]
+        },
+        {
+          "after_start": 522,
+          "after_lines": [
+            "    A(\n",
+            "        \"> 结论：C1/C3/C6 的**假设（纯 `O(Ma^2)`）在本区间内被证伪**；C2/C5/C7 因仪器未验证而不可判定；\"\n",
+            "        \"C4 只在后处理读法下成立。所有结论都是 honest —— 没有一个 FAIL 被改写为 PASS。\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(\"> 结论：C1/C3/C6 的**假设（纯 `O(Ma^2)`）在本区间内被证伪**；C2/C5/C7 因仪器未验证而不可判定；\"\n",
+            "      \"C4 只在后处理读法下成立。所有结论都是 honest —— 没有一个 FAIL 被改写为 PASS。\")\n"
+          ]
+        },
+        {
+          "after_start": 530,
+          "after_lines": [
+            "    A(\n",
+            "        f\"* git commit：`{prov.get('git_commit', 'n/a')}`；python {prov.get('python')}；numpy {prov.get('numpy')}\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"* git commit：`{prov.get('git_commit', 'n/a')}`；python {prov.get('python')}；numpy {prov.get('numpy')}\")\n"
+          ]
+        },
+        {
+          "after_start": 536,
+          "after_lines": [
+            "    A(\n",
+            "        f\"* 逐算例墙钟合计 {_fmt(sum(tw.values()) if tw else float('nan'), 4)} s（单核 NumPy，128 核共享机 load ~200 下实测）；\"\n",
+            "        f\"装配与后处理墙钟 {_fmt(prov.get('wall_seconds_total', float('nan')), 4)} s\"\n",
+            "    )\n",
+            "    A(\n",
+            "        \"* 原始逐算例记录：`benchmarks/verified/lbm_weakly_compressible/raw/*.json`（每算例一份，含完整场量）\"\n",
+            "    )\n"
+          ],
+          "before_lines": [
+            "    A(f\"* 逐算例墙钟合计 {_fmt(sum(tw.values()) if tw else float('nan'), 4)} s（单核 NumPy，128 核共享机 load ~200 下实测）；\"\n",
+            "      f\"装配与后处理墙钟 {_fmt(prov.get('wall_seconds_total', float('nan')), 4)} s\")\n",
+            "    A(\"* 原始逐算例记录：`benchmarks/verified/lbm_weakly_compressible/raw/*.json`（每算例一份，含完整场量）\")\n"
+          ]
+        },
+        {
+          "after_start": 559,
+          "after_lines": [
+            "        \"C1/C3 Ma 标度（差分剖面 + 密度波动）\": fig_ma_scaling(\n",
+            "            res, figs_dir / \"fig1_ma_scaling.png\"\n",
+            "        ),\n",
+            "        \"C2/C5 圆柱 St / C_D / C_L 的 Mach 无关性\": fig_cylinder(\n",
+            "            res, figs_dir / \"fig2_cylinder_mach.png\"\n",
+            "        ),\n"
+          ],
+          "before_lines": [
+            "        \"C1/C3 Ma 标度（差分剖面 + 密度波动）\": fig_ma_scaling(res, figs_dir / \"fig1_ma_scaling.png\"),\n",
+            "        \"C2/C5 圆柱 St / C_D / C_L 的 Mach 无关性\": fig_cylinder(res, figs_dir / \"fig2_cylinder_mach.png\"),\n"
+          ]
+        },
+        {
+          "after_start": 579,
+          "after_lines": [
+            "    raise SystemExit(main())\n"
+          ],
+          "before_lines": [
+            "    raise SystemExit(main())"
+          ]
+        }
+      ],
+      "pre_format_sha256": "6d5e3851d5f06fb0fac75c2dae0d425f80939c91d67c5a90eeca89ce22d83d0f",
+      "formatting_ast_identical": true
+    },
+    {
+      "old_path": "scripts/dam_break_summary.py",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/dam_break_summary.py",
+      "git_mode": "100644",
+      "original_git_blob": "2f4e74f0394016e203cfc5772ecfc7071bbc8d51",
+      "original_sha256": "a72894efe9d54b4f3245f858ad2791afc452b30e9620a5aedd9bd81760b548aa",
+      "size_bytes": 4876,
+      "current_git_blob": "2f4e74f0394016e203cfc5772ecfc7071bbc8d51",
+      "current_sha256": "a72894efe9d54b4f3245f858ad2791afc452b30e9620a5aedd9bd81760b548aa",
+      "current_size_bytes": 4876,
+      "byte_identical": true,
+      "path_only_edits": []
+    }
+  ],
+  "path_only_document_updates": [
+    {
+      "old_path": "docs/verification/lbm_weakly_compressible.md",
+      "new_path": "docs/verification/lbm_weakly_compressible.md",
+      "git_mode": "100644",
+      "original_git_blob": "2a936f6eb0cb0a0d02704ec7e8ca66e302046ba7",
+      "original_sha256": "757f12bada612db1e550cc6dc3adc535a14230b7bdd850efe1413789f791c94e",
+      "size_bytes": 11559,
+      "current_git_blob": "ddf09cda7606ae79e561d0335d150867a7628802",
+      "current_sha256": "56ea087f43ec45627b865e73736224a23b995a17f11871b22efbbfd4af8f807d",
+      "current_size_bytes": 11827,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/plot_lbm_weakly_compressible.py",
+          "new": "benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py",
+          "count": 1
+        },
+        {
+          "old": "](fig1_ma_scaling.png)",
+          "new": "](../../benchmarks/verified/lbm_weakly_compressible/figures/fig1_ma_scaling.png)",
+          "count": 1
+        },
+        {
+          "old": "](fig2_cylinder_mach.png)",
+          "new": "](../../benchmarks/verified/lbm_weakly_compressible/figures/fig2_cylinder_mach.png)",
+          "count": 1
+        },
+        {
+          "old": "](fig3_pressure_poisson.png)",
+          "new": "](../../benchmarks/verified/lbm_weakly_compressible/figures/fig3_pressure_poisson.png)",
+          "count": 1
+        },
+        {
+          "old": "](fig4_profiles.png)",
+          "new": "](../../benchmarks/verified/lbm_weakly_compressible/figures/fig4_profiles.png)",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/REPORT.md",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "f3391b3e9f96662b71c869f9431a6b5e6f0ae31d",
+      "original_sha256": "2cd7ef3eb2e290e3354e49d5a6ac798be9ec049cf4130e5115bb1f2e95ee7321",
+      "size_bytes": 3467,
+      "current_git_blob": "7187b0515d169fc16a4df5db342ac7a36da5ab21",
+      "current_sha256": "ae752043cee4e54c5e137e7fe4ff6edb87aaa59575b11261912ca410f9b383e3",
+      "current_size_bytes": 3502,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/dam_break_summary.py",
+          "new": "benchmarks/pending/dam_break_2d_multimodel/dam_break_summary.py",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "append_only_document_update": {
+    "old_path": "benchmarks/pending/dam_break_2d_multimodel/README.md",
+    "new_path": "benchmarks/pending/dam_break_2d_multimodel/README.md",
+    "git_mode": "100644",
+    "original_git_blob": "90569c1722c07309ad08078a03eb5290a79c2b87",
+    "original_sha256": "862a901a4dd5bc43650dd10e1f733a3c1b5b3fd8078ad5d12b98d541239999f7",
+    "size_bytes": 437,
+    "current_git_blob": "83ed0e69771a1838a2c759b92281f3d435bd518b",
+    "current_sha256": "03bbf15ecbc5fae54956e2c36a3eb7f62a480cc2b53281333559a33d4a5635ca",
+    "current_size_bytes": 1652,
+    "byte_identical": false,
+    "appended_text": "\n## Historical post-processing\n\nThe [case-specific summary tool](dam_break_summary.py) retains its original\nrepository-relative input/output contract. To repeat the archived **front-position**\ncomparison without running a solver, copy the original four tracked CSVs and\nreference JSON to the expected layout in an isolated scratch directory:\n\n```bash\nrepo=\"$(pwd)\"  # from the checkout root\nscratch=\"$(mktemp -d)\"\nmkdir -p \"$scratch/benchmarks/pending/dam_break_sc\"\ncp \"$repo/benchmarks/pending/dam_break_sc/result.json\" \"$scratch/benchmarks/pending/dam_break_sc/\"\nfor m in sc scmp cg fe; do\n    dest=\"$scratch/outputs/dam_break_benchmark/$m/dam_break/bench_dam_${m}_fast\"\n    mkdir -p \"$dest\"\n    cp \"$repo/benchmarks/pending/dam_break_2d_multimodel/front_position_$m.csv\" \"$dest/front_position.csv\"\ndone\n(cd \"$scratch\" && python \"$repo/benchmarks/pending/dam_break_2d_multimodel/dam_break_summary.py\")\n```\n\nThe tracked CSVs reproduce the four historical rounded RMSE/MAE values and\ngenerate a front-comparison PNG. Original per-step snapshots are not tracked;\nthe optional GIF cannot be regenerated from these inputs. This is offline\npost-processing of historical failed results, not a new scientific validation.\n"
+  },
+  "unchanged_historical_assets": [
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/figures.json",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/figures.json",
+      "git_mode": "100644",
+      "original_git_blob": "0c253af4401577d2af9b248b223ea5f74d8a80df",
+      "original_sha256": "d1e8eeeb3fd356c5fcd6a172927dd250cdbe07f0ee25e10235326d08af26c77a",
+      "size_bytes": 688,
+      "current_git_blob": "0c253af4401577d2af9b248b223ea5f74d8a80df",
+      "current_sha256": "d1e8eeeb3fd356c5fcd6a172927dd250cdbe07f0ee25e10235326d08af26c77a",
+      "current_size_bytes": 688,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/figures/fig_flow_evolution.png",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/figures/fig_flow_evolution.png",
+      "git_mode": "100644",
+      "original_git_blob": "fa6bf49e01a88528f6a0dead4a9a2b0448df058c",
+      "original_sha256": "bc5838fb89ad3de133beace96170d25a689b97cf90774f90240d2b0635901f14",
+      "size_bytes": 650955,
+      "current_git_blob": "fa6bf49e01a88528f6a0dead4a9a2b0448df058c",
+      "current_sha256": "bc5838fb89ad3de133beace96170d25a689b97cf90774f90240d2b0635901f14",
+      "current_size_bytes": 650955,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/figures/fig_front_vs_MM.png",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/figures/fig_front_vs_MM.png",
+      "git_mode": "100644",
+      "original_git_blob": "80c06c0c1d061ac201283dcc3ea5d34fafa48830",
+      "original_sha256": "6a2a2cc9d7c1fe5671511d7fc27b028716c7da6526a87f333a6aabbd2005e3bc",
+      "size_bytes": 118936,
+      "current_git_blob": "80c06c0c1d061ac201283dcc3ea5d34fafa48830",
+      "current_sha256": "6a2a2cc9d7c1fe5671511d7fc27b028716c7da6526a87f333a6aabbd2005e3bc",
+      "current_size_bytes": 118936,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_cg.csv",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_cg.csv",
+      "git_mode": "100644",
+      "original_git_blob": "b2fb55ec40cd0d8a6c04cdf3c3298663782bce10",
+      "original_sha256": "0649b5979ab8075d97106dcd49f9b3a39da5604b8ab4ff9ec36aafe675992571",
+      "size_bytes": 398,
+      "current_git_blob": "b2fb55ec40cd0d8a6c04cdf3c3298663782bce10",
+      "current_sha256": "0649b5979ab8075d97106dcd49f9b3a39da5604b8ab4ff9ec36aafe675992571",
+      "current_size_bytes": 398,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_fe.csv",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_fe.csv",
+      "git_mode": "100644",
+      "original_git_blob": "912f9cf7e726624ae1b79135fb8298d26777d295",
+      "original_sha256": "100dc267234ec3fd474d40157cd5cf272778196b19e0caedb716cf595d6f4614",
+      "size_bytes": 306,
+      "current_git_blob": "912f9cf7e726624ae1b79135fb8298d26777d295",
+      "current_sha256": "100dc267234ec3fd474d40157cd5cf272778196b19e0caedb716cf595d6f4614",
+      "current_size_bytes": 306,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_sc.csv",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_sc.csv",
+      "git_mode": "100644",
+      "original_git_blob": "6d7399e7d7dffd1904bb38d27fc0fcb32e4077d9",
+      "original_sha256": "057a68f1c3c686d7f610df4dd2ce928d4e4023bf85232411afb30dd12e476243",
+      "size_bytes": 291,
+      "current_git_blob": "6d7399e7d7dffd1904bb38d27fc0fcb32e4077d9",
+      "current_sha256": "057a68f1c3c686d7f610df4dd2ce928d4e4023bf85232411afb30dd12e476243",
+      "current_size_bytes": 291,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_scmp.csv",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/front_position_scmp.csv",
+      "git_mode": "100644",
+      "original_git_blob": "f96fe90391647281c89fbad9a5947b78e34d2f1c",
+      "original_sha256": "bfa79e52a876d6aeae416c5cd0c6658489a283c27b23458100ea49c17df9358e",
+      "size_bytes": 421,
+      "current_git_blob": "f96fe90391647281c89fbad9a5947b78e34d2f1c",
+      "current_sha256": "bfa79e52a876d6aeae416c5cd0c6658489a283c27b23458100ea49c17df9358e",
+      "current_size_bytes": 421,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_2d_multimodel/metrics_vs_MM.json",
+      "new_path": "benchmarks/pending/dam_break_2d_multimodel/metrics_vs_MM.json",
+      "git_mode": "100644",
+      "original_git_blob": "cc81add46d660b3fb9e94cacfa61107173a4c7b6",
+      "original_sha256": "c838aab160954a0b8e0cade4dae07a2aa969654d995e245c845510fc6366e821",
+      "size_bytes": 3718,
+      "current_git_blob": "cc81add46d660b3fb9e94cacfa61107173a4c7b6",
+      "current_sha256": "c838aab160954a0b8e0cade4dae07a2aa969654d995e245c845510fc6366e821",
+      "current_size_bytes": 3718,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/pending/dam_break_sc/result.json",
+      "new_path": "benchmarks/pending/dam_break_sc/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "5c7ea9bb9898c0dbd6bf58acf26495c559145172",
+      "original_sha256": "cdff3318f3fbc4528ad683bb97ba398a181fafeee260a74bd53c9ece4513e6fa",
+      "size_bytes": 10612,
+      "current_git_blob": "5c7ea9bb9898c0dbd6bf58acf26495c559145172",
+      "current_sha256": "cdff3318f3fbc4528ad683bb97ba398a181fafeee260a74bd53c9ece4513e6fa",
+      "current_size_bytes": 10612,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/gates.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/gates.json",
+      "git_mode": "100644",
+      "original_git_blob": "b16ddf003a24131471dcdb7dad3ab826af79daca",
+      "original_sha256": "35c2d80776e4a80d43c3d7a2f2716da41f394b14f77a897582a2ade12a9ac3dd",
+      "size_bytes": 14136,
+      "current_git_blob": "b16ddf003a24131471dcdb7dad3ab826af79daca",
+      "current_sha256": "35c2d80776e4a80d43c3d7a2f2716da41f394b14f77a897582a2ade12a9ac3dd",
+      "current_size_bytes": 14136,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/ma_sweep.csv",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/ma_sweep.csv",
+      "git_mode": "100644",
+      "original_git_blob": "d7647c06572c2a4ca752e4af22b962fb4844e873",
+      "original_sha256": "a9fc6f5194c20d6623188ac6fc8923a3a0d362bcc1826d6650a0b4a053726bc6",
+      "size_bytes": 2547,
+      "current_git_blob": "d7647c06572c2a4ca752e4af22b962fb4844e873",
+      "current_sha256": "a9fc6f5194c20d6623188ac6fc8923a3a0d362bcc1826d6650a0b4a053726bc6",
+      "current_size_bytes": 2547,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/acoustic_0.01.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/acoustic_0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "75561c2f83dd206ce6f8d6c7a96a9a22598280ce",
+      "original_sha256": "cc88b4b80edb22134530c8e3acaf4bc48ee3f55c453d91b05c6e796a90ff1d2b",
+      "size_bytes": 1139125,
+      "current_git_blob": "75561c2f83dd206ce6f8d6c7a96a9a22598280ce",
+      "current_sha256": "cc88b4b80edb22134530c8e3acaf4bc48ee3f55c453d91b05c6e796a90ff1d2b",
+      "current_size_bytes": 1139125,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.01.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "54a032d161b742acc56a6902cb725237fa9ecc27",
+      "original_sha256": "0e4b4e731c272235abbb9244af275e71f27c84e98c0a18bbd22bbcba6b0455b2",
+      "size_bytes": 865482,
+      "current_git_blob": "54a032d161b742acc56a6902cb725237fa9ecc27",
+      "current_sha256": "0e4b4e731c272235abbb9244af275e71f27c84e98c0a18bbd22bbcba6b0455b2",
+      "current_size_bytes": 865482,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.1.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.1.json",
+      "git_mode": "100644",
+      "original_git_blob": "b0071c825ad7b75a6b0710deee3936cabdfb6879",
+      "original_sha256": "b272f573caafbed09012005775d6cfa0d98f32d9f69a16aee610f66e7ef5e569",
+      "size_bytes": 842081,
+      "current_git_blob": "b0071c825ad7b75a6b0710deee3936cabdfb6879",
+      "current_sha256": "b272f573caafbed09012005775d6cfa0d98f32d9f69a16aee610f66e7ef5e569",
+      "current_size_bytes": 842081,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.2.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.2.json",
+      "git_mode": "100644",
+      "original_git_blob": "671c8eab4f552d8553a89e51f78fe0d411970038",
+      "original_sha256": "6ce2b816f2c07c2b66bae432356a6d13bf836d6c7dbe4dcc0043a20f51e52400",
+      "size_bytes": 802972,
+      "current_git_blob": "671c8eab4f552d8553a89e51f78fe0d411970038",
+      "current_sha256": "6ce2b816f2c07c2b66bae432356a6d13bf836d6c7dbe4dcc0043a20f51e52400",
+      "current_size_bytes": 802972,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.3.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.3.json",
+      "git_mode": "100644",
+      "original_git_blob": "a9f8f33a6852899565caf710e347121568f967c8",
+      "original_sha256": "59a86376dceedff64cf46e45d699b1dc51f8e0994d23218b4f99830e366c92a2",
+      "size_bytes": 785844,
+      "current_git_blob": "a9f8f33a6852899565caf710e347121568f967c8",
+      "current_sha256": "59a86376dceedff64cf46e45d699b1dc51f8e0994d23218b4f99830e366c92a2",
+      "current_size_bytes": 785844,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.01.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "416e38b758df48570ce13e39b7a6698dc49b223d",
+      "original_sha256": "3fa3e1d530c53a628caa2e021df2837417ccb7d9861e84b7fdb1d1aee75910a1",
+      "size_bytes": 47719,
+      "current_git_blob": "416e38b758df48570ce13e39b7a6698dc49b223d",
+      "current_sha256": "3fa3e1d530c53a628caa2e021df2837417ccb7d9861e84b7fdb1d1aee75910a1",
+      "current_size_bytes": 47719,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.05.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.05.json",
+      "git_mode": "100644",
+      "original_git_blob": "656836c19ec5bfddd060cc8619967bc1b8f97a6a",
+      "original_sha256": "9080c4fa459b5d5787826c5bff52041cdbab15dc3d364b0ffb8589bf2627cfaa",
+      "size_bytes": 46992,
+      "current_git_blob": "656836c19ec5bfddd060cc8619967bc1b8f97a6a",
+      "current_sha256": "9080c4fa459b5d5787826c5bff52041cdbab15dc3d364b0ffb8589bf2627cfaa",
+      "current_size_bytes": 46992,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.1.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.1.json",
+      "git_mode": "100644",
+      "original_git_blob": "e8ec3ad20672d88aa26a9d54f579d7548c973e68",
+      "original_sha256": "db3163e90db639043ab4de0dc22ebb237d522a23788f4d98d501e3ddd434f4e0",
+      "size_bytes": 46546,
+      "current_git_blob": "e8ec3ad20672d88aa26a9d54f579d7548c973e68",
+      "current_sha256": "db3163e90db639043ab4de0dc22ebb237d522a23788f4d98d501e3ddd434f4e0",
+      "current_size_bytes": 46546,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.2.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.2.json",
+      "git_mode": "100644",
+      "original_git_blob": "07660e95a005a9d55b620a10f5527b4ff9bcb2f5",
+      "original_sha256": "ca9c1b9e12508acb36a8c4e024d2135a23a1ee4b33f38f9b761f9bd5eba0f11b",
+      "size_bytes": 46274,
+      "current_git_blob": "07660e95a005a9d55b620a10f5527b4ff9bcb2f5",
+      "current_sha256": "ca9c1b9e12508acb36a8c4e024d2135a23a1ee4b33f38f9b761f9bd5eba0f11b",
+      "current_size_bytes": 46274,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.3.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.3.json",
+      "git_mode": "100644",
+      "original_git_blob": "938fced042e8115dc0463b4c3d21ad75f5e43a58",
+      "original_sha256": "094e8e2b5d1206eb0b26fe403b9d9d5065fcade83230d99b422ddf8fb103ab3a",
+      "size_bytes": 46205,
+      "current_git_blob": "938fced042e8115dc0463b4c3d21ad75f5e43a58",
+      "current_sha256": "094e8e2b5d1206eb0b26fe403b9d9d5065fcade83230d99b422ddf8fb103ab3a",
+      "current_size_bytes": 46205,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.01.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.01.json",
+      "git_mode": "100644",
+      "original_git_blob": "345d74ad4d32225daf232e6bdf0e3e48b31eee01",
+      "original_sha256": "955bc8ee279fc1b1d9120836afe702f63d59e3d49858ee232fc8ec0446213a8e",
+      "size_bytes": 632976,
+      "current_git_blob": "345d74ad4d32225daf232e6bdf0e3e48b31eee01",
+      "current_sha256": "955bc8ee279fc1b1d9120836afe702f63d59e3d49858ee232fc8ec0446213a8e",
+      "current_size_bytes": 632976,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.05.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.05.json",
+      "git_mode": "100644",
+      "original_git_blob": "367932e5d6f1c301bc835ffea0c399310f96d020",
+      "original_sha256": "9a0fe72e802e3c4209c81527428f21cbc37b58b54f54b314d665850803be86f7",
+      "size_bytes": 130015,
+      "current_git_blob": "367932e5d6f1c301bc835ffea0c399310f96d020",
+      "current_sha256": "9a0fe72e802e3c4209c81527428f21cbc37b58b54f54b314d665850803be86f7",
+      "current_size_bytes": 130015,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.1.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.1.json",
+      "git_mode": "100644",
+      "original_git_blob": "4601cf2b07da54a93b4c0784690bf3960730306f",
+      "original_sha256": "6fefde6530a2e04fa9c887e227dc2addf2dd55fbbf37762f39e5ce80aa4dd0fa",
+      "size_bytes": 88199,
+      "current_git_blob": "4601cf2b07da54a93b4c0784690bf3960730306f",
+      "current_sha256": "6fefde6530a2e04fa9c887e227dc2addf2dd55fbbf37762f39e5ce80aa4dd0fa",
+      "current_size_bytes": 88199,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.2.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.2.json",
+      "git_mode": "100644",
+      "original_git_blob": "de72deeab1199ba775d37ce81fed228938a0232e",
+      "original_sha256": "7e0eab6618cd746104d719c51d0f09020a7f73dbe7cc1e99edb5391a90080956",
+      "size_bytes": 87324,
+      "current_git_blob": "de72deeab1199ba775d37ce81fed228938a0232e",
+      "current_sha256": "7e0eab6618cd746104d719c51d0f09020a7f73dbe7cc1e99edb5391a90080956",
+      "current_size_bytes": 87324,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.3.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.3.json",
+      "git_mode": "100644",
+      "original_git_blob": "57139c30461ed4504c962841ad5ca966b0a90d98",
+      "original_sha256": "d4e08b64f20330fdffca30972ee85c8b618db9ccc7fd62a21f7ac38158f01f9a",
+      "size_bytes": 87065,
+      "current_git_blob": "57139c30461ed4504c962841ad5ca966b0a90d98",
+      "current_sha256": "d4e08b64f20330fdffca30972ee85c8b618db9ccc7fd62a21f7ac38158f01f9a",
+      "current_size_bytes": 87065,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/lbm_weakly_compressible/result.json",
+      "new_path": "benchmarks/verified/lbm_weakly_compressible/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "bf57b05fc0bebe9ac80a542179e67b111af6d6cf",
+      "original_sha256": "e1add60d81ce1374edc2693d24ad21b3e109fccfcbbc1e7be95e0886037ea18d",
+      "size_bytes": 1794935,
+      "current_git_blob": "bf57b05fc0bebe9ac80a542179e67b111af6d6cf",
+      "current_sha256": "e1add60d81ce1374edc2693d24ad21b3e109fccfcbbc1e7be95e0886037ea18d",
+      "current_size_bytes": 1794935,
+      "byte_identical": true
+    }
+  ],
+  "new_case_manifest_paths": [
+    "benchmarks/verified/lbm_weakly_compressible/benchmark_case.json",
+    "benchmarks/pending/dam_break_2d_multimodel/benchmark_case.json"
+  ],
+  "registry_ids": [
+    "benchmarks/verified/lbm_weakly_compressible",
+    "benchmarks/pending/dam_break_2d_multimodel"
+  ],
+  "compatibility": {
+    "environment": {
+      "python": "3.12.14",
+      "platform": "x86_64",
+      "matplotlib": "3.10.8",
+      "numpy": "2.3.5",
+      "pillow": "13.0.0",
+      "matplotlib_backend": "Agg",
+      "PYTHONHASHSEED": "0"
+    },
+    "weakly": {
+      "before_command": "python scripts/plot_lbm_weakly_compressible.py --artifacts <ART> --docs <DOCS>",
+      "after_command": "python benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py --artifacts <ART> --docs <DOCS>",
+      "exit_codes": [
+        0,
+        0
+      ],
+      "identical_original_generated_markdown": true,
+      "new_markdown_path_only_edits": true,
+      "normalized_stdout_sha256": "a6ec0727a832660ede61a2bd1b78f47405bc1f3c28f59740dbdf93402414fcb6",
+      "stderr_empty": true,
+      "regenerated_pngs": [
+        {
+          "path": "benchmarks/verified/lbm_weakly_compressible/figures/fig1_ma_scaling.png",
+          "size_bytes": 108180,
+          "sha256_before": "bdb5b1eebfd954efe386dcd373db4199482de297a4806eefdac80e10873927d1",
+          "sha256_after": "bdb5b1eebfd954efe386dcd373db4199482de297a4806eefdac80e10873927d1",
+          "original_image_recovered": false
+        },
+        {
+          "path": "benchmarks/verified/lbm_weakly_compressible/figures/fig2_cylinder_mach.png",
+          "size_bytes": 93143,
+          "sha256_before": "5733fde6e3ebf64ec3253a929da2b78277140d54dfda0be204c05be6b7481474",
+          "sha256_after": "5733fde6e3ebf64ec3253a929da2b78277140d54dfda0be204c05be6b7481474",
+          "original_image_recovered": false
+        },
+        {
+          "path": "benchmarks/verified/lbm_weakly_compressible/figures/fig3_pressure_poisson.png",
+          "size_bytes": 120747,
+          "sha256_before": "7e35fc7f657f6a5992b7ab7aad7ed38d48367882dfe0ebec2780a92680d25393",
+          "sha256_after": "7e35fc7f657f6a5992b7ab7aad7ed38d48367882dfe0ebec2780a92680d25393",
+          "original_image_recovered": false
+        },
+        {
+          "path": "benchmarks/verified/lbm_weakly_compressible/figures/fig4_profiles.png",
+          "size_bytes": 126016,
+          "sha256_before": "41c08e1313edbde4f0d77316e4585f1a6942f4861b3ac04e55171f98c4b8d66c",
+          "sha256_after": "41c08e1313edbde4f0d77316e4585f1a6942f4861b3ac04e55171f98c4b8d66c",
+          "original_image_recovered": false
+        }
+      ]
+    },
+    "dam": {
+      "before_command": "python scripts/dam_break_summary.py (from staged scratch root)",
+      "after_command": "python benchmarks/pending/dam_break_2d_multimodel/dam_break_summary.py (from staged scratch root)",
+      "exit_codes": [
+        0,
+        0
+      ],
+      "identical_stdout_sha256": "0aa27d8f4dfa58a02148268e23679625693f0d621a01d718cb6fa1a7bb5bbebc",
+      "stdout": "================================================================================================\n2D Dam-break — 多模型定量对比 vs Martin & Moyce 1952 实验 14 点数字化表\n参考: benchmarks/pending/dam_break_sc/result.json reference_digitisation_lethe\n================================================================================================\n模型       点数   t*_end   X*_end X*_exp@end |err|_end     RMSE      MAE    单调\n------------------------------------------------------------------------------------------------\nsc       14    3.873    0.000      3.670     3.670    2.406    2.246     是\nscmp     14    3.873    3.967      3.670     0.297    1.542    1.310     否\ncg       14    3.873    1.717      3.670     2.045    1.042    0.850     否\nfe       14    3.873    0.000      3.670     3.670    2.489    2.356     否\n\n前沿对比图已保存: outputs/dam_break_benchmark/front_comparison.png\n未找到 sc snapshot，跳过 GIF 生成\n",
+      "after_png_scratch_path": "outputs/dam_break_benchmark/front_comparison.png",
+      "identical_png_sha256": "acf61d4f275077f1306beea539d6d5c2106dff648f754ba9bca4e590f72b2a29",
+      "normalized_stderr_sha256": "79a63f35f6798c7f70282f231dd4d3c321d1fd85f2e62b1af5877b8d74163a29",
+      "warnings": "Both runs have the same missing CJK glyph warnings after substituting only the script path. Scratch image is not published; existing historical published image is unchanged.",
+      "optional_gif": "Skipped: original snapshots are not tracked; no invented input."
+    }
+  },
+  "scientific_replay": "not_run: real original inputs used for offline rendering/reanalysis only; numerical algorithms and archived gate thresholds unchanged",
+  "scientific_acceptance": "not_evaluated",
+  "remaining_blockers": [
+    "scripts, xval and models retained pending independent compatibility and asset-retrieval checks.",
+    "Native CI must actually pass on exact PR head before merging.",
+    "Original weak-compressibility figure bytes were not tracked at base; new PNGs are labeled derivative output, not recovered originals.",
+    "Dam-break full original field/snapshot bundle remains untracked."
+  ]
+}

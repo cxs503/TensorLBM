@@ -1,0 +1,62 @@
+{
+  "scope": "Historical weak-compressibility verification surface P102W3-N05 and offline reporting from the original recorded result and gate ledger. Archived directory membership is not scientific acceptance; negative and unsupported gates remain explicit.",
+  "criteria": {
+    "historical_contract": "benchmarks/verified/lbm_weakly_compressible/gates.json",
+    "recorded_gate_statuses": {
+      "c0_cylinder_instrument_validation": "NOT_SUPPORTED",
+      "c1_poiseuille_ma2_scaling": "FAIL",
+      "c2_strouhal_mach_independence": "NOT_SUPPORTED",
+      "c3_density_fluctuation_order": "FAIL",
+      "c4_acoustic_filter": "PASS",
+      "c5_hydrodynamic_coefficient_independence": "NOT_SUPPORTED",
+      "c6_pressure_poisson": "FAIL",
+      "c7_applicability_boundary": "NOT_SUPPORTED",
+      "c8_honest_gate": "PASS"
+    },
+    "current_scope": "Offline figure generation only; not a new solver replay."
+  },
+  "source": [
+    "src/tensorlbm/verification/weakly_compressible.py",
+    "benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py"
+  ],
+  "config": [],
+  "documentation": [
+    "docs/verification/lbm_weakly_compressible.md"
+  ],
+  "reference_files": [
+    "benchmarks/verified/lbm_weakly_compressible/gates.json"
+  ],
+  "results": [
+    "benchmarks/verified/lbm_weakly_compressible/result.json",
+    "benchmarks/verified/lbm_weakly_compressible/gates.json"
+  ],
+  "evidence": [
+    "benchmarks/verified/lbm_weakly_compressible/ma_sweep.csv",
+    "benchmarks/verified/lbm_weakly_compressible/raw/acoustic_0.01.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.01.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.1.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.2.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/cylinder_0.3.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.01.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.05.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.1.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.2.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/poiseuille_0.3.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.01.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.05.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.1.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.2.json",
+    "benchmarks/verified/lbm_weakly_compressible/raw/pressure_channel_0.3.json",
+    "benchmarks/verified/lbm_weakly_compressible/figures/fig1_ma_scaling.png",
+    "benchmarks/verified/lbm_weakly_compressible/figures/fig2_cylinder_mach.png",
+    "benchmarks/verified/lbm_weakly_compressible/figures/fig3_pressure_poisson.png",
+    "benchmarks/verified/lbm_weakly_compressible/figures/fig4_profiles.png",
+    "docs/architecture/migrations/case-reporting-tools-handoff-2026-11-28.json"
+  ],
+  "references": [
+    {
+      "title": "Historical gate criteria and reference identification",
+      "source": "benchmarks/verified/lbm_weakly_compressible/gates.json"
+    }
+  ]
+}

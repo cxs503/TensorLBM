@@ -1,0 +1,41 @@
+{
+  "scope": "Historical four-model 2D dam-break baseline audit against the archived 14-point Martin & Moyce digitization. The original report records 4/4 FAIL; the older trend-based campaign is not a substitute for that reference. Position CSVs and post-processing tool preserved.",
+  "criteria": {
+    "historical_reference": "benchmarks/pending/dam_break_sc/result.json#reference_digitisation_lethe",
+    "historical_reported_verdict": "4/4 FAIL",
+    "historical_metrics": "benchmarks/pending/dam_break_2d_multimodel/metrics_vs_MM.json",
+    "current_scope": "Offline post-processing only; no new verdict, and original snapshots for GIF are unavailable."
+  },
+  "source": [
+    "benchmarks/bench_dam_break.py",
+    "benchmarks/pending/dam_break_2d_multimodel/dam_break_summary.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/pending/dam_break_2d_multimodel/README.md",
+    "benchmarks/pending/dam_break_2d_multimodel/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/pending/dam_break_sc/result.json"
+  ],
+  "results": [
+    "benchmarks/pending/dam_break_2d_multimodel/metrics_vs_MM.json"
+  ],
+  "evidence": [
+    "benchmarks/pending/dam_break_2d_multimodel/front_position_sc.csv",
+    "benchmarks/pending/dam_break_2d_multimodel/front_position_scmp.csv",
+    "benchmarks/pending/dam_break_2d_multimodel/front_position_cg.csv",
+    "benchmarks/pending/dam_break_2d_multimodel/front_position_fe.csv",
+    "benchmarks/pending/dam_break_2d_multimodel/figures.json",
+    "benchmarks/pending/dam_break_2d_multimodel/figures/fig_flow_evolution.png",
+    "benchmarks/pending/dam_break_2d_multimodel/figures/fig_front_vs_MM.png",
+    "docs/architecture/migrations/case-reporting-tools-handoff-2026-11-28.json"
+  ],
+  "references": [
+    {
+      "title": "Martin & Moyce (1952), 14-point digitization",
+      "source": "benchmarks/pending/dam_break_sc/result.json",
+      "section": "reference_digitisation_lethe"
+    }
+  ]
+}
