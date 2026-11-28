@@ -1,0 +1,23 @@
+{
+  "scope": "Historical standalone linear-growth-rate scan, distinct from the later case-pool linear/nonlinear campaign and pending SCMP/VOF variants. The recorded verdict is FAIL; this index does not establish current acceptance.",
+  "criteria": {
+    "source": "benchmarks/rayleigh_taylor/result.json",
+    "growth_rate_rel_error_le_pct": 3.0,
+    "observed_order_ge": 1.5,
+    "historical_outcome": "FAIL; both gates false. Non-finite convergence values retained as archived."
+  },
+  "source": [
+    "benchmarks/rayleigh_taylor/growth_rate.py",
+    "benchmarks/rayleigh_taylor/make_figures.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/rayleigh_taylor/README.md"
+  ],
+  "reference_files": [
+    "benchmarks/rayleigh_taylor/README.md"
+  ],
+  "results": [
+    "benchmarks/rayleigh_taylor/result.json"
+  ]
+}

@@ -34,6 +34,8 @@ the revision, reference, metric, threshold and result for each new acceptance
 claim. Use a versioned external location for heavy output, with retrieval and
 integrity verified before retiring a tracked copy.
 
+The [standalone evidence ledger](migrations/standalone-benchmark-evidence-index-2026-11-28.json) indexes three previously unregistered historical campaigns and the earlier rounds of the existing Taylor–Green case-pool entry. It retains the original result paths and fingerprints, including failed gates and rejected audits; no directory is retired or new scientific acceptance asserted.
+
 ## Existing first-level directory disposition
 
 | Existing directory | Target | Constraint or decision |
