@@ -71,7 +71,7 @@ def compute_sha256(data: list[dict]) -> str:
 
 def main(output_dir: str | None = None) -> dict:
     """Write digitized data and return provenance info."""
-    out = Path(output_dir) if output_dir else Path(__file__).parent.parent / "artifacts"
+    out = Path(output_dir) if output_dir else Path(__file__).resolve().parents[3] / "artifacts"
     out.mkdir(parents=True, exist_ok=True)
 
     mm_sha = compute_sha256(MARTIN_MOYCE_DATA)

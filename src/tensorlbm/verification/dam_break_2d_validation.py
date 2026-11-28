@@ -106,9 +106,7 @@ def load_martin_moyce_data(data_path: Path | None = None) -> tuple[list[dict], s
         data_path = Path(__file__).with_name("refdata") / "martin_moyce_1952_dam_break.json"
 
     if not data_path.exists():
-        import sys
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-        from scripts.digitize_martin_moyce import main as digitize_main
+        from ._digitize_martin_moyce import main as digitize_main
         digitize_main(str(data_path.parent))
 
     content = data_path.read_text(encoding="utf-8")

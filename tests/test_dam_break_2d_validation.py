@@ -41,6 +41,14 @@ class TestMartinMoyceData:
         assert isinstance(sha, str)
         assert len(sha) == 64
 
+    def test_missing_reference_uses_packaged_generator(self, tmp_path: Path) -> None:
+        data_path = tmp_path / "refdata" / "martin_moyce_1952_dam_break.json"
+        data, digest = load_martin_moyce_data(data_path)
+        expected_data, expected_digest = load_martin_moyce_data()
+        assert data == expected_data
+        assert digest == expected_digest
+        assert (data_path.parent / "ritter_1892_dam_break_analytical.json").is_file()
+
     def test_data_has_required_fields(self) -> None:
         data, _ = load_martin_moyce_data()
         for entry in data:
