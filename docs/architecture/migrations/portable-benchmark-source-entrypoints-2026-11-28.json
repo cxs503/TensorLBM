@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "base_main": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "entries": [
+    {
+      "old_path": "benchmarks/pending/bstep_3d/run.py",
+      "new_path": "benchmarks/pending/bstep_3d/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "d8af4bb8a0d8493de62590b7e1dfcefcb590c433",
+      "original_sha256": "29a9207ef1a87946670448296f626b197de0708759ae14225fa47eaafc39a752",
+      "size_bytes": 22091,
+      "current_sha256": "2d93a54c39f74b9776e0134392972856fcd853b17f286dcc7f2c8f55d3720bd0",
+      "current_size_bytes": 22097,
+      "path_only_edits": [
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[3] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 3,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    },
+    {
+      "old_path": "benchmarks/pending/bstep_3d/run_highre.py",
+      "new_path": "benchmarks/pending/bstep_3d/run_highre.py",
+      "git_mode": "100644",
+      "original_git_blob": "0f2dccb25f9c98202f010269b158227c5978024d",
+      "original_sha256": "b3c779f18d5cd0ceb3adfe0f626aabe4e73a58704634e44fffe5ba7a1b13652d",
+      "size_bytes": 23220,
+      "current_sha256": "c90dbc20d4a9ab41a02bfdff8a766a56861cd268ed30fae8a9d8cbe0b0c306ab",
+      "current_size_bytes": 23226,
+      "path_only_edits": [
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[3] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 3,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    },
+    {
+      "old_path": "benchmarks/pending/channel_turb_3d/run.py",
+      "new_path": "benchmarks/pending/channel_turb_3d/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "f6acf605fa0b2769296f1e7c264ced74efa3e8a4",
+      "original_sha256": "d511d3b98b19e34bc740335ebd1d56fb30a813ac41e3ef939aaed5bb1a34a5e9",
+      "size_bytes": 15618,
+      "current_sha256": "ac7faadc7b38c91feb8306b39382bbeeba90aacb528671c28b9bd6d4a4f26a7f",
+      "current_size_bytes": 15624,
+      "path_only_edits": [
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[3] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 3,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    },
+    {
+      "old_path": "benchmarks/pending/cylinder_re40_st/run.py",
+      "new_path": "benchmarks/pending/cylinder_re40_st/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "cf1c7f1fdaab342d12ecd812f699cdf078108c25",
+      "original_sha256": "31d2ca8a26bc80053587493cd1775ed1956e45735e2bb16cee2ac44dbc1d9ec0",
+      "size_bytes": 8788,
+      "current_sha256": "b9bbc88059657da9dda7195658deb2f939b144112c017b022de0db4a225480f9",
+      "current_size_bytes": 8794,
+      "path_only_edits": [
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[3] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 3,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    },
+    {
+      "old_path": "benchmarks/verified/cavity_3d_full/run.py",
+      "new_path": "benchmarks/verified/cavity_3d_full/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "22c42ac00b3294231956cf15fcce7d5a8bbc927b",
+      "original_sha256": "c31a2531045e04d8ff32493c7750c63afd2454087e7dd8a58f88c3fa73c0b7f5",
+      "size_bytes": 13982,
+      "current_sha256": "6c2f06b8a312280cf752928e8d9e65b5e0ef1f792797d4a6f07a14bf6f2c8b35",
+      "current_size_bytes": 13988,
+      "path_only_edits": [
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[3] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 3,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re200/run.py",
+      "new_path": "benchmarks/verified/cylinder/re200/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "49ead709c274575bec3c5e18eba09c4a03da0022",
+      "original_sha256": "df32cb92812a7b1f9a17a990fbb34bb50999c2f92bb658e9cebac9f65bbdec3a",
+      "size_bytes": 9590,
+      "current_sha256": "79911c44f6a2222305ee1574d0482a77107e103a9b24c6bf0645293342840ef8",
+      "current_size_bytes": 9621,
+      "path_only_edits": [
+        {
+          "old": "import time\n",
+          "new": "import time\nfrom pathlib import Path\n",
+          "count": 1
+        },
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[4] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 4,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re20_st/run.py",
+      "new_path": "benchmarks/verified/cylinder/re20_st/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "da98205c2ccbd85dbc12c5c557ce0bbe74d2783e",
+      "original_sha256": "dc2a1f9e5a2a781b1ed13ee5a900db1bbeba2359a578f383dd71ca6e191339be",
+      "size_bytes": 8220,
+      "current_sha256": "98de0de2fc37bb6c20cc9afe6727685ad3dc3264aa21af7b972893d694418177",
+      "current_size_bytes": 8226,
+      "path_only_edits": [
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[4] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 4,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder_3d/run_compare_d20.py",
+      "new_path": "benchmarks/verified/cylinder_3d/run_compare_d20.py",
+      "git_mode": "100644",
+      "original_git_blob": "604f9abac98e72ecb4603e199ee9662d2809757e",
+      "original_sha256": "3db6ee9e05fcc5d6c87763e57818f0ba61c211da8ad31ea7df6fdf3044f38709",
+      "size_bytes": 12459,
+      "current_sha256": "b00dcbfd67c74388003227d139db8ca7d1ac4a708e9adb869fab070176e8bf88",
+      "current_size_bytes": 12465,
+      "path_only_edits": [
+        {
+          "old": "sys.path.insert(0, \"/srv/tensor/operator-a/cxs/TensorLBM/src\")",
+          "new": "sys.path.insert(0, str(Path(__file__).resolve().parents[3] / \"src\"))",
+          "count": 1
+        }
+      ],
+      "canonical_parent_depth": 3,
+      "old_source_path": "/srv/tensor/operator-a/cxs/TensorLBM/src"
+    }
+  ],
+  "source_authority": {
+    "policy": "docs/architecture/source_authority_policy.json",
+    "active_reference_count_before": 29,
+    "active_reference_count_after": 21,
+    "removed_exact_allowlist_entries": {
+      "benchmarks/pending/bstep_3d/run.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      },
+      "benchmarks/pending/bstep_3d/run_highre.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      },
+      "benchmarks/pending/channel_turb_3d/run.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      },
+      "benchmarks/pending/cylinder_re40_st/run.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      },
+      "benchmarks/verified/cavity_3d_full/run.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      },
+      "benchmarks/verified/cylinder/re200/run.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      },
+      "benchmarks/verified/cylinder/re20_st/run.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      },
+      "benchmarks/verified/cylinder_3d/run_compare_d20.py": {
+        "matches": 1,
+        "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
+      }
+    },
+    "unchanged_frozen_tree": "f482f80c56e861d7a5c038d1b6647394edaa1ba2"
+  },
+  "compatibility": {
+    "scope": "Actual portable command-line import and --help checks, no solver execution. These are in-place source-entry corrections; no benchmark, manual or evidence path moved. Original numeric implementation preserved via exact reversible replacements. Baseline from external working directory failed without explicit repo/src; prior documented invocation with repo/src passes.",
+    "deferred": "Explicit historical-source pin, existing thermal shims, and baseline failing XVAL campaigns are not changed. The remaining legacy-reference whitelist is preserved.",
+    "actual_receipts": [
+      {
+        "path": "benchmarks/pending/bstep_3d/run.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "2038365c0b2226bbcbdb5158cd7408b0ec390055ac9c9c843fec5a1649013753",
+        "help_size_bytes": 798,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      {
+        "path": "benchmarks/pending/bstep_3d/run_highre.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "41acfdfb2898d04ce0092327e33b1b77c11bc5cd0bd8333d8fbfb026dec8763d",
+        "help_size_bytes": 1084,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      {
+        "path": "benchmarks/pending/channel_turb_3d/run.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "e5b66de5e312d3d05b8df411506e9933969910085981749382c6572dc88cb290",
+        "help_size_bytes": 299,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      {
+        "path": "benchmarks/pending/cylinder_re40_st/run.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "f6a340925ad6b07b8cb6653b4d0b654e560f4650c5ee80cfed5c1c87312afe02",
+        "help_size_bytes": 2147,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      {
+        "path": "benchmarks/verified/cavity_3d_full/run.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "f7fee40731c10d0aa1f8913eee09d2e77c55461f6a00e7bb91682bd5b1c76784",
+        "help_size_bytes": 396,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      {
+        "path": "benchmarks/verified/cylinder/re200/run.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "7c12960c1b5e772801d7679336c9f4c1bf59be198474eff6cbfef04239046463",
+        "help_size_bytes": 544,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      {
+        "path": "benchmarks/verified/cylinder/re20_st/run.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "072246a30f40bbd0f2dc03a2131eeafa3b8557d4f5c642092e852e19e5f36841",
+        "help_size_bytes": 2744,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      {
+        "path": "benchmarks/verified/cylinder_3d/run_compare_d20.py",
+        "old_explicit_source_help_exit": 0,
+        "old_isolated_error": "ModuleNotFoundError: tensorlbm",
+        "new_isolated_help_exit": 0,
+        "help_sha256": "11755c62ffef33aeff197d90fc4770ae02ef45ef40832f3f7351e6e9613ad8ee",
+        "help_size_bytes": 268,
+        "help_byte_identical": true,
+        "actual_imported_package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      }
+    ],
+    "python": "3.12.14"
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

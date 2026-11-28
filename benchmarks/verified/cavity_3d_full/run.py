@@ -39,7 +39,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-sys.path.insert(0, "/srv/tensor/operator-a/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from tensorlbm.boundaries3d import zou_he_moving_lid_3d
 from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
