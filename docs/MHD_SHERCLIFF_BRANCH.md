@@ -1,5 +1,7 @@
 # MHD 物理面 II：绝缘壁 Shercliff 阶梯、Lorentz 力与 MHD 推进器推力/效率账本
 
+> Repository layout note (2026-11-28): [current historical report helper and input limitations](../development/audit/m8370/README.md). The original scientific report below is retained. No fresh run or validation.
+
 **节点** p422w3-n08-mhd-lbm · **仓** TensorLBM · **物理域** 电磁流体力学 / 绿色推进
 **验收结论**：`all_passed = True`（六个机器判据全部通过，见 §6）
 **台账** `artifacts/mhd_acceptance/node_acceptance.json`

@@ -21,7 +21,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-WORK = Path(__file__).resolve().parents[1]
+WORK = Path(__file__).resolve().parents[3]
 ART = WORK / "artifacts" / "in61_n06_wall_model_usability"
 RECORD = ART / "wall_model_usability.json"
 MISSION_ID = 6975

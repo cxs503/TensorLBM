@@ -130,6 +130,8 @@ The [plotting and maintenance ledger](migrations/legacy-plotting-maintenance-202
 records the final two script subdirectories and the maintained channel plotting
 entry point. The legacy cleanup and synthetic fixture sources are archived.
 
+The [verification report-helper handoff ledger](migrations/verification-report-helper-handoff-2026-11-28.json) archives six historical report scripts, preserves public report paths and records verified CLI compatibility and missing original input bundles.
+
 The [documentation process-directory ledger](migrations/docs-process-directories-2026-11-22.json)
 retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
 unchanged archive objects and proves that the three removed history files are

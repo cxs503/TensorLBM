@@ -1,5 +1,7 @@
 # P67-N02 · TensorLBM KBC 碰撞算子 H 定理验证面
 
+> Repository layout note (2026-11-28): [current historical report helper and input limitations](../development/audit/m6744/README.md). The original scientific report below is retained. No fresh run or validation.
+
 > 本报告由 `scripts/build_h_theorem_report.py` 从 `artifacts/h_theorem_kbc/campaign.json` 程序化生成：文中每个数字均为工件取值，零手抄。（生成时间 2026-11-08T08:51:22，总计算 735 s，float64，torch 线程 4）
 
 ## 1. 案例介绍
