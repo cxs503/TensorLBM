@@ -38,7 +38,7 @@ Martin & Moyce (1952) 液柱坍塌实验 14 点数字化表——直读自
 `bench_dam_break.py` 的门比较对象是**线性趋势 X*≈1+t***（容差 RMSE≤2.5），并以
 "Martin & Moyce" 命名该趋势——**这不是 M&M 实验数据**（实验曲线在 T=2.96 处 X=3.67，
 且明显非线性）。在该宽松门下 scmp/cg 获判 PASS，而对真实验表两者分别 +150%（T=1，
-触壁前）与 -56%（T=2.96）。同源问题亦存在于 `scripts/dam_break_summary.py`（本 PR 一并
+触壁前）与 -56%（T=2.96）。同源问题亦存在于 `benchmarks/pending/dam_break_2d_multimodel/dam_break_summary.py`（本 PR 一并
 修正为读 14 点实验表）。门语义重设计属 MP-DAMBREAK S1 载荷。
 
 ## 5. 结构性缺口清单（S1 输入）

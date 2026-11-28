@@ -1,6 +1,6 @@
 # 弱可压缩 LBM 验证面：Ma→0 渐近一致性、绕圆柱 Strouhal 与声学滤波（P102W3-N05）
 
-> 本页由 `scripts/plot_lbm_weakly_compressible.py` 从 `benchmarks/verified/lbm_weakly_compressible/{result,gates}.json` 自动生成，文中所有数字均为程序化注入（零手抄）。
+> 本页由 `benchmarks/verified/lbm_weakly_compressible/plot_lbm_weakly_compressible.py` 从 `benchmarks/verified/lbm_weakly_compressible/{result,gates}.json` 自动生成，文中所有数字均为程序化注入（零手抄）。
 
 ## 1. 案例介绍（物理背景 / 几何 / 参数）
 
@@ -115,19 +115,19 @@ LBM 用 `p = c_s^2 rho`（`c_s^2 = 1/3`）代替不可压压力泊松方程，�
 
 ### C1/C3 Ma 标度（差分剖面 + 密度波动）
 
-![C1/C3 Ma 标度（差分剖面 + 密度波动）](fig1_ma_scaling.png)
+![C1/C3 Ma 标度（差分剖面 + 密度波动）](../../benchmarks/verified/lbm_weakly_compressible/figures/fig1_ma_scaling.png)
 
 ### C2/C5 圆柱 St / C_D / C_L 的 Mach 无关性
 
-![C2/C5 圆柱 St / C_D / C_L 的 Mach 无关性](fig2_cylinder_mach.png)
+![C2/C5 圆柱 St / C_D / C_L 的 Mach 无关性](../../benchmarks/verified/lbm_weakly_compressible/figures/fig2_cylinder_mach.png)
 
 ### C6 压力场 vs 不可压压力泊松解
 
-![C6 压力场 vs 不可压压力泊松解](fig3_pressure_poisson.png)
+![C6 压力场 vs 不可压压力泊松解](../../benchmarks/verified/lbm_weakly_compressible/figures/fig3_pressure_poisson.png)
 
 ### 速度剖面与差分信号
 
-![速度剖面与差分信号](fig4_profiles.png)
+![速度剖面与差分信号](../../benchmarks/verified/lbm_weakly_compressible/figures/fig4_profiles.png)
 
 ## 6. 注意点 / 局限
 

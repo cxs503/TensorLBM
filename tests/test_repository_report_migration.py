@@ -2141,6 +2141,54 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for link in re.findall(r"\]\(([^)]+)\)", index.read_text()):
             self.assertTrue((index.parent / link).is_file(), link)
 
+    def test_case_reporting_tools_keep_source_bytes_and_restore_report_links(self):
+        path = LEDGER_PATH.parent / "case-reporting-tools-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        self.assertEqual(ledger["top_level_directories_before"], ledger["top_level_directories_after"])
+        self.assertEqual(ledger["scripts_tracked_before"] - ledger["scripts_tracked_after"], 2)
+        self.assertEqual(ledger["scientific_acceptance"], "not_evaluated")
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            rows = {r["old_path"]: r["new_path"] for r in csv.DictReader(stream)
+                    if r["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(rows, {r["old_path"]: r["new_path"] for r in ledger["entries"]})
+        for row in ledger["entries"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", row["old_path"]], cwd=REPO))
+        for row in ledger["entries"] + ledger["path_only_document_updates"]:
+            data = (REPO / row["new_path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["current_sha256"])
+            if row.get("format_only_reverse_splices"):
+                formatted = data.decode()
+                lines = formatted.splitlines(keepends=True)
+                for op in reversed(row["format_only_reverse_splices"]):
+                    start = op["after_start"]
+                    end = start + len(op["after_lines"])
+                    self.assertEqual(lines[start:end], op["after_lines"])
+                    lines[start:end] = op["before_lines"]
+                unformatted = "".join(lines)
+                self.assertEqual(ast.dump(ast.parse(formatted)), ast.dump(ast.parse(unformatted)))
+                data = unformatted.encode()
+                self.assertEqual(hashlib.sha256(data).hexdigest(), row["pre_format_sha256"])
+            for edit in reversed(row["path_only_edits"]):
+                self.assertEqual(data.count(edit["new"].encode()), edit["count"])
+                data = data.replace(edit["new"].encode(), edit["old"].encode())
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["original_sha256"])
+        readme = ledger["append_only_document_update"]
+        raw = (REPO / readme["new_path"]).read_bytes()
+        self.assertEqual(hashlib.sha256(raw.removesuffix(readme["appended_text"].encode())).hexdigest(),
+                         readme["original_sha256"])
+        for row in ledger["unchanged_historical_assets"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        weak = ledger["compatibility"]["weakly"]
+        self.assertEqual(weak["exit_codes"], [0, 0])
+        self.assertTrue(weak["identical_original_generated_markdown"])
+        report = REPO / "docs/verification/lbm_weakly_compressible.md"
+        for fig in weak["regenerated_pngs"]:
+            self.assertFalse(fig["original_image_recovered"])
+            self.assertEqual(fig["sha256_before"], fig["sha256_after"])
+            self.assert_fingerprint(REPO / fig["path"], fig["sha256_after"], fig["size_bytes"])
+            self.assertIn(os.path.relpath(REPO / fig["path"], report.parent), report.read_text())
+        self.assertEqual(ledger["compatibility"]["dam"]["exit_codes"], [0, 0])
+
     def test_phasefield_case_relocation_preserves_original_figures_and_provenance(self):
         import base64
 

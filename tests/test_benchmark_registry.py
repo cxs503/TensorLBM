@@ -404,6 +404,23 @@ class BenchmarkRegistryTests(unittest.TestCase):
                     for image in ("fig_hero.png", "fig_laplace.png", "fig_sensitivity.png"):
                         self.assertIn(f"{archive}/artifacts/{image}", variant["evidence"])
 
+    def test_case_specific_report_tools_and_negative_results_have_existing_owners(self):
+        weak_path = "benchmarks/verified/lbm_weakly_compressible"
+        dam_path = "benchmarks/pending/dam_break_2d_multimodel"
+        for case, script, result in (
+            (weak_path, "plot_lbm_weakly_compressible.py", "gates.json"),
+            (dam_path, "dam_break_summary.py", "metrics_vs_MM.json"),
+        ):
+            (row,) = self.registry("--case", case)
+            self.assertEqual(row["id"], case)
+            self.assertEqual(row["current_acceptance"], "not_evaluated")
+            variant = row["variants"][0]
+            self.assertIn(f"{case}/{script}", variant["source"])
+            self.assertIn(f"{case}/{result}", variant["results"])
+        gates = json.loads((ROOT / weak_path / "gates.json").read_text())["gates"]
+        self.assertEqual({g["status"] for g in gates.values()}, {"NOT_SUPPORTED", "FAIL", "PASS"})
+        self.assertIn("4/4 FAIL", (ROOT / dam_path / "REPORT.md").read_text())
+
     def test_alias_retains_all_variants(self):
         path = "benchmarks/verified/poiseuille_3d_duct/duct_ar05"
         (record,) = self.registry("--case", path)
