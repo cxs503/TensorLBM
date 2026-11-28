@@ -374,5 +374,48 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(formal["current_acceptance"], "not_evaluated")
 
 
+    def test_no_mcmp_partial_matrix_and_kernel_results_have_distinct_ownership(self):
+        (layered,) = self.registry("--case", "xval:no_mcmp_layered_poiseuille")
+        (kernel,) = self.registry("--case", "xval:no_mcmp_kernel_boundary")
+        for case in (layered, kernel):
+            self.assertEqual(case["current_acceptance"], "not_evaluated")
+        layer_variant = layered["variants"][0]
+        kernel_variant = kernel["variants"][0]
+        self.assertEqual(
+            layered["cross_validation"]["criteria"]["full_matrix_minimum_arms_existing_test"], 15,
+        )
+        self.assertNotEqual(layer_variant["results"], kernel_variant["results"])
+        partial = json.loads((ROOT / layer_variant["results"][0]).read_text())
+        self.assertTrue(partial["quick"])
+        self.assertEqual(len(partial["runs"]), 2)
+        self.assertFalse(partial["verdict"]["all_declared_thresholds_pass"])
+        ledger_path = ROOT / "docs/architecture/migrations/round1-two-phase-package-authority-2026-11-28.json"
+        ledger = json.loads(ledger_path.read_text())["followup_evidence_registration"]
+        self.assertFalse(ledger["full_matrix_recovered"])
+        self.assertEqual(len(ledger["source_snapshots"]), 5)
+        self.assertTrue(all(row["actual_run_count"] == 2 and row["quick"]
+                            for row in ledger["source_snapshots"]))
+        aggregate = json.loads((ROOT / kernel_variant["results"][0]).read_text())
+        chunks = {}
+        for row in ledger["unchanged_gate_chunk_objects"]:
+            data = (ROOT / row["path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["sha256"])
+            self.assertIn(row["path"], kernel_variant["evidence"])
+            chunks.update(json.loads(data))
+        self.assertEqual(set(chunks), {f"G{i}" for i in range(1, 7)})
+        self.assertEqual(chunks, aggregate["gates"])
+        self.assertEqual(aggregate["gate_count"], 9)
+        self.assertEqual(aggregate["gate_count_passed"], 9)
+        offline = ledger["offline_aggregation"]
+        self.assertTrue(offline["generated_bytes_match_original"])
+        self.assertFalse(offline["solver_invoked"])
+        self.assertEqual(offline["scientific_acceptance"], "not_evaluated")
+        result = offline["result"]
+        self.assertEqual(hashlib.sha256((ROOT / result["path"]).read_bytes()).hexdigest(),
+                         result["sha256"])
+        all_ids = {row["id"] for row in self.registry("--json")}
+        self.assertTrue(set(ledger["new_case_ids"] + ledger["retained_distinct_case_ids"]) <= all_ids)
+
+
 if __name__ == "__main__":
     unittest.main()

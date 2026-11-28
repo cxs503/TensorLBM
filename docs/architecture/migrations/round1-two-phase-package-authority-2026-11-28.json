@@ -187,5 +187,187 @@
     "algorithm_changed": false,
     "current_acceptance": "not_evaluated",
     "full_scientific_replay_performed": false
+  },
+  "followup_evidence_registration": {
+    "source_main": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+    "prior_draft_head": "c0a804d1b50225d3ef7f1c43ab6504603d73c1dd",
+    "source_snapshots": [
+      {
+        "source": "actual main",
+        "commit": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+        "source_url": "https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "git_mode": "100644",
+        "git_blob": "63a45251db52640f13e107eee222068d427d6e4b",
+        "sha256": "d090a6295431d7162ca14023a3a4fc997983df2354e2c7caac24333224d5b58f",
+        "size_bytes": 13009,
+        "quick": true,
+        "actual_run_count": 2,
+        "archived_all_declared_thresholds_pass": false,
+        "report": {
+          "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+          "git_mode": "100644",
+          "git_blob": "90d0baccf133932a6f323329976e9e056bc42c19",
+          "sha256": "482aa31120ff9c2c4d4b5a1eddf88d7fa53ae98d19aa756456ea7338ccdc430c",
+          "size_bytes": 7658
+        }
+      },
+      {
+        "source": "original mission branch",
+        "commit": "1c1774d2de2029636067764d575e04ccd8eb07b3",
+        "source_url": "https://github.com/cxs503/TensorLBM/blob/1c1774d2de2029636067764d575e04ccd8eb07b3/xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "git_mode": "100644",
+        "git_blob": "95766cbe940233364f151124c5c4a9501d1fe56d",
+        "sha256": "862b8ac512f27dc669358a36f8434a679c32d6c0fecf10125aca2620a0a52157",
+        "size_bytes": 12957,
+        "quick": true,
+        "actual_run_count": 2,
+        "archived_all_declared_thresholds_pass": false,
+        "report": {
+          "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+          "git_mode": "100644",
+          "git_blob": "fcfedeaa20079b4aaa720eca00ba376f686818c3",
+          "sha256": "9dcbff7a42a597e5eed6a33af57f5ba8e3ca698d16ab0201254d6107cb746c62",
+          "size_bytes": 10166
+        }
+      },
+      {
+        "source": "independent audit branch",
+        "commit": "76e8307bf434cb738c01482c2c4195bcf799e050",
+        "source_url": "https://github.com/cxs503/TensorLBM/blob/76e8307bf434cb738c01482c2c4195bcf799e050/xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "git_mode": "100644",
+        "git_blob": "95766cbe940233364f151124c5c4a9501d1fe56d",
+        "sha256": "862b8ac512f27dc669358a36f8434a679c32d6c0fecf10125aca2620a0a52157",
+        "size_bytes": 12957,
+        "quick": true,
+        "actual_run_count": 2,
+        "archived_all_declared_thresholds_pass": false,
+        "report": {
+          "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+          "git_mode": "100644",
+          "git_blob": "fcfedeaa20079b4aaa720eca00ba376f686818c3",
+          "sha256": "9dcbff7a42a597e5eed6a33af57f5ba8e3ca698d16ab0201254d6107cb746c62",
+          "size_bytes": 10166
+        }
+      },
+      {
+        "source": "m21325 mission branch",
+        "commit": "82218e5432072fdecd35920f284041763142d668",
+        "source_url": "https://github.com/cxs503/TensorLBM/blob/82218e5432072fdecd35920f284041763142d668/xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "git_mode": "100644",
+        "git_blob": "63a45251db52640f13e107eee222068d427d6e4b",
+        "sha256": "d090a6295431d7162ca14023a3a4fc997983df2354e2c7caac24333224d5b58f",
+        "size_bytes": 13009,
+        "quick": true,
+        "actual_run_count": 2,
+        "archived_all_declared_thresholds_pass": false,
+        "report": {
+          "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+          "git_mode": "100644",
+          "git_blob": "90d0baccf133932a6f323329976e9e056bc42c19",
+          "sha256": "482aa31120ff9c2c4d4b5a1eddf88d7fa53ae98d19aa756456ea7338ccdc430c",
+          "size_bytes": 7658
+        }
+      },
+      {
+        "source": "PR #2655 exact head",
+        "commit": "f8ec4ef0b1b09001a33ff65d6ad3144fb480ed25",
+        "source_url": "https://github.com/cxs503/TensorLBM/blob/f8ec4ef0b1b09001a33ff65d6ad3144fb480ed25/xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+        "git_mode": "100644",
+        "git_blob": "63a45251db52640f13e107eee222068d427d6e4b",
+        "sha256": "d090a6295431d7162ca14023a3a4fc997983df2354e2c7caac24333224d5b58f",
+        "size_bytes": 13009,
+        "quick": true,
+        "actual_run_count": 2,
+        "archived_all_declared_thresholds_pass": false,
+        "report": {
+          "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+          "git_mode": "100644",
+          "git_blob": "90d0baccf133932a6f323329976e9e056bc42c19",
+          "sha256": "482aa31120ff9c2c4d4b5a1eddf88d7fa53ae98d19aa756456ea7338ccdc430c",
+          "size_bytes": 7658
+        }
+      }
+    ],
+    "full_matrix_recovered": false,
+    "search_scope": "Direct Git fetch of exact extant mission and audit branches plus PR #2655 head, and inspected main. No additional full-matrix file found in their tracked study trees. Untracked/historical workspaces remain inaccessible.",
+    "registry_count_before": 256,
+    "registry_count_after": 258,
+    "new_case_ids": [
+      "xval:no_mcmp_layered_poiseuille",
+      "xval:no_mcmp_kernel_boundary"
+    ],
+    "retained_distinct_case_ids": [
+      "xval:no_mcmp_dam_break",
+      "xval:no_mcmp_phase_field_round3"
+    ],
+    "unchanged_gate_chunk_objects": [
+      {
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G1.json",
+        "git_mode": "100644",
+        "git_blob": "826fa2129abd0dca5410ff9a7bdc71397dfdc8ef",
+        "sha256": "227cfb4f572aae9646206379fd42cb38e4b0f0ec2800cb4d22b7104c626b355b",
+        "size_bytes": 1214
+      },
+      {
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G2.json",
+        "git_mode": "100644",
+        "git_blob": "78d7eb25bf725888ac692e4b0783fb967ca0bfa4",
+        "sha256": "d2cb69460363019fdc49496c1d3e03d9f13ce0386e763b6d9fbd398212ece783",
+        "size_bytes": 268
+      },
+      {
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G3.json",
+        "git_mode": "100644",
+        "git_blob": "b571aaa26176531c873400baf140c2dab6e2fcc0",
+        "sha256": "32e820205b70b5f8c6044434bff09c437b839375496720d947ba7343712fd511",
+        "size_bytes": 1789
+      },
+      {
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G4.json",
+        "git_mode": "100644",
+        "git_blob": "20fd3befefb0e8534547892fae05aac0c199b5bc",
+        "sha256": "2cf4e64169fe80e5e6fc6a6c146c16365671726ff1fccb52242639d1822c5ef6",
+        "size_bytes": 671
+      },
+      {
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G5.json",
+        "git_mode": "100644",
+        "git_blob": "979b7ea03aeac33c86e1123c4fd66b3dbeec7ddd",
+        "sha256": "7d9d8f6e753603c03272ed163b040461a1f5c3a0fa77aa27d92b2a80d6108d51",
+        "size_bytes": 1333
+      },
+      {
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G6.json",
+        "git_mode": "100644",
+        "git_blob": "a0a93dc1bce7de8fd9bcf06c2049c55fcdd466cf",
+        "sha256": "e4ffae9dea3fb51c4b893b31f57079121888de67969ad5fbc32f2ca7d80faaa1",
+        "size_bytes": 2868
+      }
+    ],
+    "offline_aggregation": {
+      "command": "python <isolated-copy>/run_kernel_boundary.py --stages \"\" --merge",
+      "input_chunk_count": 6,
+      "historical_gate_count": 9,
+      "historical_gate_count_passed": 9,
+      "result": {
+        "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/results.json",
+        "git_mode": "100644",
+        "git_blob": "980072c08a3a8b45887cb9a7994d92a7f2eca212",
+        "sha256": "fb14132541456f15f7ecc1481735a4686c2332de0348f3e5d58faa950f9b72b6",
+        "size_bytes": 8669
+      },
+      "generated_bytes_match_original": true,
+      "solver_invoked": false,
+      "scientific_acceptance": "not_evaluated"
+    },
+    "missing_figure_paths": "Original round-one and kernel-boundary figure folders have no tracked files; historical report references remain, no substitute added.",
+    "no_new_numerical_results": true,
+    "retained_root": "xval",
+    "top_level_directories_unchanged": true
   }
 }

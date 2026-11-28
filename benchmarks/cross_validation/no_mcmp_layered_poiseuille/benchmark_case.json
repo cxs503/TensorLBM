@@ -1,0 +1,40 @@
+{
+  "scope": "Round-one layered Poiseuille study of the frozen two-phase-only approximation. The actual tracked JSON is a two-arm quick snapshot, not the full matrix stated in the historical one-pager and audit. The full-matrix assertion requires at least 15 arms and fails; archived threshold verdict is false. Current scientific acceptance is not evaluated. Retain the legacy study paths until full evidence and compatibility are verified.",
+  "criteria": {
+    "archived_predeclared_thresholds": {
+      "K1_analytic_selfcheck": 1e-10,
+      "K2_l2_rel": 0.15,
+      "K3_max_rel_peak": 0.15,
+      "K4_flux_rel": 0.15,
+      "K5_uy_spurious_rel": 0.01,
+      "K6_mass_drift_rel": 1e-06,
+      "K8_density_contrast": 0.15,
+      "interpretation": "0.15 is the owner band (relative error above 15% is not acceptable). K1 is a semantics/exactness check and is therefore at machine precision. Diagnostics that no threshold can decide a priori (interface width growth, convergence history) are reported as numbers only."
+    },
+    "full_matrix_minimum_arms_existing_test": 15,
+    "interpretation": "Original thresholds and completeness test unchanged; not satisfied by this quick snapshot."
+  },
+  "source": [
+    "src/tensorlbm/verification/two_phase_only.py",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/run_xval.py"
+  ],
+  "config": [
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/predeclared.json",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/posthoc_addendum.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/no_mcmp_layered_poiseuille/README.md",
+    "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY.md",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/round1-two-phase-package-authority-2026-11-28.json"
+  ],
+  "references": [
+    "Two-layer Stokes/Poiseuille analytic reference defined in the original preregistration. No externally run waLBerla solver is claimed."
+  ]
+}
