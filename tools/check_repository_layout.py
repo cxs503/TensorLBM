@@ -61,6 +61,11 @@ RETIRED_FILES = {
     "scripts/audit_m17668_figure.py",
     "scripts/audit_m17668_report.py",
     "src/tensorlbm/dg_verification.py",
+    "scripts/audit_m15891_mcmp_laplace.py",
+    "scripts/audit_m14689.py",
+    "scripts/post_report_m15044.py",
+    "scripts/verdict_db_m15044.py",
+    "scripts/de_nxt_diag_w1_report.py",
 }
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "audit_m18748"),

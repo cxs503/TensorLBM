@@ -163,6 +163,8 @@ comparison and versioned replay are discoverable from its
 [benchmark entry](../../benchmarks/xval_yml_xml_pipeline/README.md). The
 historical report keeps its published path.
 
+The [board-audit and design script handoff ledger](migrations/board-audit-and-design-script-handoff-2026-11-28.json) reduces the loose script root, preserves public report URLs, and records byte-identical before/after post-processing and non-replayable historical inputs.
+
 The [legacy script ledger](migrations/legacy-channel-checks-2026-11-23.json)
 archives the standalone channel verification probes under development.
 

@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "base_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 53,
+  "docs_second_level_after": 53,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 581,
+  "entries": [
+    {
+      "old_path": "scripts/audit_m15891_mcmp_laplace.py",
+      "new_path": "development/audit/m15891/audit_m15891_mcmp_laplace.py",
+      "git_mode": "100644",
+      "original_git_blob": "4772a9f1cf9b26c4b889c6a09ea24b7a82f3d822",
+      "original_sha256": "71fc141de3614386b2e9d805625bbe561ac99d9a1d386b2dca93dd7348472cd8",
+      "size_bytes": 8365,
+      "current_sha256": "96b1be760b660c78578a2a975609732b1e9103cc8c7a9c5a8a6f6c7db32e5181",
+      "current_size_bytes": 8369,
+      "byte_identical": false,
+      "path_only_replacements": [
+        {
+          "old": "ROOT = HERE.parent\n",
+          "new": "ROOT = HERE.parents[2]\n",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "scripts/audit_m14689.py",
+      "new_path": "development/audit/m15044/audit_m14689.py",
+      "git_mode": "100644",
+      "original_git_blob": "6dd19118085f048deb20a850dfd82406c28f4c89",
+      "original_sha256": "2309f3d47be3df5f87bb67bb87a5d157d6e48abbb4fe869cf2299ea4871d40b9",
+      "size_bytes": 9303,
+      "current_sha256": "2309f3d47be3df5f87bb67bb87a5d157d6e48abbb4fe869cf2299ea4871d40b9",
+      "current_size_bytes": 9303,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/post_report_m15044.py",
+      "new_path": "development/audit/m15044/post_report_m15044.py",
+      "git_mode": "100644",
+      "original_git_blob": "5e45802abd4cb7d2547b596c5651198d37123161",
+      "original_sha256": "162424e210daba361562f34f0ad7ed6ce7929ded853794e94f5113aab13e317d",
+      "size_bytes": 11370,
+      "current_sha256": "162424e210daba361562f34f0ad7ed6ce7929ded853794e94f5113aab13e317d",
+      "current_size_bytes": 11370,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/verdict_db_m15044.py",
+      "new_path": "development/audit/m15044/verdict_db_m15044.py",
+      "git_mode": "100644",
+      "original_git_blob": "181bfbde70ec990d627b9356cafd47d1e33283e4",
+      "original_sha256": "460cc3cc89f058f35fc0efb6dcad764895cbbc67d42bcc7b9c01f7cb87a040cd",
+      "size_bytes": 2787,
+      "current_sha256": "460cc3cc89f058f35fc0efb6dcad764895cbbc67d42bcc7b9c01f7cb87a040cd",
+      "current_size_bytes": 2787,
+      "byte_identical": true
+    },
+    {
+      "old_path": "scripts/de_nxt_diag_w1_report.py",
+      "new_path": "development/audit/drop_entry/design/diagnostic-wave1/de_nxt_diag_w1_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "21e8df734834ca3bf52464be84f7fd4b48c9fa9a",
+      "original_sha256": "9b969fdd4bc149d4e24ea6a687e8d7a6c8d500e4770eb6a38a1ac594c09df7d5",
+      "size_bytes": 2850,
+      "current_sha256": "9b969fdd4bc149d4e24ea6a687e8d7a6c8d500e4770eb6a38a1ac594c09df7d5",
+      "current_size_bytes": 2850,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/audits/m15891_CASE-MCMP-LAPLACE_audit.md",
+      "new_path": "docs/audits/m15891_CASE-MCMP-LAPLACE_audit.md",
+      "git_mode": "100644",
+      "original_git_blob": "39377700daae761e440f17b670a2f6525cdb0745",
+      "original_sha256": "86215377c5542e84c8c54f6e2b1ef1dddb2a7d35a5af2d372aba9fc0153ac042",
+      "size_bytes": 16687,
+      "current_sha256": "2980c48091349663310b43a5601dbe6d429b1922de7404dbb86a78637d943366",
+      "current_size_bytes": 16953,
+      "byte_identical": false,
+      "path_only_replacements": [
+        {
+          "old": "# m15891 交差核验：m15467 / CASE-MCMP-LAPLACE（TensorLBM 算例池）\n",
+          "new": "# m15891 交差核验：m15467 / CASE-MCMP-LAPLACE（TensorLBM 算例池）\n\n> Repository layout note (2026-11-28): [current historical-audit entry and derived reanalysis](../../development/audit/m15891/README.md); the original report below is retained. The regenerated files are not recovered historical outputs or a fresh scientific solve.\n",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/audit/m14689-board-audit.md",
+      "new_path": "docs/audit/m14689-board-audit.md",
+      "git_mode": "100644",
+      "original_git_blob": "e371ab94f842202cd6593eab878544a36445ed44",
+      "original_sha256": "70ed038e86d81dc86b33794147e03f5f7411fac37897b171934aa9fb71df950c",
+      "size_bytes": 12194,
+      "current_sha256": "215ccb3de65a37b7ccd7c90a813df8de4d2df916f4cbf0fe5ec4bfe0e262c607",
+      "current_size_bytes": 12450,
+      "byte_identical": false,
+      "path_only_replacements": [
+        {
+          "old": "# Board audit — m14689 `GAP-LBM-MCMP-POISEUILLE` (TensorLBM)\n",
+          "new": "# Board audit — m14689 `GAP-LBM-MCMP-POISEUILLE` (TensorLBM)\n\n> Repository layout note (2026-11-28): [current archived audit entry and publication helpers](../../development/audit/m15044/README.md). The external original mission worktree is not available; historical commands below are preserved, not newly accepted.\n",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "unchanged_prior_archive": [
+    {
+      "old_path": "development/audit/m15891/verdict_m15891.sql",
+      "new_path": "development/audit/m15891/verdict_m15891.sql",
+      "git_mode": "100644",
+      "original_git_blob": "adc845b55217c41f6044d6d7178362f52e47051a",
+      "original_sha256": "69ef0e79fc3873878e24420cd3a032c90168b3f70241c456938fa504ed685fd3",
+      "size_bytes": 14327,
+      "current_sha256": "69ef0e79fc3873878e24420cd3a032c90168b3f70241c456938fa504ed685fd3",
+      "current_size_bytes": 14327,
+      "byte_identical": true
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "benchmarks/case_pool/mcmp_laplace/artifacts/summary.json",
+      "new_path": "benchmarks/case_pool/mcmp_laplace/artifacts/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "eae64a69ed6fb00eb89b3d46c9d44aaedaad7666",
+      "original_sha256": "24c59267f5d6363bc61a78ec947968cbc8d7114e2ed8b2f11de48980737cdf8a",
+      "size_bytes": 95083,
+      "current_sha256": "24c59267f5d6363bc61a78ec947968cbc8d7114e2ed8b2f11de48980737cdf8a",
+      "current_size_bytes": 95083,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/mcmp_laplace/artifacts/hero_fields.npz",
+      "new_path": "benchmarks/case_pool/mcmp_laplace/artifacts/hero_fields.npz",
+      "git_mode": "100644",
+      "original_git_blob": "24e2fc0bb75c8a72b70364c9079505349110664e",
+      "original_sha256": "1d87e092a661472bc8c081f998cf535fe22dfc16978a1c7ae24256cd2b814a8d",
+      "size_bytes": 110738,
+      "current_sha256": "1d87e092a661472bc8c081f998cf535fe22dfc16978a1c7ae24256cd2b814a8d",
+      "current_size_bytes": 110738,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/mcmp_laplace/README.md",
+      "new_path": "benchmarks/case_pool/mcmp_laplace/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "81a3b5fd60733024838f20cc21838e656adbd46f",
+      "original_sha256": "5fc8dcb55ef15ea7b1949e88561c64b42703d44b073267fdec4dc2a70e7f228b",
+      "size_bytes": 19356,
+      "current_sha256": "5fc8dcb55ef15ea7b1949e88561c64b42703d44b073267fdec4dc2a70e7f228b",
+      "current_size_bytes": 19356,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/mcmp_stratified_poiseuille/result_r2.json",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/result_r2.json",
+      "git_mode": "100644",
+      "original_git_blob": "4d7273d6d99ebe3a7237b5a68c20930bbf925e5e",
+      "original_sha256": "0ec61c7d58fe6987a48036115d173a490373105294e817bc3da7e033e586216a",
+      "size_bytes": 213916,
+      "current_sha256": "0ec61c7d58fe6987a48036115d173a490373105294e817bc3da7e033e586216a",
+      "current_size_bytes": 213916,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/mcmp_stratified_poiseuille/REPORT.md",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "1a3b27ceb2d6b56fd89475b2b73b4ceec985ee39",
+      "original_sha256": "b0fffc22cf009b5a036eddaa11be79f2eac6f45ebe38f34945d48fae34eb4159",
+      "size_bytes": 12268,
+      "current_sha256": "b0fffc22cf009b5a036eddaa11be79f2eac6f45ebe38f34945d48fae34eb4159",
+      "current_size_bytes": 12268,
+      "byte_identical": true
+    },
+    {
+      "old_path": "development/audit/drop_entry/BB/NEXT/TRACK_DIAG_W1.md",
+      "new_path": "development/audit/drop_entry/BB/NEXT/TRACK_DIAG_W1.md",
+      "git_mode": "100644",
+      "original_git_blob": "3c1f31344e045b957f6eba3564901623e93d66b8",
+      "original_sha256": "0561f4c0959d92635c5a3ca8ee9f5667e1bd9f1e2f438b593dba6f925a4676a2",
+      "size_bytes": 1852,
+      "current_sha256": "0561f4c0959d92635c5a3ca8ee9f5667e1bd9f1e2f438b593dba6f925a4676a2",
+      "current_size_bytes": 1852,
+      "byte_identical": true
+    }
+  ],
+  "derived_reanalysis": [
+    {
+      "path": "benchmarks/case_pool/mcmp_laplace/evidence/m15891/derived_reanalysis_20261128/evidence.json",
+      "sha256": "0ae924b40e0bc7c32a85a3cb34e3b2f2f086ade3aa6177025716cb8976d0584d",
+      "size_bytes": 9511,
+      "before_after_byte_identical": true,
+      "original_historical_artifact_recovered": false
+    },
+    {
+      "path": "benchmarks/case_pool/mcmp_laplace/evidence/m15891/derived_reanalysis_20261128/audit_m15891_mcmp_laplace.png",
+      "sha256": "e9b80b27f7a149c30c276d5aaa9ea945c6c4239954a3a9d42ff096d284af79c3",
+      "size_bytes": 171590,
+      "before_after_byte_identical": true,
+      "original_historical_artifact_recovered": false
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact main-tree paths and indexed external code searches checked for all five old script paths; no active cross-repository path hits. Public audit URLs remain in place, with reversible navigation notes only. Frozen SQL and historical body retain old literals. External bookmarks not exhaustively verifiable.",
+    "navigation_indexes": [
+      "development/audit/m15891/README.md",
+      "development/audit/m15044/README.md",
+      "development/audit/drop_entry/design/diagnostic-wave1/README.md",
+      "benchmarks/case_pool/mcmp_laplace/evidence/m15891/README.md",
+      "benchmarks/verified/mcmp_stratified_poiseuille/evidence/m15044/README.md"
+    ],
+    "case_registry": {
+      "existing_cases": [
+        "benchmarks/case_pool/mcmp_laplace",
+        "benchmarks/verified/mcmp_stratified_poiseuille"
+      ],
+      "new_case_ids": 0,
+      "current_acceptance": "not_evaluated"
+    },
+    "runtime": "Real CPU Torch 2.15.0, actual numpy/matplotlib; m15891 used original tracked summary.json and hero_fields.npz, before/after evidence JSON and figure byte-identical. m14689 CLI --help before/after only; external mission data not available. Publication/database helper scripts not invoked. Derived output location is explicitly new; historical output absent.",
+    "deferred": [
+      {
+        "path": "docs/xval_aa_fused_stream_collide",
+        "reason": "Existing run_validation.py executes numerical work at import and imports 11 names absent from canonical tensorlbm; no full run attempted or import shim introduced. Retain until compatibility is reviewed."
+      },
+      {
+        "path": "scripts/board_audit_m17746.py",
+        "reason": "External raw m17678 worktree is not available, top-level script writes output and depends on original root. No path-only compatibility replay yet."
+      },
+      {
+        "path": "scripts/audit_m17855_probe.py and scripts/publish_audit_report_m17855.py",
+        "reason": "Legacy source-authority pins and external raw worktree; related DB helper retained as a group."
+      }
+    ],
+    "runtime_versions": {
+      "torch": "2.15.0+cpu",
+      "numpy": "2.3.5",
+      "matplotlib": "3.10.8"
+    }
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false,
+    "historical_input_postprocessing_performed": true
+  }
+}
