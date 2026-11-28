@@ -200,7 +200,10 @@ The [early NEBB and sparse audit archive ledger](migrations/nebb-early-rounds-an
 The [round-1 two-phase package authority ledger](migrations/round1-two-phase-package-authority-2026-11-28.json)
 records byte-identical relocation into the canonical verification package and
 a compatibility alias for the legacy study. The legacy xval directory remains
-pending recovery of the incomplete historical result and full compatibility checks.
+pending recovery of the original historical result and full compatibility checks.
+A [fresh replay ledger](migrations/layered-poiseuille-full-replay-2026-11-28.json)
+records the complete 21-arm current-main run separately from the preserved
+2-arm historical snapshot; its original criteria still fail.
 
 
 The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.json)

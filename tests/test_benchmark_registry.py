@@ -449,6 +449,16 @@ class BenchmarkRegistryTests(unittest.TestCase):
         ledger = json.loads(ledger_path.read_text())["followup_evidence_registration"]
         self.assertFalse(ledger["full_matrix_recovered"])
         self.assertEqual(len(ledger["source_snapshots"]), 5)
+        fresh_ledger_path = ROOT / "docs/architecture/migrations/layered-poiseuille-full-replay-2026-11-28.json"
+        fresh = json.loads(fresh_ledger_path.read_text())
+        self.assertFalse(fresh["historical_full_matrix_recovered"])
+        self.assertEqual(fresh["fresh_run_count"], 21)
+        self.assertFalse(fresh["all_declared_thresholds_pass"])
+        for row in fresh["unchanged_original_assets"] + fresh["fresh_evidence"]:
+            data = (ROOT / row["path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["sha256"])
+            self.assertEqual(len(data), row["size_bytes"])
+        self.assertIn(str(fresh_ledger_path.relative_to(ROOT)), layer_variant["evidence"])
         self.assertTrue(all(row["actual_run_count"] == 2 and row["quick"]
                             for row in ledger["source_snapshots"]))
         aggregate = json.loads((ROOT / kernel_variant["results"][0]).read_text())

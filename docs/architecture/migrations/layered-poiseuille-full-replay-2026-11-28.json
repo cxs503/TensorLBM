@@ -1,0 +1,91 @@
+{
+  "source_commit": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+  "source_tree": "acdb63dc4483cfdbc6a9e321336fb9b22dbc8834",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "retired_paths": [],
+  "unchanged_original_assets": [
+    {
+      "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+      "sha256": "d090a6295431d7162ca14023a3a4fc997983df2354e2c7caac24333224d5b58f",
+      "size_bytes": 13009,
+      "git_blob": "63a45251db52640f13e107eee222068d427d6e4b"
+    },
+    {
+      "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+      "sha256": "482aa31120ff9c2c4d4b5a1eddf88d7fa53ae98d19aa756456ea7338ccdc430c",
+      "size_bytes": 7658,
+      "git_blob": "90d0baccf133932a6f323329976e9e056bc42c19"
+    },
+    {
+      "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/predeclared.json",
+      "sha256": "da3e05971585568c567d14a989c23aef23fee728eafbc5bfda9b91d0887b63e9",
+      "size_bytes": 6511,
+      "git_blob": "ac2c6344edc355973411943df45d20c878f50db2"
+    },
+    {
+      "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/run_xval.py",
+      "sha256": "fe7ffcd61f1f5e233d3386967b581260570b95c086a6ae299c6f73a2dab6bffd",
+      "size_bytes": 46665,
+      "git_blob": "51564792cb5103042465a0e82d22ece598932ef3"
+    },
+    {
+      "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/two_phase_only.py",
+      "sha256": "bb9c984c21e20b9951e96017745f7b3568f6cea9270fca71df10c0d64c7314ee",
+      "size_bytes": 570,
+      "git_blob": "be33402f369b688e0d109375269d68bbb975901b"
+    },
+    {
+      "path": "src/tensorlbm/verification/two_phase_only.py",
+      "sha256": "8900e47ee84c244f18a361dbdb1b6c12918fa1b54d9b41fb4a612f318af725b6",
+      "size_bytes": 23070,
+      "git_blob": "e2a761bffc37e14b9ae9d28ae104e1b8b7b3f044"
+    }
+  ],
+  "fresh_evidence": [
+    {
+      "path": "benchmarks/cross_validation/no_mcmp_layered_poiseuille/evidence/replay-2026-11-28-ca2a9e50/collector.py.txt",
+      "sha256": "513be0c189e9f187bee4fb8962a6d0c92c4771728e6dba1954a19f986c6e3b7e",
+      "size_bytes": 2258,
+      "git_blob": "518d5a977cefbbd66659241359c3a01dce9fbbe7"
+    },
+    {
+      "path": "benchmarks/cross_validation/no_mcmp_layered_poiseuille/evidence/replay-2026-11-28-ca2a9e50/environment.json",
+      "sha256": "d122721129706bc04ef8ce63644c460ad4501a3eceb6b84b0ec15528d00e8857",
+      "size_bytes": 4728,
+      "git_blob": "2cebcf63f09e008a283bd5e897286eab2e286f3a"
+    },
+    {
+      "path": "benchmarks/cross_validation/no_mcmp_layered_poiseuille/evidence/replay-2026-11-28-ca2a9e50/full-result.json.gz",
+      "sha256": "3988e9bfb5513d81385fc4c36eb0551d76729f9f42f060b8033571744564a1fb",
+      "size_bytes": 71982,
+      "git_blob": "e13fb5b3663ef6158460ff50ac3492f135fdf987"
+    },
+    {
+      "path": "benchmarks/cross_validation/no_mcmp_layered_poiseuille/evidence/replay-2026-11-28-ca2a9e50/run.log",
+      "sha256": "0c50cd131101e04c197a572d6241208a8c997bbb08ec36e13e845313a1ef8add",
+      "size_bytes": 1081,
+      "git_blob": "c9555b92f2a95643c9fc877252187c5e4267d15d"
+    },
+    {
+      "path": "benchmarks/cross_validation/no_mcmp_layered_poiseuille/evidence/replay-2026-11-28-ca2a9e50/summary.json",
+      "sha256": "863d4f2483a8249dbdee24eb0bcf626c342fcc0586502fd4eb96962015f87c7e",
+      "size_bytes": 11233,
+      "git_blob": "47f60e38d8a5a98b96ddea9086b7e43c2e9ff5b2"
+    }
+  ],
+  "uncompressed_result_sha256": "b05558a1b5ab6feece57a62affc4788e6736871211d23bd611a92ce48dcc294e",
+  "uncompressed_result_bytes": 387374,
+  "fresh_run_count": 21,
+  "converged_count": 21,
+  "all_declared_thresholds_pass": false,
+  "failed_predeclared_checks": [
+    "K6_mass_drift_rel",
+    "K8_density_contrast"
+  ],
+  "historical_full_matrix_recovered": false,
+  "historical_snapshot": "2-arm quick archive remains byte-identical, not replaced",
+  "note": "Fresh x86_64 CPU run of all 21 original preregistered arms; called existing run_xval.build_arms, run_arm, and evaluate unchanged. No numerical code, parameters, gates, or archived scientific verdict altered. Original full historical result remains unrecovered. CI native LoongArch64 not represented. Archive figures not generated in this replay.",
+  "compatibility": "Retain xval and original public URLs; software completeness assertion now evaluates the new distinct full replay while the original quick snapshot and report-render check remain separate.",
+  "scientific_acceptance": "failed_on_this_replay"
+}

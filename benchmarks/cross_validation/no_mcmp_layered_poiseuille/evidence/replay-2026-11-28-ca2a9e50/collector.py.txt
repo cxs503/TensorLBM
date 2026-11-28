@@ -1,0 +1,38 @@
+import concurrent.futures as cf
+import json, os, platform, pathlib, sys, datetime, subprocess
+root=pathlib.Path.cwd()
+out=pathlib.Path('/tmp/tlbm-1622-matrix')
+case=root/'xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY'
+sys.path.insert(0,str(case))
+import run_xval
+import torch
+import numpy
+import tensorlbm
+def run_one(job):
+    i, arm=job
+    torch.set_num_threads(1)
+    result=run_xval.run_arm(arm)
+    temp=out/f'arm-{i:02d}.tmp'
+    dest=out/f'arm-{i:02d}.json'
+    temp.write_text(json.dumps(result,indent=1))
+    temp.replace(dest)
+    return i, result.get('steps'), result.get('converged'), result.get('l2_rel')
+if __name__=='__main__':
+    arms=run_xval.build_arms(quick=False)
+    info={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+          'source_tree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),
+          'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'python':platform.python_version(),'machine':platform.machine(),'torch':torch.__version__,
+          'numpy':numpy.__version__,'tensorlbm':getattr(tensorlbm,'__version__','unknown'),
+          'command':'run_xval.build_arms(quick=False), run_xval.run_arm for every arm, run_xval.evaluate unchanged; one CPU thread per worker; no historical writes',
+          'arm_count':len(arms),'arms':arms,'settings':run_xval.PRE['solver_settings']}
+    (out/'environment.json').write_text(json.dumps(info,indent=1))
+    with cf.ProcessPoolExecutor(max_workers=6) as pool:
+        futures=[pool.submit(run_one,j) for j in enumerate(arms)]
+        for f in cf.as_completed(futures):
+            print('completed:',f.result(),flush=True)
+    runs=[json.loads((out/f'arm-{i:02d}.json').read_text()) for i in range(len(arms))]
+    full={'anchor':run_xval.PRE['anchor'],'quick':False,'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(), 'tensorlbm_version':info['tensorlbm'],'torch':info['torch'],'python':info['python'],'settings':info['settings'],'runs':runs,'figures':[]}
+    full['verdict']=run_xval.evaluate(full)
+    (out/'full-result.json').write_text(json.dumps(full,indent=1))
+    print('matrix complete',len(runs),full['verdict'].get('all_declared_thresholds_pass'),flush=True)

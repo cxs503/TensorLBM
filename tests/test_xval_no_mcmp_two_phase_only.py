@@ -14,6 +14,8 @@ Three things are asserted here:
 
 from __future__ import annotations
 
+import gzip
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -152,9 +154,30 @@ def test_report_is_rendered_from_results_json():
     )
 
 
-@pytest.mark.skipif(not RESULTS.exists(), reason="results.json not generated yet")
-def test_results_json_shape_and_thresholds():
+def test_archived_quick_snapshot_remains_partial():
     results = json.loads(RESULTS.read_text())
+    assert results["quick"] is True
+    assert len(results["runs"]) == 2
+    assert not results["verdict"]["all_declared_thresholds_pass"]
+
+
+def test_results_json_shape_and_thresholds():
+    replay = REPO_ROOT / ("benchmarks/cross_validation/no_mcmp_layered_poiseuille/"
+                          "evidence/replay-2026-11-28-ca2a9e50")
+    data = gzip.decompress((replay / "full-result.json.gz").read_bytes())
+    summary = json.loads((replay / "summary.json").read_text())
+    assert hashlib.sha256(data).hexdigest() == summary["result_sha256"]
+    results = json.loads(data)
+    assert not results["quick"]
+    expected = run_xval.build_arms(quick=False)
+    assert len(results["runs"]) == len(expected) == 21
+    for rec, arm in zip(results["runs"], expected, strict=True):
+        assert all(rec["arm"][key] == value for key, value in arm.items())
+    evaluated = run_xval.evaluate(results)
+    assert json.loads(json.dumps(evaluated)) == results["verdict"]
+    assert not results["verdict"]["all_declared_thresholds_pass"]
+    assert not results["verdict"]["checks"]["K6_mass_drift_rel"]["pass"]
+    assert not results["verdict"]["checks"]["K8_density_contrast"]["pass"]
     assert results["anchor"] == "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY"
     assert len(results["runs"]) >= 15, "the predeclared matrix must be run in full"
     for rec in results["runs"]:
