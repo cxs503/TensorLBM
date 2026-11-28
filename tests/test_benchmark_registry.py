@@ -23,6 +23,24 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(sum("pdf" in row["tutorial"] for row in records), 33)
         self.assertTrue(all(row["current_acceptance"] == "not_evaluated" for row in records))
 
+    def test_bitwise_and_capillary_cases_expose_archived_reports_without_promotion(self):
+        (bitwise,) = self.registry("--case", "campaign:xval_bitwise_refdata")
+        variant = bitwise["variants"][0]
+        self.assertIn("development/audit/m17718/REPORT.md", variant["documentation"])
+        self.assertIn("docs/audit_m17718.md", variant["documentation"])
+        self.assertIn("benchmarks/xval_bitwise_refdata/refdata/d2q9_bitwise_v1.json",
+                      variant["reference_files"])
+        self.assertIn("benchmarks/xval_bitwise_refdata/result.json", variant["results"])
+        self.assertEqual(bitwise["current_acceptance"], "not_evaluated")
+        (capillary,) = self.registry("--case", "benchmarks/case_pool/capillary_rise")
+        variant = capillary["variants"][0]
+        self.assertIn("development/audit/m15893/M15893_BOARD_AUDIT.md", variant["documentation"])
+        self.assertIn("development/audit/m15893/repro/artifacts/jurin_closed_box.json",
+                      variant["evidence"])
+        self.assertIn("benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box.json",
+                      variant["results"])
+        self.assertEqual(capillary["current_acceptance"], "not_evaluated")
+
     def test_sparse_and_raster_archives_have_searchable_evidence(self):
         for name, result, figure in (
             ("sparse_list_aos", "round2_d3q19/results.json", "poiseuille_profile.png"),

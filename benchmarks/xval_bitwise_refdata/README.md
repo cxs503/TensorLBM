@@ -92,3 +92,13 @@ PYTHONPATH=src python3 benchmarks/xval_bitwise_refdata/run.py check
   package; running both suites in one pytest process makes `import tensorlbm`
   resolve to the `TensorLBM` copy and the bitwise digests diverge (a false red,
   not a real kernel regression). Run each suite in its own process.
+
+## Historical evidence navigation
+
+The [original m17718 mission report](../../development/audit/m17718/REPORT.md) and
+[stable independent audit](../../docs/audit_m17718.md) describe the archived
+run, not current scientific acceptance. The [original report at its recorded path](https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/xval_bitwise_refdata_m17718/REPORT.md)
+remains available by revision. Running `python benchmarks/xval_bitwise_refdata/make_report.py`
+from the repository writes a new report to `outputs/historical/m17718/REPORT.md`,
+not over the archived report. The original referenced PNG is missing from the
+tracked tree; no synthetic or replacement figure was added.

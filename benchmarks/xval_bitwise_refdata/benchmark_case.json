@@ -1,0 +1,32 @@
+{
+  "scope": "Existing D2Q9 bitwise reference-data regression and analytic Taylor–Green decay benchmark; the historical result is indexed, not a newly executed acceptance. The recorded TGV figure is not tracked in the source revision.",
+  "criteria": {
+    "archived_tgv_relative_error_tolerance_pct": 15.0,
+    "archived_matching_environment_ulp_budget": 0.0,
+    "archived_negative_controls_required": true,
+    "interpretation": "Use the original archived protocol and environment-sensitive ULP policy; no current acceptance."
+  },
+  "source": [
+    "benchmarks/xval_bitwise_refdata/run.py",
+    "benchmarks/xval_bitwise_refdata/harness.py",
+    "benchmarks/xval_bitwise_refdata/probe_weight_bias.py",
+    "benchmarks/xval_bitwise_refdata/make_report.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/xval_bitwise_refdata/README.md",
+    "development/audit/m17718/REPORT.md",
+    "docs/audit_m17718.md"
+  ],
+  "reference_files": [
+    "benchmarks/xval_bitwise_refdata/refdata/d2q9_bitwise_v1.json"
+  ],
+  "results": [
+    "benchmarks/xval_bitwise_refdata/result.json",
+    "benchmarks/xval_bitwise_refdata/probe_weight_bias.json"
+  ],
+  "evidence": [],
+  "references": [
+    "Analytic two-dimensional Taylor–Green vortex decay and environment-bound frozen bitwise reference data (see archived mission report)."
+  ]
+}

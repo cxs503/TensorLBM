@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "base_main": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 51,
+  "docs_second_level_after": 49,
+  "retired_second_level_directories": [
+    "docs/xval_bitwise_refdata_m17718",
+    "docs/board_audit_m15893"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/xval_bitwise_refdata_m17718/REPORT.md",
+      "new_path": "development/audit/m17718/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "5b47e33998753a1ab599f72e1bae834372016115",
+      "original_sha256": "3a1336f92cdc773ea37b1ca1aae44539818a2d1b705aea251fe85f0d8b785520",
+      "size_bytes": 12484,
+      "current_sha256": "3a1336f92cdc773ea37b1ca1aae44539818a2d1b705aea251fe85f0d8b785520",
+      "current_size_bytes": 12484,
+      "byte_identical": true,
+      "path_only_edits": []
+    },
+    {
+      "old_path": "docs/board_audit_m15893/M15893_BOARD_AUDIT.md",
+      "new_path": "development/audit/m15893/M15893_BOARD_AUDIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "5132f90484729e448e9320ccb7067f710fbee9d2",
+      "original_sha256": "02d2ff1dd15b5a3595c9aa03bbf49c1865ec76913ea318106a602137281d2c32",
+      "size_bytes": 11875,
+      "current_sha256": "b5284f3236a25e60ae89cd0fa6702cc7cc77984659ce6c9bd657578b47d0131d",
+      "current_size_bytes": 11846,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "../../development/audit/m15893/repro/",
+          "new": "./repro/",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "benchmarks/xval_bitwise_refdata/make_report.py",
+      "new_path": "benchmarks/xval_bitwise_refdata/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "3db0f425f0b3cfa993cec34894ac982971d90a97",
+      "original_sha256": "bcc9a6bf56380af77e16cc92b16b8c6c0f11b11eb2909a06de8499665b6bf250",
+      "size_bytes": 15714,
+      "current_sha256": "04896fd4a04c8fd18660677f3993394f7dfff50b4cee617bd2ac03905e05794a",
+      "current_size_bytes": 15711,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "REPO / \"docs\" / \"xval_bitwise_refdata_m17718\" / \"REPORT.md\"",
+          "new": "REPO / \"outputs\" / \"historical\" / \"m17718\" / \"REPORT.md\"",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/audit_m17718.md",
+      "new_path": "docs/audit_m17718.md",
+      "git_mode": "100644",
+      "original_git_blob": "ceeb6c331b13fbcbe336c6257b1ed373cc0a949b",
+      "original_sha256": "5c1fbd8f599fbf78ca60f972f63b5565b7d0073482278efdf48dfe5b36f18a2b",
+      "size_bytes": 7703,
+      "current_sha256": "2e86438c896bc3822c10fb08596c8ae8b762071f8ec0136c3fa06b97437fb5dc",
+      "current_size_bytes": 8255,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "",
+          "new": "\n<!-- repository-layout-note:start -->\nRepository layout note (2026-11-28): the original six-section mission report is\nnow archived at [m17718 REPORT](../development/audit/m17718/REPORT.md). The recorded path and verdict above\nare historical; [original revision](https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/xval_bitwise_refdata_m17718/REPORT.md)\nis preserved. The historical figure referenced above is not tracked at this\nrevision. No new scientific acceptance is implied.\n<!-- repository-layout-note:end -->\n",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "benchmarks/xval_bitwise_refdata/README.md",
+      "new_path": "benchmarks/xval_bitwise_refdata/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "d5fb2f781e394492cedc68cf855e027af4776c37",
+      "original_sha256": "71543d717b5d049d965c3723ff9489d31f8fbd9ab49f7f62a7bfc7b1f2d67cf8",
+      "size_bytes": 4991,
+      "current_sha256": "17a38c55bd12c426e6ff42499a583d85064858e2a476672603befe5f201caf40",
+      "current_size_bytes": 5711,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "",
+          "new": "\n## Historical evidence navigation\n\nThe [original m17718 mission report](../../development/audit/m17718/REPORT.md) and\n[stable independent audit](../../docs/audit_m17718.md) describe the archived\nrun, not current scientific acceptance. The [original report at its recorded path](https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/xval_bitwise_refdata_m17718/REPORT.md)\nremains available by revision. Running `python benchmarks/xval_bitwise_refdata/make_report.py`\nfrom the repository writes a new report to `outputs/historical/m17718/REPORT.md`,\nnot over the archived report. The original referenced PNG is missing from the\ntracked tree; no synthetic or replacement figure was added.\n",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "benchmarks/case_pool/capillary_rise/README.md",
+      "new_path": "benchmarks/case_pool/capillary_rise/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "b95bcbf394743cc8117ccfc8ea1c1369a048f57d",
+      "original_sha256": "3a8ae01455a6d890dc724bda7c8c57e20c9ff331f8725c970c9db9708d2a75bc",
+      "size_bytes": 7224,
+      "current_sha256": "3f30e960c3f987c9f6ce79853f1135c0cd675b2b420e1d825a654f825619fc61",
+      "current_size_bytes": 7782,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "",
+          "new": "\n## Historical independent audit navigation\n\nThe [m15893 board audit](../../../development/audit/m15893/M15893_BOARD_AUDIT.md) and its\n[archived replay inputs and results](../../../development/audit/m15893/repro/)\nretain the original negative verdict. See the\n[original revision](https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/board_audit_m15893/M15893_BOARD_AUDIT.md)\nfor the pre-migration report bytes. The original referenced PNG remains missing\nfrom the tracked tree. This navigation does not reevaluate the case.\n",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "benchmarks/xval_bitwise_refdata/result.json",
+      "new_path": "benchmarks/xval_bitwise_refdata/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "953b9eb7fb963d403ab6320829b3eb253e8006e0",
+      "original_sha256": "f5ec3ddfef72924d212708c746f42351efe2009761ee4a7b1d59a4679d44c168",
+      "size_bytes": 39613
+    },
+    {
+      "old_path": "benchmarks/xval_bitwise_refdata/probe_weight_bias.json",
+      "new_path": "benchmarks/xval_bitwise_refdata/probe_weight_bias.json",
+      "git_mode": "100644",
+      "original_git_blob": "20d1ffc224ace98e1b7f81469b1d0bc6cab10c2f",
+      "original_sha256": "bb91ce914e36382972e9aed284ce04378eadb277ccdd31d8b06dd00e6e9c832f",
+      "size_bytes": 558
+    },
+    {
+      "old_path": "benchmarks/xval_bitwise_refdata/refdata/d2q9_bitwise_v1.json",
+      "new_path": "benchmarks/xval_bitwise_refdata/refdata/d2q9_bitwise_v1.json",
+      "git_mode": "100644",
+      "original_git_blob": "ae73dc6d13de415ecfbbddfb1384bf98cb151e47",
+      "original_sha256": "5c2cf2c0b2e1218bdfab100b6ae37040b9e665eedb244758bdf119a715ac2f7c",
+      "size_bytes": 244990
+    },
+    {
+      "old_path": "benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box.json",
+      "new_path": "benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box.json",
+      "git_mode": "100644",
+      "original_git_blob": "44dbf1dd7541835e6d64d1999c48cf2b411536e9",
+      "original_sha256": "e5dffad70c46f1f78ec71ce5a1e1e3370d7c80ecfda8f72d3472cac6fb9b4f38",
+      "size_bytes": 20007
+    },
+    {
+      "old_path": "benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box_report.md",
+      "new_path": "benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box_report.md",
+      "git_mode": "100644",
+      "original_git_blob": "ca2afe8b8d4992127b6261a3c37efeb869acb490",
+      "original_sha256": "3403d72d9a91260cea32bce8d8941e9beeeb55cb738c3665f343842e0bcebcf8",
+      "size_bytes": 3981
+    },
+    {
+      "old_path": "benchmarks/case_pool/capillary_rise/artifacts/route_a_vent_diagnostics.md",
+      "new_path": "benchmarks/case_pool/capillary_rise/artifacts/route_a_vent_diagnostics.md",
+      "git_mode": "100644",
+      "original_git_blob": "b62dec21f8a3586874864c89d5b45cd215428fb2",
+      "original_sha256": "58cd40e0920e6f8b6b62e4a940a6737de9d197b1e50f84ba3c534f5a8b3806dd",
+      "size_bytes": 1853
+    },
+    {
+      "old_path": "development/audit/m15893/repro/artifacts/jurin_closed_box.json",
+      "new_path": "development/audit/m15893/repro/artifacts/jurin_closed_box.json",
+      "git_mode": "100644",
+      "original_git_blob": "89fce0e3bbf997e3dc325f9c8d8a1c45d5a65001",
+      "original_sha256": "76a16399a1fe9409a7bdb2639509afe0eb1e00bfbc69a155ae6ab82cf89dee12",
+      "size_bytes": 20007
+    },
+    {
+      "old_path": "development/audit/m15893/repro/artifacts/jurin_closed_box_report.md",
+      "new_path": "development/audit/m15893/repro/artifacts/jurin_closed_box_report.md",
+      "git_mode": "100644",
+      "original_git_blob": "ca2afe8b8d4992127b6261a3c37efeb869acb490",
+      "original_sha256": "3403d72d9a91260cea32bce8d8941e9beeeb55cb738c3665f343842e0bcebcf8",
+      "size_bytes": 3981
+    },
+    {
+      "old_path": "development/audit/m15893/repro/sc_closed_box.py",
+      "new_path": "development/audit/m15893/repro/sc_closed_box.py",
+      "git_mode": "100644",
+      "original_git_blob": "56cb52f299415bbac18a9a2e02576f47451f4c63",
+      "original_sha256": "e6fc3497977cf7f0bb284dc4b29a047e87fd07b02d54a604303588e1d7694259",
+      "size_bytes": 22745
+    }
+  ],
+  "compatibility": {
+    "original_revision_urls": [
+      "https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/xval_bitwise_refdata_m17718/REPORT.md",
+      "https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/board_audit_m15893/M15893_BOARD_AUDIT.md"
+    ],
+    "cross_repository_indexed_search": "Four indexed owner-scoped path/name queries found only TensorLBM consumers; external bookmarks are not exhaustively verifiable. Original reports are internal mission/audit records; public audit and case README URLs unchanged.",
+    "original_missing_assets": [
+      "benchmarks/xval_bitwise_refdata/figures/tgv_bitwise_bench.png",
+      "benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box.png"
+    ],
+    "replay_output_directory": "outputs/historical/m17718",
+    "new_registry_id": "campaign:xval_bitwise_refdata",
+    "existing_registry_id": "benchmarks/case_pool/capillary_rise",
+    "registry_count_before": 256,
+    "registry_count_after": 257,
+    "solver_invoked": false,
+    "replay_parity": {
+      "before_after_byte_identical": true,
+      "bytes": 12484,
+      "sha256": "095f6d6cc4f3d251f5da6ab21f11b29c408608bc7958994e34644077cf0d5fea",
+      "original_committed_report_sha256": "3a1336f92cdc773ea37b1ca1aae44539818a2d1b705aea251fe85f0d8b785520",
+      "generated_result_matches_original_committed_report": false,
+      "scope": "Actual report generation using copied tracked JSON/golden inputs in two isolated repositories with identical case-relative input layout; no solver executed. Historical report preserved; source result had since changed."
+    }
+  },
+  "retained_root_constraints": {
+    "models": "Published checkpoint runtime and retrieval compatibility not verified.",
+    "app": "Supported application root; preserve deployment contract.",
+    "scripts": "Mixed active workflows and legacy tools pending dependency-level checks.",
+    "xval": "Remaining campaigns include unavailable prerequisites, baseline errors, and unverified entry points."
+  },
+  "science": {
+    "current_acceptance": "not_evaluated",
+    "algorithm_changed": false,
+    "full_scientific_replay_performed": false,
+    "archived_bitwise_pass": true,
+    "archived_capillary_verdict": "FAIL (closed-box SC route)"
+  }
+}

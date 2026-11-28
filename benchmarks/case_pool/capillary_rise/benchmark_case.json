@@ -1,0 +1,38 @@
+{
+  "scope": "Existing capillary rise case pool; register the originally predeclared closed-box SC route and archived independent negative audit, without promoting the case or evaluating other variants.",
+  "criteria": {
+    "archived_closed_box_absolute_error_pct_strictly_below": 10,
+    "archived_tight_goal_pct_strictly_below": 5,
+    "archived_convergence_last_20_pct_height_spread_pct_strictly_below": 2,
+    "archived_convergence_liquid_max_speed_strictly_below": 0.02,
+    "archived_stopping_steps": 12000,
+    "interpretation": "Historical predeclared thresholds for closed-box SC route only; no current acceptance."
+  },
+  "source": [
+    "benchmarks/case_pool/capillary_rise/ab_wall_fix.py",
+    "benchmarks/case_pool/capillary_rise/chunk_run.py",
+    "benchmarks/case_pool/capillary_rise/jurin_cac.py",
+    "benchmarks/case_pool/capillary_rise/make_figures.py",
+    "benchmarks/case_pool/capillary_rise/run_case.py",
+    "benchmarks/case_pool/capillary_rise/sc_closed_box.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/case_pool/capillary_rise/README.md",
+    "benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box_report.md",
+    "benchmarks/case_pool/capillary_rise/artifacts/route_a_vent_diagnostics.md",
+    "development/audit/m15893/M15893_BOARD_AUDIT.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box.json"
+  ],
+  "evidence": [
+    "development/audit/m15893/repro/artifacts/jurin_closed_box.json",
+    "development/audit/m15893/repro/artifacts/jurin_closed_box_report.md",
+    "development/audit/m15893/repro/sc_closed_box.py"
+  ],
+  "references": [
+    "Jurin capillary-rise relation with declared and measured contact angle; closed-box balance in sc_closed_box.py (see archived protocol)."
+  ]
+}
