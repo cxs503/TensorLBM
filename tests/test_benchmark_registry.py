@@ -55,6 +55,56 @@ class BenchmarkRegistryTests(unittest.TestCase):
                 self.assertIn(f"{archive}/README.md", variant["documentation"])
                 self.assertEqual(record["current_acceptance"], "not_evaluated")
 
+    def test_historical_wetting_and_compressed_production_keep_original_gates(self):
+        records = self.registry("--json")
+        by_id = {row["id"]: row for row in records}
+        akai = by_id["campaign:xval_akai2018_wetting_rotation"]
+        self.assertNotIn("campaign:xval_akai2018_wetting", by_id)
+        av = akai["variants"][0]
+        prefix = "benchmarks/xval_akai2018_wetting"
+        self.assertIn(f"{prefix}/analytic_verification.json", av["results"])
+        for arm in ("ctl60", "gk30", "gk60", "gk60_R10", "gk60_b090", "gk90"):
+            path = f"{prefix}/out_{arm}/results.json"
+            self.assertIn(path, av["results"])
+            archived = json.loads((ROOT / path).read_text())["results"][arm]
+            self.assertFalse(archived["pass_15pct"])
+        wetting = by_id["campaign:xval_openlbmpm_wetting"]
+        wv = wetting["variants"][0]
+        for arm in ("cot60", "ctl60"):
+            path = f"benchmarks/xval_openlbmpm_wetting/results_{arm}.json"
+            self.assertIn(path, wv["results"])
+            archived = json.loads((ROOT / path).read_text())
+            self.assertFalse(archived["gate_pass_capgeom"])
+        self.assertIn("docs/figures/r3_bounceback_map_evidence.png", wv["evidence"])
+        self.assertIn("benchmarks/xval_openlbmpm_wetting/figures.json", wv["evidence"])
+        compressed = by_id["xval:compressed_fluid_node_table"]
+        criteria = compressed["cross_validation"]["criteria"]
+        self.assertEqual(criteria["primary_analytic_error_percent_strictly_below"], 15)
+        self.assertEqual(
+            criteria["historical_production_followup"]["physics_absolute_error_percent_strictly_below"], 3,
+        )
+        for row in (akai, wetting, compressed):
+            self.assertEqual(row["current_acceptance"], "not_evaluated")
+        path = "benchmarks/xval_compressed_node_table_prod/results.json"
+        self.assertIn(path, compressed["variants"][0]["results"])
+        owners = [
+            row["id"] for row in records
+            if any(path in v.get("results", []) for v in row["variants"])
+        ]
+        self.assertEqual(owners, ["xval:compressed_fluid_node_table"])
+
+        ledger_path = "docs/architecture/migrations/wetting-and-production-evidence-index-2026-11-28.json"
+        ledger = json.loads((ROOT / ledger_path).read_text())
+        self.assertEqual(ledger["top_level_directories_before"], ledger["top_level_directories_after"])
+        self.assertEqual(ledger["scientific_acceptance"], "not_evaluated")
+        for entry in ledger["entries"]:
+            self.assertEqual(entry["old_path"], entry["new_path"])
+            self.assertTrue(entry["byte_identical"])
+            self.assertEqual(entry["original_sha256"], entry["current_sha256"])
+            if entry["old_path"].endswith((".json", ".npy", ".png", ".txt")):
+                data = (ROOT / entry["new_path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(data).hexdigest(), entry["original_sha256"])
+
     def test_relocated_kovasznay_runners_and_norberg_reference_are_searchable(self):
         (kovasznay,) = self.registry("--case", "benchmarks/verified/kovasznay_2d")
         directory = "benchmarks/verified/kovasznay_2d"

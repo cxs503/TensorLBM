@@ -1,0 +1,67 @@
+{
+  "scope": "Historical OpenLBMPM geometric-wetting contact-angle cross-validation, distinct from the Akai anchor. Preserve operator tests, failed endpoint arms, audit verdict and the R2/R3 follow-up reports. The historical figures.json is a list of external paths, not image bytes.",
+  "criteria": {
+    "historical_operator": {
+      "decision_gate": "relative contact-angle error <= 15 % (M1, every case)",
+      "ranking_metric": "M2 fidelity to the analytic continuation of the interface",
+      "unit_of_analysis": "(variant, theta, xi)",
+      "repetitions": "none needed: deterministic analytic fields, paired comparison"
+    },
+    "historical_endpoint_contact_angle_relative_error_percent_max": 15,
+    "historical_endpoint_recorded_gate_counts": {
+      "cap_geometry_pass": 0,
+      "cap_geometry_total": 2,
+      "control_gate_pass": 0,
+      "control_gate_total": 2
+    },
+    "later_round_limit": "R2 report does not accept the short-time endpoint. R3 reports later improvement, but original R2/R3 numerical bundles are not tracked; the retained R3 PNG is evidence only."
+  },
+  "source": [
+    "benchmarks/xval_openlbmpm_wetting/analytic_cap_convention.py",
+    "benchmarks/xval_openlbmpm_wetting/blob_mechanism.py",
+    "benchmarks/xval_openlbmpm_wetting/make_figure_r3.py",
+    "benchmarks/xval_openlbmpm_wetting/make_figures.py",
+    "benchmarks/xval_openlbmpm_wetting/operator_study.py",
+    "benchmarks/xval_openlbmpm_wetting/probe_wetting_direction.py",
+    "benchmarks/xval_openlbmpm_wetting/run.py",
+    "benchmarks/xval_openlbmpm_wetting/sweep_convention.py",
+    "benchmarks/xval_openlbmpm_wetting/wall_drop_measure.py"
+  ],
+  "config": [
+    "benchmarks/xval_openlbmpm_wetting/run.py"
+  ],
+  "documentation": [
+    "docs/XVAL-LBM-OPENLBMPM-GEOMETRIC-WETTING.md",
+    "docs/AUDIT_m17885_xval_lbm_geometric_wetting.md",
+    "docs/XVAL-LBM-GEOMETRIC-WETTING-CONTACT-ANGLE.md",
+    "docs/XVAL-LBM-GEOMETRIC-WETTING-CONTACT-ANGLE-R2-CONVENTION.md",
+    "docs/XVAL-LBM-GEOMETRIC-WETTING-CONTACT-ANGLE-R3-OPP-MAP.md"
+  ],
+  "reference_files": [
+    "benchmarks/xval_openlbmpm_wetting/operator_study.json",
+    "benchmarks/xval_openlbmpm_wetting/equivalence_check.json"
+  ],
+  "references": [
+    {
+      "title": "OpenLBMPM geometric wetting reference",
+      "url": "https://github.com/PorousMediaSimulation/openLBMPM",
+      "source": "docs/XVAL-LBM-OPENLBMPM-GEOMETRIC-WETTING.md"
+    }
+  ],
+  "results": [
+    "benchmarks/xval_openlbmpm_wetting/operator_study.json",
+    "benchmarks/xval_openlbmpm_wetting/equivalence_check.json",
+    "benchmarks/xval_openlbmpm_wetting/results.json",
+    "benchmarks/xval_openlbmpm_wetting/results_cot60.json",
+    "benchmarks/xval_openlbmpm_wetting/results_ctl60.json"
+  ],
+  "evidence": [
+    "benchmarks/xval_openlbmpm_wetting/figures.json",
+    "benchmarks/xval_openlbmpm_wetting/phi_cot60.npy",
+    "benchmarks/xval_openlbmpm_wetting/phi_ctl60.npy",
+    "benchmarks/xval_openlbmpm_wetting/publish_report_m21300.py",
+    "docs/figures/r3_bounceback_map_evidence.png",
+    "development/audit/m17885/verdict_m17885.sql",
+    "docs/architecture/migrations/wetting-and-production-evidence-index-2026-11-28.json"
+  ]
+}

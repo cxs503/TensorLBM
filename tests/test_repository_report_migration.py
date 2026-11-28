@@ -107,8 +107,16 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                                  if r["new_path"].startswith(root + "/")} <= registered)
                 if key == "compressed":
                     manifest = json.loads((REPO / owner / "benchmark_case.json").read_text())
-                    self.assertEqual({k: manifest[k] for k in ledger["prior_compressed_contract"]},
-                                     ledger["prior_compressed_contract"])
+                    prior = ledger["prior_compressed_contract"]
+                    # Later protocol evidence may extend the manifest, but must
+                    # preserve every original criterion and ordered asset.
+                    self.assertTrue(manifest["scope"].startswith(prior["scope"]))
+                    self.assertEqual(
+                        {k: manifest["criteria"][k] for k in prior["criteria"]},
+                        prior["criteria"],
+                    )
+                    for field in ("results", "source", "config"):
+                        self.assertEqual(manifest[field][:len(prior[field])], prior[field])
             for rel in (f"{root}/README.md", f"{owner}/README.md"):
                 doc = REPO / rel
                 for link in re.findall(r"\]\(([^)]+)\)", doc.read_text()):
