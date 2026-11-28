@@ -8,7 +8,7 @@ gate so the document and the evidence can never drift apart.
 
 Usage::
 
-    PYTHONPATH=src python scripts/units_bootstrap_gate_report.py
+    PYTHONPATH=src python development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py
 """
 
 from __future__ import annotations
@@ -284,9 +284,9 @@ def main() -> None:
     add("# 1) 跑门，产出证据 JSON")
     add("PYTHONPATH=src python -m tensorlbm.units.gate --out artifacts/units_bootstrap_gate")
     add("# 2) 重建图")
-    add("PYTHONPATH=src python scripts/units_bootstrap_gate_figures.py")
+    add("PYTHONPATH=src python development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py")
     add("# 3) 重建本文件（数字全部来自 JSON）")
-    add("PYTHONPATH=src python scripts/units_bootstrap_gate_report.py")
+    add("PYTHONPATH=src python development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py")
     add("# 4) 用例（CI 常规跑法）")
     add("pytest tests/test_units_bootstrap_gate.py -q")
     add("```")
@@ -300,8 +300,8 @@ def main() -> None:
     add("| 用例 | `tests/test_units_bootstrap_gate.py` |")
     add("| 证据 JSON | `artifacts/units_bootstrap_gate/gate_report.json` |")
     add("| 图 1–4 | `artifacts/units_bootstrap_gate/fig_*.png` |")
-    add("| 图/文档生成脚本 | `scripts/units_bootstrap_gate_figures.py`, "
-        "`scripts/units_bootstrap_gate_report.py` |")
+    add("| 图/文档生成脚本 | `development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py`, "
+        "`development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py` |")
     add("")
     DOC.parent.mkdir(parents=True, exist_ok=True)
     DOC.write_text("\n".join(lines) + "\n")

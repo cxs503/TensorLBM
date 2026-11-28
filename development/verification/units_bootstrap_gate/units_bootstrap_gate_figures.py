@@ -8,7 +8,7 @@ JSON is missing.
 
 Usage::
 
-    PYTHONPATH=src python scripts/units_bootstrap_gate_figures.py
+    PYTHONPATH=src python development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py
 """
 
 from __future__ import annotations

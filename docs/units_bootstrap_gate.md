@@ -186,9 +186,9 @@ LBM 在格点上求解（`dx = dt = rho = 1`），用户看到的一切物理量
 # 1) 跑门，产出证据 JSON
 PYTHONPATH=src python -m tensorlbm.units.gate --out artifacts/units_bootstrap_gate
 # 2) 重建图
-PYTHONPATH=src python scripts/units_bootstrap_gate_figures.py
+PYTHONPATH=src python development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py
 # 3) 重建本文件（数字全部来自 JSON）
-PYTHONPATH=src python scripts/units_bootstrap_gate_report.py
+PYTHONPATH=src python development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py
 # 4) 用例（CI 常规跑法）
 pytest tests/test_units_bootstrap_gate.py -q
 ```
@@ -202,5 +202,5 @@ pytest tests/test_units_bootstrap_gate.py -q
 | 用例 | `tests/test_units_bootstrap_gate.py` |
 | 证据 JSON | `artifacts/units_bootstrap_gate/gate_report.json` |
 | 图 1–4 | `artifacts/units_bootstrap_gate/fig_*.png` |
-| 图/文档生成脚本 | `scripts/units_bootstrap_gate_figures.py`, `scripts/units_bootstrap_gate_report.py` |
+| 图/文档生成脚本 | `development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py`, `development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py` |
 
