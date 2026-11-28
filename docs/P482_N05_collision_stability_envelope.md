@@ -1,5 +1,7 @@
 # P482-N05 — Collision-operator stability domain: predicted vs measured exchange law
 
+> Repository layout note (2026-11-28): [Historical report-generation tools and input receipt](../development/audit/p482-n05/README.md). The archived renderer writes to an ignored replay directory rather than replacing this published report; the historical verdict below is not a new acceptance.
+
 *Node*: **P482-N05** (campaign DAG, physics domain, TensorLBM tenant)
 *Module*: `tensorlbm.stability.collision_stability` (models, prediction, measurement)
 + `tensorlbm.stability.envelope` (campaign, envelope, gate)
@@ -169,7 +171,7 @@ outside the stable region.
 PYTHONPATH=src python scripts/run_p482_n05_stability_envelope.py --stage all \
     --out outputs/p482_n05
 PYTHONPATH=src python -m pytest tests/test_lbm_collision_stability_envelope.py -q
-PYTHONPATH=src python scripts/p482_n05_write_docs.py
+PYTHONPATH=src python development/audit/p482-n05/p482_n05_write_docs.py
 ```
 
 - 证据分级：M1/M2/M3 全部为 **REAL**（真实特征值分析与真实非线性时间积分，无 mock/硬编码）；

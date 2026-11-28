@@ -17,14 +17,6 @@
       "matches": 1,
       "matching_lines_sha256": "29cc1692e04f1b91cf0a98a37fa304a1ac2bd85bcb0f7319787c4a730c40edca"
     },
-    "benchmarks/collision_operator_matrix/run_all.py": {
-      "matches": 6,
-      "matching_lines_sha256": "dc74a3bb613234e4d708d013c2787e09ec8118845c8146207d6064f4d7f4d0ba"
-    },
-    "benchmarks/collision_operator_matrix/run_cluster.py": {
-      "matches": 1,
-      "matching_lines_sha256": "b51178954de2ea3c22d9b8ddc81d02daad97658fa3b95aeef5e0b31abbd633ac"
-    },
     "benchmarks/compile_route.py": {
       "matches": 2,
       "matching_lines_sha256": "2846416e0f762303a0840b35adfff3f3722d5c7dceb7e3a3ece6acc41e64e376"
@@ -108,14 +100,6 @@
     "scripts/audit_m17855_probe.py": {
       "matches": 2,
       "matching_lines_sha256": "1e779bbd7a3daeffd8fd1accb7ac9b883fcc81db47c3b62f9f54f554fbc7b0c0"
-    },
-    "scripts/p482_n05_publish_report.py": {
-      "matches": 1,
-      "matching_lines_sha256": "3c88d44311a521e9e48af8ff7543c28ba25e0b89c563495994b03640cf864dd8"
-    },
-    "scripts/p482_n05_write_docs.py": {
-      "matches": 3,
-      "matching_lines_sha256": "13ebd088279820d00a5f467b7caf55ad235b05404fecf88e0eb804799170d873"
     },
     "scripts/publish_audit_report_m17855.py": {
       "matches": 2,

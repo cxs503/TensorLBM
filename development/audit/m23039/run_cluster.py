@@ -4,7 +4,7 @@
 Collision Operator Matrix — cluster job.
 
 Tests BGK, TRT, RLBM on 2D cases (MRT is MOCK/broken for 2D).
-Writes results to docs/m23039/.
+Writes replay results to outputs/historical/collision_operator_matrix/m23039/.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO / "docs" / "m23039"
+REPO = Path(__file__).resolve().parents[3]
+OUT_DIR = REPO / "outputs" / "historical" / "collision_operator_matrix" / "m23039"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(REPO / "development/legacy/TensorLBM/src"))

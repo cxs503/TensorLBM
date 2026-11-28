@@ -6,6 +6,8 @@ baseline list is from `bcdd5fa4`. The
 
 ## Maintained deliverables
 
+The [P482 report-helper ledger](migrations/p482-report-helper-handoff-2026-11-28.json) archives two historical report generators that referenced the frozen checkout. The stable report and original input checksums are preserved; report regeneration uses an ignored output path and no new scientific verdict is assigned.
+
 The [T4 migration ledger](migrations/t4-physics-ai-drivers-2026-11-24.json)
 places the two physics-AI campaign drivers beside their benchmark entry.
 
@@ -77,6 +79,8 @@ cross-validations and keep historical supporting material in development.
 The [geometry verification ledger](migrations/geometry-xval-2026-11-26.json)
 records the archived [fill-gradient normal](../../development/verification/fill_gradient_normal/README.md)
 and [EDT geometry tagging](../../development/verification/edt_two_segment_geometry_tag_compression/README.md) studies.
+
+The [historical collision-matrix ledger](migrations/historical-collision-matrix-2026-11-28.json) retires two internal mission folders and the old collision-operator replay folder. The two frozen-source runners are archived, not active benchmark entries; their original results and legacy source tree remain unchanged.
 
 The [kernel and preprocessing ledger](migrations/kernel-preprocess-xval-2026-11-26.json)
 records the archived [warp-shift streaming](../../development/verification/warp_shift_streaming/README.md)

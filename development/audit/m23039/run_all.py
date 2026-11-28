@@ -18,11 +18,11 @@ Operators:
   - Cumulant:   NOT_SUPPORTED
 
 Usage:
-    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py
-    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case tg2d
-    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case cylinder
-    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case channel
-    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --smoke
+    PYTHONPATH=development/legacy/TensorLBM/src:. python development/audit/m23039/run_all.py
+    PYTHONPATH=development/legacy/TensorLBM/src:. python development/audit/m23039/run_all.py --case tg2d
+    PYTHONPATH=development/legacy/TensorLBM/src:. python development/audit/m23039/run_all.py --case cylinder
+    PYTHONPATH=development/legacy/TensorLBM/src:. python development/audit/m23039/run_all.py --case channel
+    PYTHONPATH=development/legacy/TensorLBM/src:. python development/audit/m23039/run_all.py --smoke
 """
 
 from __future__ import annotations
@@ -41,8 +41,8 @@ import torch
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-REPO = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO / "docs" / "m23039"
+REPO = Path(__file__).resolve().parents[3]
+OUT_DIR = REPO / "outputs" / "historical" / "collision_operator_matrix" / "m23039"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
