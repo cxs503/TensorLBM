@@ -137,6 +137,8 @@ The [oracle and Norberg audit ledger](migrations/oracle-and-square-cylinder-audi
 
 The [DFG and Cartesian MPI audit ledger](migrations/dfg-and-cartesian-mpi-audits-2026-11-27.json) preserves two mission archives, the original DFG evidence and figures, and records historical-input reanalysis parity without scientific promotion.
 
+The [historical publication script handoff ledger](migrations/historical-publication-script-handoff-2026-11-28.json) archives one-off report helpers, preserves stable report URLs, and records local build compatibility and original input gaps without publishing externally.
+
 The [hotpatch records ledger](migrations/hotpatch-mission-records-2026-11-22.json)
 maps `docs/m23777/` and `docs/m24569/` into
 `development/audit/hotpatch-absorption/` and records the original checksums.

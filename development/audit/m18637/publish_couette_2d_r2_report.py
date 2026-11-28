@@ -17,7 +17,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 ART = ROOT / "benchmarks" / "case_pool" / "couette_2d" / "artifacts"
 BASE = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
 USER = os.environ.get("TENSOR_AGENT_USER", "eco_admin")
