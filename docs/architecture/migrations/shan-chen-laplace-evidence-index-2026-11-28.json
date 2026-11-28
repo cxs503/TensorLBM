@@ -1,0 +1,462 @@
+{
+  "schema_version": 1,
+  "base_main": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "retained_legacy_directory": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+  "retained_reason": "Three original artifact tests fail because four reported PNGs are absent; do not move the root or weaken tests. Other legacy roots remain subject to prior compatibility constraints.",
+  "tracked_original_assets": [
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "git_blob": "43bb78b37b872e5644685a55dc3ded4121653a12",
+      "sha256": "16d06446deca7e9e35fe2d14ec5f03325c83ef209f40008a7e28e551ea3c4f1d",
+      "size_bytes": 5532
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/REPORT.md",
+      "git_mode": "100644",
+      "git_blob": "d9bab0c5e86bedcce07f28d6ce083898788ca43e",
+      "sha256": "908720a2a12ed8c2626cb0a75f7a700605f06d551022206d9cec839c0281c8a6",
+      "size_bytes": 11108
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/REPORT_XVAL_SHAN_CHEN_LAPLACE_PRESSURE.md",
+      "git_mode": "100644",
+      "git_blob": "fa34eb3c73f072025a6a762899f19922210b2d1c",
+      "sha256": "3f13fc44252241b778fcf9683298f0621e69293ea2d699b73aabc969302ff5ca",
+      "size_bytes": 12413
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/field_snapshot_R20.json",
+      "git_mode": "100644",
+      "git_blob": "25cc8253c538203c21dbbf363c731b08720e7a6b",
+      "sha256": "6aff6bbd8f6adac0fe4adc03c8067b817dbbffab4d9e3cc13710c3fc8c6c8440",
+      "size_bytes": 222
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/PROVENANCE.json",
+      "git_mode": "100644",
+      "git_blob": "08cf6c445387be5d771a972172383db27db97619",
+      "sha256": "5259dc3eca93cf1633adcf00e3e53bb7f6449d3020b033cd3775467f890bd95f",
+      "size_bytes": 902
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/result.json",
+      "git_mode": "100644",
+      "git_blob": "038a5f58ae327e1d590079f30b3bb407d4248ee6",
+      "sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb",
+      "size_bytes": 64488
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/REPORT_AUDIT_R2.md",
+      "git_mode": "100644",
+      "git_blob": "2fc1e221f480cd4838c6d98c1ab68e70315eef47",
+      "sha256": "4c35c8a8867946dd8f799f925933a177107599f63ada0f611a83f227feda190a",
+      "size_bytes": 11257
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/artifacts/audit_r2.json",
+      "git_mode": "100644",
+      "git_blob": "4d83d288f3a547a66f1d834f24344516112da2a5",
+      "sha256": "cfe683ad7ec498f1b55b13af8959d6495e6ca1655fe0f7538159eb4172038835",
+      "size_bytes": 45654
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/make_report.py",
+      "git_mode": "100644",
+      "git_blob": "0a7eec64c0e013edfba75583224b5c94782c54d0",
+      "sha256": "3418fbf0f21628f4b1b2f4e2b362e1932034e9ddfcd33bb7fc6f2b0abc49c0bc",
+      "size_bytes": 13636
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/run_audit.py",
+      "git_mode": "100644",
+      "git_blob": "6532def6a2157c6ac789ed7b7dd7b23e0c4be31a",
+      "sha256": "4110e848de8c8110f5d36895de74e83bc3e9edd34a5dff005837f5bfb3b2cccf",
+      "size_bytes": 16169
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/make_figures.py",
+      "git_mode": "100644",
+      "git_blob": "d6c8de5f99d804118ec13c5c7ba7340bbc5e1f13",
+      "sha256": "33d031ca86c56b14a17b638ea717d75aa68f48a585d0026c5bab2d074421c0d0",
+      "size_bytes": 10150
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/make_report.py",
+      "git_mode": "100644",
+      "git_blob": "77d49770c35c1fbd4564a09633b1961729618c2e",
+      "sha256": "767955687f1be47f900f85ad839db0761665f446857dc0dc3206037c0c527709",
+      "size_bytes": 14879
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/oss_port.py",
+      "git_mode": "100644",
+      "git_blob": "a13730cb0ecd3a373d31b9c6fce3fa7d243f8b6a",
+      "sha256": "8dad49c269a2e04b2f0277e4eb9d6c7b595257d78ab4a5a49b876463d738d330",
+      "size_bytes": 9596
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/predeclared.json",
+      "git_mode": "100644",
+      "git_blob": "343157065a9c5527acf751d2ffa5e97510500ca8",
+      "sha256": "b08e12d4df620c657a91c3864059eec0a1e219e42e8cdf60723243b71a172dc7",
+      "size_bytes": 9267
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/ref_sc.py",
+      "git_mode": "100644",
+      "git_blob": "b9dd792dfb1b5664dae7eef53d3750b1284624ac",
+      "sha256": "7c55cff0c084b08c3dcc4b968eb604513b3c920a78e40b973d47f9c1c18686d3",
+      "size_bytes": 8762
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/run_xval.py",
+      "git_mode": "100644",
+      "git_blob": "2ce0395c29cf4337ef12505da00dc3f7b33ce792",
+      "sha256": "dae794673f6313c70c2c74101704c4932216f505f9a1ecd91047148b7d950d37",
+      "size_bytes": 19974
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/REPORT_VERIFY_R1.md",
+      "git_mode": "100644",
+      "git_blob": "56e7d5ec9371f4bb0213272317abee032113f003",
+      "sha256": "c5726b436944972c2a976fa12b09cfc08d6b2fec0125773df14ca111945248c7",
+      "size_bytes": 12075
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/artifacts/field_profiles_r1.npz",
+      "git_mode": "100644",
+      "git_blob": "eabf29cbdda760dec83194974b8646462dde2db5",
+      "sha256": "ddbea7c21f19f98c0ae4b2c1ed65f820ebb0616f2d91646e767161548602005a",
+      "size_bytes": 71934
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/artifacts/long_run_check.json",
+      "git_mode": "100644",
+      "git_blob": "fe977dcf8dbbf2f294eac1fa3bb407b89b05744d",
+      "sha256": "f2a9c6a36859aab3434b6cfb58d98e6510d74b1924ceadd3eb5614a51f4616e8",
+      "size_bytes": 5259
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/artifacts/verify_r1.json",
+      "git_mode": "100644",
+      "git_blob": "85537a5cd30d52a0a1d611827be81a17d8d97107",
+      "sha256": "7b2037e2cbc49077ca4a075553b837a44d794f58beddda0132777a704ecc4aca",
+      "size_bytes": 13832
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/long_run_check.py",
+      "git_mode": "100644",
+      "git_blob": "b172470e8246d5596f52a821784dff46a7c4559b",
+      "sha256": "51b1b0eb70c4179499cb7840d6b49b06582831b634eefa1884170c9a49da56b3",
+      "size_bytes": 2777
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/make_figures_r1.py",
+      "git_mode": "100644",
+      "git_blob": "bfa005187fd8230c92c24f25109805ca6075abcc",
+      "sha256": "59cc4eea9bb44cf843c87d43f031c55138964f4b5f096dfca36a8633be040552",
+      "size_bytes": 8000
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/verify_r1.py",
+      "git_mode": "100644",
+      "git_blob": "12a5f5d40a7427353f2c3e5e8c8b915a1a95b7ab",
+      "sha256": "36206a2b8ebff211b005d7b14bc0f62574250f294dea99e9176b4a74feed6e41",
+      "size_bytes": 12180
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/REPORT_VERIFY_R2.md",
+      "git_mode": "100644",
+      "git_blob": "25ff3d5128ff5a5576f04a15c10fba13f87c3983",
+      "sha256": "44b27cf04e4d61f8de0d3d7c688e3b24e495bf07abf2b8d2a7cc08fbf23733d7",
+      "size_bytes": 4385
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/REPORT_VERIFY_R3.md",
+      "git_mode": "100644",
+      "git_blob": "96d03c95f4123aebb6415a2d783afe404526c997",
+      "sha256": "f42305494f73331d129f85383ddfcb0194009ae323c8e8b30b4fad75b2571e73",
+      "size_bytes": 9307
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r2_summary.json",
+      "git_mode": "100644",
+      "git_blob": "5f4c74f11dfe98142313509c845af99f5ee61208",
+      "sha256": "221f42934b25cbdd594ce330a265b7759adc34bafbdf5011b1e155e1aded04a3",
+      "size_bytes": 1394
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_parts/droplet_2d.json",
+      "git_mode": "100644",
+      "git_blob": "f54505047b0ad7ce2287f5dbb7f1a61f03ed479a",
+      "sha256": "5adfb24462c78f73c463a5918457e0b10cab6caa194f32ee6c1c713c581b87a0",
+      "size_bytes": 1497
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_parts/field_2d.json",
+      "git_mode": "100644",
+      "git_blob": "685b3087cc9b0556502a9d9674db2511f91dff9e",
+      "sha256": "f738802042506482beb2f03a95510a4ae3f4a02c8bf7712065e12b38cea4a266",
+      "size_bytes": 64730
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_parts/flat_2d.json",
+      "git_mode": "100644",
+      "git_blob": "9cf04cc4fb7d8cefc24cd440625f236c898e3a17",
+      "sha256": "79bc333dbca71a7e03c0fe2253918ea74b87796ac6c478443527676e1d5f98bc",
+      "size_bytes": 759
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_summary.json",
+      "git_mode": "100644",
+      "git_blob": "8227b3a8e005d7877f3ac7fb41998f25f1fa017b",
+      "sha256": "379432a43bbdcc757339270e80504ca48208b61627ae929850daf4241c72b944",
+      "size_bytes": 4827
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_figures_r2.py",
+      "git_mode": "100644",
+      "git_blob": "4be4e54f1765fbe5165ad0add213c7b70ebb8981",
+      "sha256": "e8d5b58e8aa20b45c40f6554b34828b7a3e16b226ccee9ab6d5260a05cc93ea8",
+      "size_bytes": 4490
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_figures_r2_theory.py",
+      "git_mode": "100644",
+      "git_blob": "c7e59b16d01f3709be6ab68a11121f583fb96201",
+      "sha256": "2aa235a4658a7ce6abbf903717c427b9ce16dedb51c10d48166a5ebc3d57096f",
+      "size_bytes": 2778
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_figures_r3.py",
+      "git_mode": "100644",
+      "git_blob": "c36f6942a36f984c700dc5bbcd3efcffe9acc7ef",
+      "sha256": "02161f89bd005832422f963fc034427f84439f6d0b20f32ce2d00a4dca5b979e",
+      "size_bytes": 6613
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_report_r3.py",
+      "git_mode": "100644",
+      "git_blob": "74fbb4663f41fce41e47dd3316481a9b331653ec",
+      "sha256": "a5ba71eafde2d6e5216df9213e9a1cb370c9af3d164e3aa9d3ba8e5206d0fae9",
+      "size_bytes": 15786
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/predeclared.json",
+      "git_mode": "100644",
+      "git_blob": "3f9a86ba67c7d7b831fe45aaae224058475c70ad",
+      "sha256": "4e43ad8f135ca89b8c2155d2a80919c270e4c428403714fd211c749cd5630e62",
+      "size_bytes": 410
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/run_r2.py",
+      "git_mode": "100644",
+      "git_blob": "d670571b5187e3de051bab4be4d255280be514da",
+      "sha256": "5d7b820f15f5371f14e701fb8fd2d8677b6ea4038406291a116c08bb9b2efa5d",
+      "size_bytes": 23899
+    },
+    {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/run_r3_split.py",
+      "git_mode": "100644",
+      "git_blob": "5aab9d8181d9ca6c68bf72be801491e2084698e7",
+      "sha256": "bcc0c124f2311744c72f9178d7ba58d2ebfbccc5e1326b6675cdd6ed11c1ff4a",
+      "size_bytes": 11013
+    }
+  ],
+  "original_mission_branch_receipts": [
+    {
+      "mission": "m18324",
+      "commit": "8246c1962da08742c70a54af6f73151ce13296f7",
+      "url": "https://github.com/cxs503/TensorLBM/tree/8246c1962da08742c70a54af6f73151ce13296f7/xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+      "expected_original_png_paths_found": 0,
+      "tracked_study_files": 5
+    },
+    {
+      "mission": "m20921",
+      "commit": "1067d331e27c75c8a6760a3ba67a63955f03354e",
+      "url": "https://github.com/cxs503/TensorLBM/tree/1067d331e27c75c8a6760a3ba67a63955f03354e/xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+      "expected_original_png_paths_found": 0,
+      "tracked_study_files": 11,
+      "calibration_result": {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/result.json",
+        "git_mode": "100644",
+        "git_blob": "038a5f58ae327e1d590079f30b3bb407d4248ee6",
+        "sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb",
+        "size_bytes": 64488
+      }
+    },
+    {
+      "mission": "m20984",
+      "commit": "93c4aef7ad34d50858853ea54fb66ccd82fa2625",
+      "url": "https://github.com/cxs503/TensorLBM/tree/93c4aef7ad34d50858853ea54fb66ccd82fa2625/xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+      "expected_original_png_paths_found": 0,
+      "tracked_study_files": 18,
+      "calibration_result": {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/result.json",
+        "git_mode": "100644",
+        "git_blob": "038a5f58ae327e1d590079f30b3bb407d4248ee6",
+        "sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb",
+        "size_bytes": 64488
+      }
+    },
+    {
+      "mission": "m21403",
+      "commit": "581a8329460e4f28044625c1cb0f8a16fe0a1240",
+      "url": "https://github.com/cxs503/TensorLBM/tree/581a8329460e4f28044625c1cb0f8a16fe0a1240/xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+      "expected_original_png_paths_found": 0,
+      "tracked_study_files": 24,
+      "calibration_result": {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/result.json",
+        "git_mode": "100644",
+        "git_blob": "038a5f58ae327e1d590079f30b3bb407d4248ee6",
+        "sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb",
+        "size_bytes": 64488
+      }
+    },
+    {
+      "mission": "m21481",
+      "commit": "e417c3ab56093bda7dcf54a59174e61a00c87739",
+      "url": "https://github.com/cxs503/TensorLBM/tree/e417c3ab56093bda7dcf54a59174e61a00c87739/xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+      "expected_original_png_paths_found": 0,
+      "tracked_study_files": 28,
+      "calibration_result": {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/result.json",
+        "git_mode": "100644",
+        "git_blob": "038a5f58ae327e1d590079f30b3bb407d4248ee6",
+        "sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb",
+        "size_bytes": 64488
+      }
+    }
+  ],
+  "exact_size_search": {
+    "trees_inspected": 6,
+    "candidate_objects": 0,
+    "original_hash_matches": 0
+  },
+  "recovery": {
+    "original_input_hashes_verified": true,
+    "figure_provenance": {
+      "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/PROVENANCE.json",
+      "git_mode": "100644",
+      "git_blob": "08cf6c445387be5d771a972172383db27db97619",
+      "sha256": "5259dc3eca93cf1633adcf00e3e53bb7f6449d3020b033cd3775467f890bd95f",
+      "size_bytes": 902
+    },
+    "missing_original_figures": [
+      {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig1_droplet_field.png",
+        "expected_sha256": "7afdf08a58a2cf8d7bf52f32b259edfb875eff3b3cbc8e04b4707e6bfa7bbb57",
+        "expected_size_bytes": 125395,
+        "original_recovered": false,
+        "isolated_offline_regeneration": "not attempted: original function must execute 5000 solver steps; no raw full field retained"
+      },
+      {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig2_laplace_fit.png",
+        "expected_sha256": "c5443a1e609f7e7122c56ca32350fb6f861e932c4317ef6e2588be9e13a24950",
+        "expected_size_bytes": 82146,
+        "original_recovered": false,
+        "isolated_offline_regeneration": {
+          "sha256": "cf6dec19ff04e45e7bea29841acd3ccbda72fff7da403b34d4237162d9dc6a3b",
+          "size_bytes": 98179,
+          "matches_original": false,
+          "committed": false
+        }
+      },
+      {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig3_sigma_vs_R.png",
+        "expected_sha256": "54d4c0d30784c3cd00c09cd60b51a9f07d82da096f9a32c28abf5ce0aa69a540",
+        "expected_size_bytes": 50947,
+        "original_recovered": false,
+        "isolated_offline_regeneration": {
+          "sha256": "df70c485fa667fe57ee5c962183269d11e6ed13c676f8cc15befd3416f8683be",
+          "size_bytes": 54606,
+          "matches_original": false,
+          "committed": false
+        }
+      },
+      {
+        "path": "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/fig4_sensitivity.png",
+        "expected_sha256": "ebbc7b63e4ac26b476ed27ad93431fc26ff7f950492d272f8ada0c43c7e28402",
+        "expected_size_bytes": 79500,
+        "original_recovered": false,
+        "isolated_offline_regeneration": {
+          "sha256": "9d1ea4fcc2566e2d9e04ffe24cdccdb328d419d5762caee36393fadd44ddbb34",
+          "size_bytes": 89092,
+          "matches_original": false,
+          "committed": false
+        }
+      }
+    ],
+    "offline_plot_environment": "matplotlib 3.11.2; real committed result JSON, isolated copied folder; only fig_laplace, fig_sigma_vs_R, fig_sensitivity invoked",
+    "whole_generator_attempt": "Stopped at missing tensorlbm import before solver initialization in isolated tree. Did not retry the solver-dependent fig_field function. No numerical solver was executed.",
+    "full_scientific_replay_performed": false
+  },
+  "artifact_tests_at_main": {
+    "command": "python -m pytest -q tests/test_xval_sc_laplace_artifacts.py --disable-warnings",
+    "passed": 5,
+    "failed": 3,
+    "failed_tests": [
+      "test_cited_figures_exist_and_are_readable_pngs",
+      "test_no_orphan_figures_on_disk",
+      "test_figure_provenance_matches_the_committed_bytes"
+    ]
+  },
+  "case_registry": {
+    "before": 256,
+    "after": 260,
+    "new_ids": [
+      "xval:shan_chen_laplace_calibration",
+      "xval:shan_chen_laplace_flat_interface_r1",
+      "xval:shan_chen_laplace_conditioning_audit",
+      "xval:shan_chen_laplace_dimension_followup"
+    ],
+    "existing_ids_unchanged": true,
+    "original_m18324_report_only": "Original branch contains only report, diff, source and preregistration; no tracked result. Do not conflate its protocol with the available m20921 result."
+  },
+  "historical_statuses": {
+    "m20921_archived_pass_all_15pct": true,
+    "r3_archived_verdicts": {
+      "P1_cross_dim": "NOT_RUN",
+      "P2_mech_balance_2d": true,
+      "P2_mech_balance_3d": "NOT_RUN",
+      "P3_radius_consistency_2d": true,
+      "P3_radius_consistency_3d": "NOT_RUN",
+      "P4_sigmaK_vs_lap_2d": false,
+      "P4_sigmaK_vs_lap_3d": "NOT_RUN",
+      "P5_coexist_vs_maxwell_2d": true,
+      "P5_coexist_vs_maxwell_3d": "NOT_RUN"
+    },
+    "current_acceptance": "not_evaluated"
+  },
+  "algorithm_changed": false,
+  "scientific_acceptance": "not_evaluated"
+}

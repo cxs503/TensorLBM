@@ -1,0 +1,36 @@
+{
+  "scope": "Independent historical calibration against the existing locked reference. The tracked result and R20 field-summary hashes match the original figure provenance, but the four cited original PNG files are absent. The earlier m18324 OSS report and preregistration describe a distinct procedure with no tracked machine-readable result on its original branch; do not apply that preregistration to the later m20921 result.",
+  "criteria": {
+    "archived_relative_sigma_error_pct_strictly_below": 15.0,
+    "archived_tight_target_pct_strictly_below": 3.0,
+    "archived_reference_locked_doc": 0.0561,
+    "interpretation": "Historical m20921 criteria from its result config; m18324 protocol is context only."
+  },
+  "source": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/run_xval.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/ref_sc.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/make_report.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/make_figures.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/oss_port.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/cross_validation/shan_chen_laplace_calibration/README.md",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/REPORT.md",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/REPORT_XVAL_SHAN_CHEN_LAPLACE_PRESSURE.md",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/DIFF_OSS_VS_TENSORLBM.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/result.json"
+  ],
+  "evidence": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/field_snapshot_R20.json",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/artifacts/figures/PROVENANCE.json",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/predeclared.json",
+    "docs/architecture/migrations/shan-chen-laplace-evidence-index-2026-11-28.json"
+  ],
+  "references": [
+    "Historical Young–Laplace calibration and locked reference described by the archived m20921 report. Earlier OSS comparison report is a separate report-only record."
+  ]
+}

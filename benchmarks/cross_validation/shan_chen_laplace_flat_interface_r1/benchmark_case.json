@@ -1,0 +1,30 @@
+{
+  "scope": "Archived follow-up uses a flat-interface probe and forcing/tau sensitivity to investigate the calibration. The independent result, long-run check and field profile NPZ are all present; no new calculation or physical acceptance.",
+  "criteria": {
+    "documented_owner_error_band_pct_strictly_below": 15,
+    "documented_tight_target_pct_strictly_below": 3,
+    "interpretation": "Report describes separate sensitivity legs; no aggregate pass is inferred."
+  },
+  "source": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/verify_r1.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/long_run_check.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/make_figures_r1.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/cross_validation/shan_chen_laplace_flat_interface_r1/README.md",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/REPORT_VERIFY_R1.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/artifacts/verify_r1.json",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/artifacts/long_run_check.json"
+  ],
+  "evidence": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r1/artifacts/field_profiles_r1.npz",
+    "docs/architecture/migrations/shan-chen-laplace-evidence-index-2026-11-28.json"
+  ],
+  "references": [
+    "Flat-interface comparison and independently recorded follow-up report."
+  ]
+}
