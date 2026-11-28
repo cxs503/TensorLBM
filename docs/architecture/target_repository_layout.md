@@ -150,6 +150,8 @@ retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
 unchanged archive objects and proves that the three removed history files are
 byte-identical to their retained `docs/mission_summaries/` copies.
 
+The [historical wetting and compressed-table production evidence ledger](migrations/wetting-and-production-evidence-index-2026-11-28.json) registers the original OpenLBMPM wetting campaign and connects earlier Akai rounds and the production follow-up to their existing cases. It preserves failed and incomplete historical evidence, original checksums and stable documentation paths without scientific promotion.
+
 The [oracle and Norberg audit ledger](migrations/oracle-and-square-cylinder-audit-docs-2026-11-27.json) archives historical audit records and connects them to the existing cases without changing their criteria or results.
 
 The [m28104 concurrent DFG correction ledger](migrations/m28104-dfg-concurrent-path-corrections-2026-11-28.json) archives the new internal mission directory, extends the existing pending case evidence, and records the exact reversible path-only changes introduced by #3086 without replacing the prior provenance.

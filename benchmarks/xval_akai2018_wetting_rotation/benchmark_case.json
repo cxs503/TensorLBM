@@ -1,19 +1,40 @@
 {
-  "scope": "Akai-style rotational wetting for static droplet contact angles, with analytic estimator calibration, archived Round 4 field remeasurement and an unconverged Round 6 smoke run.",
+  "scope": "Akai-style rotational wetting for static droplet contact angles, with analytic estimator calibration, archived Round 4 field remeasurement and an unconverged Round 6 smoke run. Earlier R1 ghost-wetting evidence, R4/R5 reports and R6 rotational evidence belong to the same Akai anchor. Historical R1 endpoint arms all failed; the later reports describe partial improvements and do not establish current acceptance.",
   "criteria": {
     "protocol": "benchmarks/xval_akai2018_wetting_rotation/REPORT.md",
-    "scope": "Below 15% contact-angle error after convergence and single-component droplet checks. The reported smoke arm is unconverged."
+    "scope": "Below 15% contact-angle error after convergence and single-component droplet checks. The reported smoke arm is unconverged.",
+    "historical_r1_local_bc": {
+      "gate": "each (theta, xi) case: relative error <= 15 %"
+    },
+    "historical_r1_endpoint": {
+      "gate": "|theta_circle - theta_target| / theta_target <= 15 %",
+      "secondary": "|theta_cap - theta_circle| <= 5 deg; mass drift <= 1e-8"
+    },
+    "historical_r1_recorded_gate_counts": {
+      "local_bc_pass": 22,
+      "local_bc_total": 22,
+      "endpoint_pass": 0,
+      "endpoint_total": 6
+    },
+    "historical_later_round_limit": "R4/R5 reports and R6 remeasurement are not a fresh full-solver replay; original R4/R5 standalone bundles are not tracked. The R6 smoke is unconverged."
   },
   "source": [
     "benchmarks/xval_akai2018_wetting_rotation/run.py",
     "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.py",
-    "benchmarks/xval_akai2018_wetting_rotation/remeasure_round4.py"
+    "benchmarks/xval_akai2018_wetting_rotation/remeasure_round4.py",
+    "benchmarks/xval_akai2018_wetting/estimator_analytic_study.py",
+    "benchmarks/xval_akai2018_wetting/resolution_ladder.py",
+    "benchmarks/xval_akai2018_wetting/run.py",
+    "benchmarks/xval_akai2018_wetting/verify_bc_analytic.py"
   ],
   "config": [
     "benchmarks/xval_akai2018_wetting_rotation/run.py"
   ],
   "documentation": [
-    "benchmarks/xval_akai2018_wetting_rotation/REPORT.md"
+    "benchmarks/xval_akai2018_wetting_rotation/REPORT.md",
+    "docs/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING.md",
+    "docs/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-R4-OPP-FIX.md",
+    "docs/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-R5-ESTIMATOR-CALIBRATION.md"
   ],
   "reference_files": [
     "docs/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING.md"
@@ -26,6 +47,28 @@
   ],
   "results": [
     "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.json",
-    "benchmarks/xval_akai2018_wetting_rotation/round4_remeasure.json"
+    "benchmarks/xval_akai2018_wetting_rotation/round4_remeasure.json",
+    "benchmarks/xval_akai2018_wetting/analytic_verification.json",
+    "benchmarks/xval_akai2018_wetting/out_ctl60/results.json",
+    "benchmarks/xval_akai2018_wetting/out_gk30/results.json",
+    "benchmarks/xval_akai2018_wetting/out_gk60/results.json",
+    "benchmarks/xval_akai2018_wetting/out_gk60_R10/results.json",
+    "benchmarks/xval_akai2018_wetting/out_gk60_b090/results.json",
+    "benchmarks/xval_akai2018_wetting/out_gk90/results.json",
+    "benchmarks/xval_akai2018_wetting_rotation/_smoke/out_rot_60/results.json"
+  ],
+  "evidence": [
+    "benchmarks/xval_akai2018_wetting/_last_phi_ctl60.npy",
+    "benchmarks/xval_akai2018_wetting/_last_phi_gk30.npy",
+    "benchmarks/xval_akai2018_wetting/_last_phi_gk60.npy",
+    "benchmarks/xval_akai2018_wetting/_last_phi_gk90.npy",
+    "benchmarks/xval_akai2018_wetting/log_ctl60.txt",
+    "benchmarks/xval_akai2018_wetting/log_gk30.txt",
+    "benchmarks/xval_akai2018_wetting/log_gk60.txt",
+    "benchmarks/xval_akai2018_wetting/log_gk60_R10.txt",
+    "benchmarks/xval_akai2018_wetting/log_gk60_b090.txt",
+    "benchmarks/xval_akai2018_wetting/log_gk90.txt",
+    "benchmarks/xval_akai2018_wetting_rotation/_smoke/out_rot_60/phi_final.npy",
+    "docs/architecture/migrations/wetting-and-production-evidence-index-2026-11-28.json"
   ]
 }

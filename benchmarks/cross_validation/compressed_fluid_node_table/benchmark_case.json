@@ -1,13 +1,23 @@
 {
-  "scope": "D2Q9 compressed neighbour-table versus dense control and analytic plane-channel permeability. The historical campaign translated the OpenLBMPM indexing semantics and did not execute the external CUDA solver.",
+  "scope": "D2Q9 compressed neighbour-table versus dense control and analytic plane-channel permeability. The historical campaign translated the OpenLBMPM indexing semantics and did not execute the external CUDA solver. The later production backend integration follow-up uses separate 3% physical and 1e-8 identity gates; it retains the dense on-node negative controls.",
   "criteria": {
     "primary_analytic_error_percent_strictly_below": 15.0,
     "representation_relative_error_strictly_below": 1e-08,
-    "admitted_mach_number_upper_bound": 0.1
+    "admitted_mach_number_upper_bound": 0.1,
+    "historical_production_followup": {
+      "identity_relative_error_strictly_below": 1e-08,
+      "physics_absolute_error_percent_strictly_below": 3.0,
+      "recorded_compressed_arms_pass": 2,
+      "recorded_compressed_arms_total": 2,
+      "recorded_dense_on_node_arms_pass": 0,
+      "recorded_dense_on_node_arms_total": 2
+    }
   },
   "source": [
     "benchmarks/cross_validation/compressed_fluid_node_table/run_xval.py",
-    "src/tensorlbm/porous/fluid_node_table.py"
+    "src/tensorlbm/porous/fluid_node_table.py",
+    "benchmarks/xval_compressed_node_table_prod/run_bench.py",
+    "src/tensorlbm/porous_media.py"
   ],
   "config": [
     "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json"
@@ -15,7 +25,8 @@
   "documentation": [
     "docs/xval_compressed_fluid_node_neighbour_table.md",
     "development/audit/m17677/AUDIT_m17677.md",
-    "benchmarks/cross_validation/compressed_fluid_node_table/README.md"
+    "benchmarks/cross_validation/compressed_fluid_node_table/README.md",
+    "docs/xval_compressed_node_table_prod_integration.md"
   ],
   "reference_files": [
     "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json",
@@ -35,7 +46,8 @@
   ],
   "results": [
     "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/results.json",
-    "benchmarks/cross_validation/compressed_fluid_node_table/evidence/2026-11-25-cpu-replay.json"
+    "benchmarks/cross_validation/compressed_fluid_node_table/evidence/2026-11-25-cpu-replay.json",
+    "benchmarks/xval_compressed_node_table_prod/results.json"
   ],
   "evidence": [
     "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/REPORT.md",
@@ -46,6 +58,7 @@
     "development/audit/m17677/publish_report.py",
     "development/audit/m17677/tools/m17677_compressed_node_table_audit.py",
     "development/audit/m17677/verdict_m17677.sql",
-    "docs/architecture/migrations/nebb-early-rounds-and-sparse-audits-2026-11-27.json"
+    "docs/architecture/migrations/nebb-early-rounds-and-sparse-audits-2026-11-27.json",
+    "docs/architecture/migrations/wetting-and-production-evidence-index-2026-11-28.json"
   ]
 }
