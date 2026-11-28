@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "base_main": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "scripts_tracked_before": 559,
+  "scripts_tracked_after": 557,
+  "entries": [
+    {
+      "old_path": "scripts/digitize_martin_moyce.py",
+      "new_path": "src/tensorlbm/verification/_digitize_martin_moyce.py",
+      "git_mode": "100644",
+      "original_git_blob": "953e163e4cbc6f41808bd880674188fd126d8642",
+      "original_sha256": "423683d17e7bce05e482039987f3dff42106b98d38142f3839e65c9cdd32fa1e",
+      "size_bytes": 4752,
+      "current_sha256": "786f31d82ec40558f6d263ba4b7b8a104847a0b78787a4e82a28e04079d3ed10",
+      "current_size_bytes": 4759,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "Path(__file__).parent.parent / \"artifacts\"",
+          "new": "Path(__file__).resolve().parents[3] / \"artifacts\"",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "scripts/make_demo_gif.py",
+      "new_path": "examples/make_demo_gif.py",
+      "git_mode": "100644",
+      "original_git_blob": "71f00e6cb1a23403983c923be466f5424d568b3c",
+      "original_sha256": "964f970d1cdfd530c4a9a8c462a769684dcd69e2b5bfefe46760887fdc99834b",
+      "size_bytes": 2542,
+      "current_sha256": "964f970d1cdfd530c4a9a8c462a769684dcd69e2b5bfefe46760887fdc99834b",
+      "current_size_bytes": 2542,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "src/tensorlbm/verification/dam_break_2d_validation.py",
+      "new_path": "src/tensorlbm/verification/dam_break_2d_validation.py",
+      "git_mode": "100644",
+      "original_git_blob": "326ecb859246ddd6ade832a219979f28bd01b734",
+      "original_sha256": "f9cd026ef59b2cc04651f4f16b403335b4ccb77eec9ab57b8ed87297be6c538d",
+      "size_bytes": 14814,
+      "current_sha256": "6dd3615ea22d5c1bcc7c5e6ccec9ac92ccf109d5c7aa6922a8dba358a3ae1ac6",
+      "current_size_bytes": 14720,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "        import sys\n        sys.path.insert(0, str(Path(__file__).parent.parent.parent))\n        from scripts.digitize_martin_moyce import main as digitize_main",
+          "new": "        from ._digitize_martin_moyce import main as digitize_main",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "README.md",
+      "new_path": "README.md",
+      "git_mode": "100644",
+      "original_git_blob": "0f1c7ee161e020ff878af85c1bf8bc87177a94e0",
+      "original_sha256": "8f951bee7179732f3bff71e83d55c88a627eec73a687504c74ab3889327a2fbe",
+      "size_bytes": 20616,
+      "current_sha256": "68c559f15ff9ccf18ebdfa68fa5b27c53c91b43af60dab34e817dbcc9b34d4c9",
+      "current_size_bytes": 20617,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/make_demo_gif.py",
+          "new": "examples/make_demo_gif.py",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/DOC_CODE_CONSISTENCY_AUDIT_m17139.md",
+      "new_path": "docs/DOC_CODE_CONSISTENCY_AUDIT_m17139.md",
+      "git_mode": "100644",
+      "original_git_blob": "f565981cf3dfcce890a89f14136d36e0210fb2d9",
+      "original_sha256": "10cb94ccaaa523ecf0605acea8aeaf7ed0351bb5e20b69b9789f40e7141dc765",
+      "size_bytes": 14485,
+      "current_sha256": "ae66f3e10d1b2ff930d966413e54755e09e56c30be43b05bd6990bd302dd03f1",
+      "current_size_bytes": 14703,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "# m17139 · TensorLBM 文档—代码一致性审计（README / 示例 / API 抽查 18 项）\n",
+          "new": "# m17139 · TensorLBM 文档—代码一致性审计（README / 示例 / API 抽查 18 项）\n\n> Repository layout note (2026-11-28): the original audit commands below describe the historical location; the current user entry is [examples/make_demo_gif.py](../examples/make_demo_gif.py). No new scientific claim.\n",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
+      "new_path": "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
+      "git_mode": "100644",
+      "original_git_blob": "f3bfca2f54371f521d1f2a43b97115b9964e609b",
+      "original_sha256": "6f766bfa461dc0d723eb5478f48444908ae740d5eddf6aefd4630dedcb22a66a",
+      "size_bytes": 1418,
+      "current_sha256": "6f766bfa461dc0d723eb5478f48444908ae740d5eddf6aefd4630dedcb22a66a",
+      "current_size_bytes": 1418,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json",
+      "new_path": "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json",
+      "git_mode": "100644",
+      "original_git_blob": "7aa75896fac5f5f7e023c24cc2df629a908e6d38",
+      "original_sha256": "80ad4064898b26bb59d32481ac1c79d344ca1f1cf6c360d8b5d33ffdaaa2bf72",
+      "size_bytes": 1169,
+      "current_sha256": "80ad4064898b26bb59d32481ac1c79d344ca1f1cf6c360d8b5d33ffdaaa2bf72",
+      "current_size_bytes": 1169,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact old paths and split import reviewed in actual main. Two indexed cross-repository searches were empty; outside bookmarks not exhaustively verifiable. README command updated, historical report URL and original audit commands retained.",
+    "new_case_ids": 0,
+    "package_fallback": "The packaged helper retains the original generator data and serialization. Explicit output directory behavior is unchanged; source-checkout default still targets repository artifacts. The solver no longer imports from scripts or mutates sys.path in the fallback.",
+    "demo_scope": "Actual parser/import compatibility, no simulation replay.",
+    "actual_receipt": {
+      "isolated_old_fallback": "ModuleNotFoundError: scripts",
+      "isolated_wheel_fallback": "success",
+      "wheel_contains_helper": true,
+      "outputs": [
+        {
+          "path": "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
+          "sha256": "6f766bfa461dc0d723eb5478f48444908ae740d5eddf6aefd4630dedcb22a66a",
+          "size_bytes": 1418,
+          "before_after_and_tracked_byte_identical": true
+        },
+        {
+          "path": "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json",
+          "sha256": "80ad4064898b26bb59d32481ac1c79d344ca1f1cf6c360d8b5d33ffdaaa2bf72",
+          "size_bytes": 1169,
+          "before_after_and_tracked_byte_identical": true
+        }
+      ],
+      "demo_help_byte_identical": true,
+      "demo_help_sha256": "d6ddbce6aea7e28c8f14de97f59e637929ea8f4a74a4756797f6a1b9ba20879b",
+      "solver_invoked": false
+    }
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

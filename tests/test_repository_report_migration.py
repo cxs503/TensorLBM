@@ -2500,6 +2500,34 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
         self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
 
+    def test_packaged_reference_and_user_demo_placement(self):
+        path = LEDGER_PATH.parent / "packaged-reference-and-user-demo-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 2)
+        for row in ledger["entries"]:
+            self.assertFalse((REPO / row["old_path"]).exists())
+            self.assertTrue((REPO / row["new_path"]).is_file())
+        self.assertIn("python examples/make_demo_gif.py", (REPO / "README.md").read_text())
+        source = (REPO / "src/tensorlbm/verification/dam_break_2d_validation.py").read_text()
+        self.assertIn("from ._digitize_martin_moyce import main", source)
+        self.assertNotIn("from scripts.digitize_martin_moyce", source)
+        for row in ledger["unchanged_related_assets_at_migration"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        receipt = ledger["compatibility"]["actual_receipt"]
+        self.assertEqual(receipt["isolated_wheel_fallback"], "success")
+        self.assertTrue(receipt["wheel_contains_helper"])
+        self.assertEqual(len(receipt["outputs"]), 2)
+        self.assertTrue(all(row["before_after_and_tracked_byte_identical"]
+                            for row in receipt["outputs"]))
+        self.assertTrue(receipt["demo_help_byte_identical"])
+        self.assertFalse(receipt["solver_invoked"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

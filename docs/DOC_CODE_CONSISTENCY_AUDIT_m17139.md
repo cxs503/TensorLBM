@@ -1,5 +1,7 @@
 # m17139 · TensorLBM 文档—代码一致性审计（README / 示例 / API 抽查 18 项）
 
+> Repository layout note (2026-11-28): the original audit commands below describe the historical location; the current user entry is [examples/make_demo_gif.py](../examples/make_demo_gif.py). No new scientific claim.
+
 **任务**：生态巡更 · TensorLBM · 文档一致性 —— README/示例与实际代码 API 抽查对照 ≥10 项，
 列出不一致处并修复最关键 3 处；示例可运行性验证。
 **分支**：`agent/m17139`　**判据**：机器可裁（pytest 门禁 + 可溯源数字 + 实跑产物）
