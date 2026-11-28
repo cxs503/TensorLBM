@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-ART = Path(__file__).resolve().parents[1] / "artifacts" / "poiseuille_order_20261107"
+ART = Path(__file__).resolve().parents[3] / "artifacts" / "poiseuille_order_20261107"
 
 
 def _rows() -> tuple[dict, list, list]:
