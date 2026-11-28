@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "base_main": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/two_phase_only.py",
+      "new_path": "src/tensorlbm/verification/two_phase_only.py",
+      "git_mode": "100644",
+      "original_git_blob": "e2a761bffc37e14b9ae9d28ae104e1b8b7b3f044",
+      "original_sha256": "8900e47ee84c244f18a361dbdb1b6c12918fa1b54d9b41fb4a612f318af725b6",
+      "size_bytes": 23070,
+      "current_sha256": "8900e47ee84c244f18a361dbdb1b6c12918fa1b54d9b41fb4a612f318af725b6",
+      "current_size_bytes": 23070,
+      "byte_identical": true,
+      "path_only_edits": []
+    }
+  ],
+  "compatibility_shim": {
+    "path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/two_phase_only.py",
+    "sha256": "bb9c984c21e20b9951e96017745f7b3568f6cea9270fca71df10c0d64c7314ee",
+    "size_bytes": 570,
+    "target": "src/tensorlbm/verification/two_phase_only.py",
+    "preserved_imports": "Original imports via the legacy checkout directory forward to the identical packaged module (including private attribute lookups)."
+  },
+  "consumer_edits": [
+    {
+      "old_path": "src/tensorlbm/verification/two_phase_only_evolving.py",
+      "new_path": "src/tensorlbm/verification/two_phase_only_evolving.py",
+      "git_mode": "100644",
+      "original_git_blob": "d01681345d6105e533f067e06a23fce9bf7f172e",
+      "original_sha256": "ee91440d06998e6db4a531a0a139d0a7a1d4395b82b42b400651a6603306e39f",
+      "size_bytes": 18406,
+      "current_sha256": "400957d405a284cec66bd6dc439f63676b4f3829f883b554ae6e1b4f15c6bf91",
+      "current_size_bytes": 17463,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "import time\nfrom pathlib import Path\n",
+          "new": "import time\n",
+          "count": 1
+        },
+        {
+          "old": "_ROUND1_MODULE = None\n\n\ndef _two_layer_analytic():\n    \"\"\"Import the round-1 analytic reference (single implementation in-repo).\n\n    The study module is loaded by path because ``xval/`` is not an importable\n    package; it is registered in ``sys.modules`` under a private name before\n    execution so that its dataclasses can resolve their own module.\n    \"\"\"\n    global _ROUND1_MODULE\n    if _ROUND1_MODULE is not None:\n        return _ROUND1_MODULE\n    import importlib.util\n    import sys\n\n    repo = Path(__file__).resolve().parents[3]\n    path = repo / \"xval\" / \"XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY\" / \"two_phase_only.py\"\n    if not path.is_file():  # pragma: no cover - study directory not shipped\n        raise FileNotFoundError(f\"round-1 analytic reference not found at {path}\")\n    name = \"_tensorlbm_round1_two_phase_only\"\n    spec = importlib.util.spec_from_file_location(name, path)\n    module = importlib.util.module_from_spec(spec)\n    sys.modules[name] = module\n    spec.loader.exec_module(module)  # type: ignore[union-attr]\n    _ROUND1_MODULE = module\n    return module\n",
+          "new": "def _two_layer_analytic():\n    \"\"\"Load the packaged round-1 reference; no source checkout is required.\"\"\"\n    from . import two_phase_only\n\n    return two_phase_only\n",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/run_xval.py",
+      "new_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "8957c93294ea55be175e441d284e4c37c1780243",
+      "original_sha256": "1388667f45eb66b27fc21067d5ed122c2e7d308c08b7d935e2f5f63b63eb6739",
+      "size_bytes": 46642,
+      "current_sha256": "fe7ffcd61f1f5e233d3386967b581260570b95c086a6ae299c6f73a2dab6bffd",
+      "current_size_bytes": 46665,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "from two_phase_only import (  # noqa: E402",
+          "new": "from tensorlbm.verification.two_phase_only import (  # noqa: E402",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY.md",
+      "new_path": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY.md",
+      "git_mode": "100644",
+      "original_git_blob": "632516163466445d37a862e63e5ab573f3639329",
+      "original_sha256": "2a7f6cf0d0c30af5bef8be7a24a9fc2e5d3b6c583ac6290bcaab65794469d781",
+      "size_bytes": 2226,
+      "current_sha256": "554a48d0a3fc1607a0c48194946930bfcd6ab5cfeeb1d99e0d6e91290e435310",
+      "current_size_bytes": 2751,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "",
+          "new": "\n<!-- repository-layout-note:start -->\nRepository layout note (2026-11-28): the round-1 implementation is now\n[packaged under src/tensorlbm/verification](../src/tensorlbm/verification/two_phase_only.py); its previous\ncheckout path is a compatibility alias. The existing report, result JSON and\npreregistration remain in place; the current tracked JSON contains only two\narms, so it does not satisfy the original full-matrix test. No scientific\nacceptance or result replacement is implied.\n<!-- repository-layout-note:end -->\n",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "unchanged_historical_assets": [
+    {
+      "old_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/predeclared.json",
+      "new_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "ac2c6344edc355973411943df45d20c878f50db2",
+      "original_sha256": "da3e05971585568c567d14a989c23aef23fee728eafbc5bfda9b91d0887b63e9",
+      "size_bytes": 6511
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/posthoc_addendum.json",
+      "new_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/posthoc_addendum.json",
+      "git_mode": "100644",
+      "original_git_blob": "b8f921ed9554ae45e1c618c45c7459d0c58b745c",
+      "original_sha256": "7bcdfb8403b0decf021021266d7cd2c65e7f733b9d6d327784e148bf2b0f22be",
+      "size_bytes": 2944
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+      "new_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "63a45251db52640f13e107eee222068d427d6e4b",
+      "original_sha256": "d090a6295431d7162ca14023a3a4fc997983df2354e2c7caac24333224d5b58f",
+      "size_bytes": 13009
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+      "new_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "90d0baccf133932a6f323329976e9e056bc42c19",
+      "original_sha256": "482aa31120ff9c2c4d4b5a1eddf88d7fa53ae98d19aa756456ea7338ccdc430c",
+      "size_bytes": 7658
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/results.json",
+      "new_path": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "980072c08a3a8b45887cb9a7994d92a7f2eca212",
+      "original_sha256": "fb14132541456f15f7ecc1481735a4686c2332de0348f3e5d58faa950f9b72b6",
+      "size_bytes": 8669
+    }
+  ],
+  "compatibility": {
+    "baseline_wheel": "Actual extracted baseline wheel loads tensorlbm but _two_layer_analytic raises FileNotFoundError for repository-only xval path.",
+    "baseline_focus_tests_passed": 9,
+    "baseline_matrix_test": {
+      "path": "tests/test_xval_no_mcmp_two_phase_only.py::test_results_json_shape_and_thresholds",
+      "actual_runs": 2,
+      "minimum_required_runs": 15,
+      "status": "failed",
+      "fetched_history": "Two visible commits of results.json contain the same 2-arm payload; full historical run not recovered."
+    },
+    "candidate_wheel": {
+      "build": "python -m pip wheel . --no-deps --no-build-isolation; actual extracted wheel loaded with only real installed third-party dependencies from isolated working directory without xval/",
+      "wheel_sha256": "0c640fa389f79e4857e60e27c412ba0962c49418c7c3aea167afb7efba5cf048",
+      "source_sha256": "8900e47ee84c244f18a361dbdb1b6c12918fa1b54d9b41fb4a612f318af725b6",
+      "module_identity": true,
+      "baseline_wheel_sha256": "dc0f2b5ba95509748fbe415361fff42adc2f7e4dc65a5e04f65d6cce68569c51"
+    },
+    "checkout_legacy_module_identity": true,
+    "direct_spec_loader_legacy_attribute_identity": true,
+    "runner_help_before_after_byte_identical": true,
+    "candidate_focus_tests_passed": 10,
+    "baseline_matrix_failure_retained": true,
+    "runtime": "Python 3.12.14, torch 2.15.0+cpu, numpy 2.5.5; no mock, no full solver replay."
+  },
+  "retained_root_constraints": {
+    "xval": "Keep root and this study directory; original full-matrix artifact was not recovered, 2-arm snapshot and prior negative scientific verdict stay unchanged. Maintain compatibility alias until consumers verified.",
+    "models": "Checkpoint retrieval/runtime not verified.",
+    "scripts": "Mixed active workflow and history still require consumer-level checks.",
+    "app": "Supported application root."
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

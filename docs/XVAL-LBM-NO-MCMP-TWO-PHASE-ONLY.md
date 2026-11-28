@@ -35,3 +35,12 @@ Admit the no-MCMP two-phase-only route as a verification arm for
 viscosity-stratified parallel channel flow; keep MCMP where component transport
 or interface dynamics matters; do not run a density contrast through the
 frozen-indicator model without a sharpening term.
+
+<!-- repository-layout-note:start -->
+Repository layout note (2026-11-28): the round-1 implementation is now
+[packaged under src/tensorlbm/verification](../src/tensorlbm/verification/two_phase_only.py); its previous
+checkout path is a compatibility alias. The existing report, result JSON and
+preregistration remain in place; the current tracked JSON contains only two
+arms, so it does not satisfy the original full-matrix test. No scientific
+acceptance or result replacement is implied.
+<!-- repository-layout-note:end -->

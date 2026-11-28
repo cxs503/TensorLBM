@@ -188,6 +188,12 @@ The [early NEBB and sparse audit archive ledger](migrations/nebb-early-rounds-an
 
 ## Root files and rollout
 
+The [round-1 two-phase package authority ledger](migrations/round1-two-phase-package-authority-2026-11-28.json)
+records byte-identical relocation into the canonical verification package and
+a compatibility alias for the legacy study. The legacy xval directory remains
+pending recovery of the incomplete historical result and full compatibility checks.
+
+
 The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.json)
 preserves the hardware scripts alongside their verification records and
 identifies the maintained baseline launcher.
