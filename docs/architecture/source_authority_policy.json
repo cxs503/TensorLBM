@@ -29,22 +29,6 @@
       "matches": 1,
       "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
     },
-    "benchmarks/pending/bstep_3d/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/pending/bstep_3d/run_highre.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/pending/channel_turb_3d/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/pending/cylinder_re40_st/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
     "benchmarks/pending/dit_turbulence/run.py": {
       "matches": 1,
       "matching_lines_sha256": "ec35f6c559eab4550f1cdfc526c73fbf26f1da81a675b52f5d3024619092239d"
@@ -52,22 +36,6 @@
     "benchmarks/pending/dit_turbulence/run_formal_dsmag.py": {
       "matches": 1,
       "matching_lines_sha256": "e188b3eca1309dc637322b0d02900b1cd4305383e31287e314de9e73f739473d"
-    },
-    "benchmarks/verified/cavity_3d_full/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/verified/cylinder/re200/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/verified/cylinder/re20_st/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/verified/cylinder_3d/run_compare_d20.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
     },
     "benchmarks/verified/permeability3d/run.py": {
       "matches": 1,

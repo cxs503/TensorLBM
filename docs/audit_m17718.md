@@ -159,3 +159,11 @@ No blocking issues found.
 - Cross-platform bitwise reproduction (only loongarch64 available)
 - 3D kernel bitwise lock (out of scope for this mission)
 - `tensor_benchmark_cases` SQL query (table not found)
+
+<!-- repository-layout-note:start -->
+Repository layout note (2026-11-28): the original six-section mission report is
+now archived at [m17718 REPORT](../development/audit/m17718/REPORT.md). The recorded path and verdict above
+are historical; [original revision](https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/xval_bitwise_refdata_m17718/REPORT.md)
+is preserved. The historical figure referenced above is not tracked at this
+revision. No new scientific acceptance is implied.
+<!-- repository-layout-note:end -->

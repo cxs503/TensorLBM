@@ -1,0 +1,44 @@
+{
+  "scope": "Separate archived kernel identity, model boundary and coexistence gates, not the layered Poiseuille matrix, dam-break study or round-three evolving-interface study. Six tracked gate chunks aggregate to nine recorded subgates. Offline aggregation reproduced the existing JSON bytes; no fresh solver replay or current scientific acceptance.",
+  "criteria": {
+    "G1_relative_force_identity_max": 1e-12,
+    "G3_dynamics_relative_difference_max": 1e-10,
+    "G4_inert_contrast_ratio_max": 1.0,
+    "G4_complementary_correlation_strictly_negative": true,
+    "G5_nonzero_tracer_correlation_abs_strictly_above": 0.99,
+    "G5_alignment_oddness_max": 1e-12,
+    "G5_tracer_and_alignment_sign_agree": true,
+    "G6_maxwell_relative_density_error_max": 0.15,
+    "G6_tight_target": 0.03,
+    "interpretation": "Archived pass conditions from the existing gate implementation. G3 phase separation and G6 tight target are separately reported diagnostics; no promotion by offline aggregation.",
+    "G2_null_max": 1e-12,
+    "G2_inert_partner_max": 1e-12,
+    "G2_nontrivial_force_strictly_above": 0.001,
+    "G3_reported_phase_separation_diagnostic_density_contrast_strictly_above": 0.5
+  },
+  "source": [
+    "src/tensorlbm/xval/no_mcmp_two_phase.py",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/run_kernel_boundary.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/cross_validation/no_mcmp_kernel_boundary/README.md",
+    "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-KERNEL-BOUNDARY.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/results.json"
+  ],
+  "evidence": [
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G1.json",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G2.json",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G3.json",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G4.json",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G5.json",
+    "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/artifacts/kernel_boundary/gates_G6.json",
+    "docs/architecture/migrations/round1-two-phase-package-authority-2026-11-28.json"
+  ],
+  "references": [
+    "Analytic discrete operator identities and the same-lattice Maxwell construction. Historical report gives the original gate settings."
+  ]
+}

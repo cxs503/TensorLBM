@@ -6,6 +6,8 @@ baseline list is from `bcdd5fa4`. The
 
 ## Maintained deliverables
 
+The [packaged reference and user-demo ledger](migrations/packaged-reference-and-user-demo-2026-11-28.json) removes the package fallback dependency on a root script and places the documented GIF demonstration in examples. No reference values or solver algorithms changed.
+
 The [P482 report-helper ledger](migrations/p482-report-helper-handoff-2026-11-28.json) archives two historical report generators that referenced the frozen checkout. The stable report and original input checksums are preserved; report regeneration uses an ignored output path and no new scientific verdict is assigned.
 
 The [T4 migration ledger](migrations/t4-physics-ai-drivers-2026-11-24.json)
@@ -82,6 +84,8 @@ The [geometry verification ledger](migrations/geometry-xval-2026-11-26.json)
 records the archived [fill-gradient normal](../../development/verification/fill_gradient_normal/README.md)
 and [EDT geometry tagging](../../development/verification/edt_two_segment_geometry_tag_compression/README.md) studies.
 
+The [portable benchmark source-entrypoint ledger](migrations/portable-benchmark-source-entrypoints-2026-11-28.json) replaces eight fixed workstation source paths with the canonical checkout source for existing case runners. The actual CLI contract is checked separately from scientific acceptance.
+
 The [historical collision-matrix ledger](migrations/historical-collision-matrix-2026-11-28.json) retires two internal mission folders and the old collision-operator replay folder. The two frozen-source runners are archived, not active benchmark entries; their original results and legacy source tree remain unchanged.
 
 The [kernel and preprocessing ledger](migrations/kernel-preprocess-xval-2026-11-26.json)
@@ -97,6 +101,11 @@ places the Round 6 wetting report with its benchmark and preserves the fused
 kernel comparison under development with its independent audits.
 
 ## Second-level placement
+
+The [Shan–Chen Laplace evidence index ledger](migrations/shan-chen-laplace-evidence-index-2026-11-28.json)
+indexes four distinct historical rounds and audits and documents unrecovered
+original figure hashes. Its legacy XVAL directory remains pending artifact
+recovery; no scientific verdict is promoted.
 
 The [Stokes, Blockforest and Chapman–Enskog historical audit ledger](migrations/stokes-blockforest-ce-audits-2026-11-27.json) maps the retired mission folders to their archived evidence and stable case navigation. It is not a new scientific acceptance.
 
@@ -190,6 +199,12 @@ The [early NEBB and sparse audit archive ledger](migrations/nebb-early-rounds-an
 
 ## Root files and rollout
 
+The [round-1 two-phase package authority ledger](migrations/round1-two-phase-package-authority-2026-11-28.json)
+records byte-identical relocation into the canonical verification package and
+a compatibility alias for the legacy study. The legacy xval directory remains
+pending recovery of the incomplete historical result and full compatibility checks.
+
+
 The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.json)
 preserves the hardware scripts alongside their verification records and
 identifies the maintained baseline launcher.
@@ -218,3 +233,8 @@ separately from this migration.
 4. Remove a retired root from the policy when its tracked contents are accounted
    for and its consumers are updated. Run directory, manual and registry checks
    on every batch. This pilot performs structural checks only.
+
+The [bitwise and capillary audit navigation ledger](migrations/bitwise-capillary-audit-navigation-2026-11-28.json)
+archives two internal reports, registers the existing bitwise reference-data benchmark,
+and attaches the independent capillary-rise audit to its existing case without
+changing archived verdicts or published manual URLs.

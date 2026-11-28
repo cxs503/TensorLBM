@@ -45,6 +45,18 @@ from tensorlbm.porous_media import _two_phase_poiseuille_analytical  # noqa: E40
 # ---------------------------------------------------------------------------
 
 
+def test_legacy_round1_import_aliases_packaged_authority():
+    import two_phase_only
+
+    from tensorlbm.verification import two_phase_only as canonical
+    from tensorlbm.verification.two_phase_only_evolving import _two_layer_analytic
+
+    assert two_phase_only is canonical
+    assert canonical is _two_layer_analytic()
+    assert canonical.two_layer_analytic is two_layer_analytic
+    assert canonical.run_two_phase_only is run_two_phase_only
+
+
 def test_analytic_invariants_machine_precision():
     """Walls, velocity continuity and stress continuity are closed exactly."""
     ny = 64

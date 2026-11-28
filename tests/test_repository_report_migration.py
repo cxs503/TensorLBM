@@ -2500,6 +2500,34 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
         self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
 
+    def test_packaged_reference_and_user_demo_placement(self):
+        path = LEDGER_PATH.parent / "packaged-reference-and-user-demo-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 2)
+        for row in ledger["entries"]:
+            self.assertFalse((REPO / row["old_path"]).exists())
+            self.assertTrue((REPO / row["new_path"]).is_file())
+        self.assertIn("python examples/make_demo_gif.py", (REPO / "README.md").read_text())
+        source = (REPO / "src/tensorlbm/verification/dam_break_2d_validation.py").read_text()
+        self.assertIn("from ._digitize_martin_moyce import main", source)
+        self.assertNotIn("from scripts.digitize_martin_moyce", source)
+        for row in ledger["unchanged_related_assets_at_migration"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        receipt = ledger["compatibility"]["actual_receipt"]
+        self.assertEqual(receipt["isolated_wheel_fallback"], "success")
+        self.assertTrue(receipt["wheel_contains_helper"])
+        self.assertEqual(len(receipt["outputs"]), 2)
+        self.assertTrue(all(row["before_after_and_tracked_byte_identical"]
+                            for row in receipt["outputs"]))
+        self.assertTrue(receipt["demo_help_byte_identical"])
+        self.assertFalse(receipt["solver_invoked"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
@@ -2517,8 +2545,8 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         audit_links = {
             "docs/board_audit/m23219/AUDIT-m23126.md":
                 "../../../development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/",
-            "docs/board_audit_m15893/M15893_BOARD_AUDIT.md":
-                "../../development/audit/m15893/repro/",
+            "development/audit/m15893/M15893_BOARD_AUDIT.md":
+                "./repro/",
         }
         for name, target in audit_links.items():
             with self.subTest(audit=name):
@@ -2526,6 +2554,66 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertIn(f"]({target})", doc.read_text(encoding="utf-8"))
                 self.assertTrue((doc.parent / target).is_dir())
 
+
+    def test_bitwise_and_capillary_audit_archives_keep_report_provenance(self):
+        path = LEDGER_PATH.parent / "bitwise-capillary-audit-navigation-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {
+                row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                if row["verification"] == path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        for directory in ledger["retired_second_level_directories"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", directory], cwd=REPO))
+        rows = ledger["entries"] + ledger["consumer_edits"]
+        for row in rows:
+            with self.subTest(path=row["new_path"]):
+                destination = REPO / row["new_path"]
+                self.assert_fingerprint(destination, row["current_sha256"], row["current_size_bytes"])
+                original = destination.read_bytes()
+                for edit in reversed(row["path_only_edits"]):
+                    old, new = edit["old"].encode(), edit["new"].encode()
+                    self.assertEqual(original.count(new), edit["count"])
+                    original = original.replace(new, old)
+                self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+                self.assertEqual(len(original), row["size_bytes"])
+                blob = hashlib.sha1(f"blob {len(original)}\0".encode() + original).hexdigest()
+                self.assertEqual(blob, row["original_git_blob"])
+        for row in ledger["unchanged_related_assets_at_migration"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        for row in ledger["entries"]:
+            self.assertFalse((REPO / row["old_path"]).exists())
+        for row in ledger["consumer_edits"]:
+            for edit in row["path_only_edits"]:
+                for target in re.findall(r"\]\(([^)]+)\)", edit["new"]):
+                    if target.startswith("https://github.com/cxs503/TensorLBM/blob/"):
+                        self.assertIn("/blob/" + ledger["base_main"] + "/", target)
+                    else:
+                        self.assertTrue((REPO / row["new_path"]).parent.joinpath(target).exists(), target)
+        # Execute the migrated report renderer with real tracked inputs in an
+        # isolated directory; never overwrite either archived result/report.
+        import shutil
+        import tempfile
+
+        directory = Path("benchmarks/xval_bitwise_refdata")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for relative in ("make_report.py", "result.json", "probe_weight_bias.json",
+                             "refdata/d2q9_bitwise_v1.json"):
+                destination = root / directory / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(REPO / directory / relative, destination)
+            subprocess.check_output([sys.executable, str(root / directory / "make_report.py")],
+                                    cwd=root)
+            generated = root / ledger["compatibility"]["replay_output_directory"] / "REPORT.md"
+            receipt = ledger["compatibility"]["replay_parity"]
+            self.assert_fingerprint(generated, receipt["sha256"], receipt["bytes"])
+            self.assertNotEqual(receipt["sha256"], receipt["original_committed_report_sha256"])
+            self.assertFalse((root / ledger["entries"][0]["old_path"]).exists())
+        self.assertFalse(ledger["compatibility"]["solver_invoked"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+        self.assertFalse(ledger["science"]["algorithm_changed"])
 
     def test_m28104_concurrent_archive_keeps_original_evidence_and_case_status(self):
         path = LEDGER_PATH.parent / "m28104-dfg-concurrent-path-corrections-2026-11-28.json"

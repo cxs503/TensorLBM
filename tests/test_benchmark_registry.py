@@ -23,6 +23,24 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(sum("pdf" in row["tutorial"] for row in records), 33)
         self.assertTrue(all(row["current_acceptance"] == "not_evaluated" for row in records))
 
+    def test_bitwise_and_capillary_cases_expose_archived_reports_without_promotion(self):
+        (bitwise,) = self.registry("--case", "campaign:xval_bitwise_refdata")
+        variant = bitwise["variants"][0]
+        self.assertIn("development/audit/m17718/REPORT.md", variant["documentation"])
+        self.assertIn("docs/audit_m17718.md", variant["documentation"])
+        self.assertIn("benchmarks/xval_bitwise_refdata/refdata/d2q9_bitwise_v1.json",
+                      variant["reference_files"])
+        self.assertIn("benchmarks/xval_bitwise_refdata/result.json", variant["results"])
+        self.assertEqual(bitwise["current_acceptance"], "not_evaluated")
+        (capillary,) = self.registry("--case", "benchmarks/case_pool/capillary_rise")
+        variant = capillary["variants"][0]
+        self.assertIn("development/audit/m15893/M15893_BOARD_AUDIT.md", variant["documentation"])
+        self.assertIn("development/audit/m15893/repro/artifacts/jurin_closed_box.json",
+                      variant["evidence"])
+        self.assertIn("benchmarks/case_pool/capillary_rise/artifacts/jurin_closed_box.json",
+                      variant["results"])
+        self.assertEqual(capillary["current_acceptance"], "not_evaluated")
+
     def test_sparse_and_raster_archives_have_searchable_evidence(self):
         for name, result, figure in (
             ("sparse_list_aos", "round2_d3q19/results.json", "poiseuille_profile.png"),
@@ -246,6 +264,44 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertIn("src/tensorlbm/shallow_water.py", campaign["variants"][0]["source"])
         self.assertIn("benchmarks/dam_break_ritter/replays/2026-11-21.json", campaign["variants"][0]["results"])
 
+    def test_laplace_evidence_rounds_remain_distinct_and_unpromoted(self):
+        import re
+
+        ledger_path = ROOT / "docs/architecture/migrations/shan-chen-laplace-evidence-index-2026-11-28.json"
+        ledger = json.loads(ledger_path.read_text())
+        records = {row["id"]: row for row in self.registry("--json")}
+        registered = [records[case_id] for case_id in ledger["case_registry"]["new_ids"]]
+        self.assertEqual(len(registered), 4)
+        result_paths = []
+        for case in registered:
+            self.assertEqual(case["current_acceptance"], "not_evaluated")
+            variant, = case["variants"]
+            result_paths.extend(variant["results"])
+            readme = ROOT / variant["path"] / "README.md"
+            for target in re.findall(r"\]\(([^)]+)\)", readme.read_text()):
+                self.assertTrue((readme.parent / target).is_file(), target)
+        self.assertEqual(len(result_paths), len(set(result_paths)))
+        for row in ledger["tracked_original_assets"]:
+            data = (ROOT / row["path"]).read_bytes()
+            self.assertEqual(len(data), row["size_bytes"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["sha256"])
+            self.assertEqual(hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest(),
+                             row["git_blob"])
+        self.assertEqual(len(ledger["tracked_original_assets"]), 37)
+        self.assertEqual(len(ledger["original_mission_branch_receipts"]), 5)
+        self.assertEqual(ledger["exact_size_search"]["original_hash_matches"], 0)
+        missing = ledger["recovery"]["missing_original_figures"]
+        self.assertEqual(len(missing), 4)
+        self.assertTrue(all(not row["original_recovered"] for row in missing))
+        self.assertFalse(ledger["recovery"]["full_scientific_replay_performed"])
+        dim = records["xval:shan_chen_laplace_dimension_followup"]["variants"][0]
+        summary = json.loads((ROOT / dim["results"][-1]).read_text())
+        verdicts = summary["verdicts"]
+        self.assertEqual(verdicts["P1_cross_dim"], "NOT_RUN")
+        self.assertFalse(verdicts["P4_sigmaK_vs_lap_2d"])
+        self.assertTrue(all(v == "NOT_RUN" for k, v in verdicts.items() if k.endswith("_3d")))
+        self.assertEqual(ledger["scientific_acceptance"], "not_evaluated")
+
     def test_shan_chen_edm_rounds_keep_separate_historical_evidence(self):
         (case,) = self.registry("--case", "xval:shan_chen_edm_lycett_luo")
         self.assertEqual(case["current_acceptance"], "not_evaluated")
@@ -394,6 +450,49 @@ class BenchmarkRegistryTests(unittest.TestCase):
         (formal,) = self.registry("--case", "benchmarks/verified/cavity/re100")
         self.assertNotEqual(formal["id"], case["id"])
         self.assertEqual(formal["current_acceptance"], "not_evaluated")
+
+
+    def test_no_mcmp_partial_matrix_and_kernel_results_have_distinct_ownership(self):
+        (layered,) = self.registry("--case", "xval:no_mcmp_layered_poiseuille")
+        (kernel,) = self.registry("--case", "xval:no_mcmp_kernel_boundary")
+        for case in (layered, kernel):
+            self.assertEqual(case["current_acceptance"], "not_evaluated")
+        layer_variant = layered["variants"][0]
+        kernel_variant = kernel["variants"][0]
+        self.assertEqual(
+            layered["cross_validation"]["criteria"]["full_matrix_minimum_arms_existing_test"], 15,
+        )
+        self.assertNotEqual(layer_variant["results"], kernel_variant["results"])
+        partial = json.loads((ROOT / layer_variant["results"][0]).read_text())
+        self.assertTrue(partial["quick"])
+        self.assertEqual(len(partial["runs"]), 2)
+        self.assertFalse(partial["verdict"]["all_declared_thresholds_pass"])
+        ledger_path = ROOT / "docs/architecture/migrations/round1-two-phase-package-authority-2026-11-28.json"
+        ledger = json.loads(ledger_path.read_text())["followup_evidence_registration"]
+        self.assertFalse(ledger["full_matrix_recovered"])
+        self.assertEqual(len(ledger["source_snapshots"]), 5)
+        self.assertTrue(all(row["actual_run_count"] == 2 and row["quick"]
+                            for row in ledger["source_snapshots"]))
+        aggregate = json.loads((ROOT / kernel_variant["results"][0]).read_text())
+        chunks = {}
+        for row in ledger["unchanged_gate_chunk_objects"]:
+            data = (ROOT / row["path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["sha256"])
+            self.assertIn(row["path"], kernel_variant["evidence"])
+            chunks.update(json.loads(data))
+        self.assertEqual(set(chunks), {f"G{i}" for i in range(1, 7)})
+        self.assertEqual(chunks, aggregate["gates"])
+        self.assertEqual(aggregate["gate_count"], 9)
+        self.assertEqual(aggregate["gate_count_passed"], 9)
+        offline = ledger["offline_aggregation"]
+        self.assertTrue(offline["generated_bytes_match_original"])
+        self.assertFalse(offline["solver_invoked"])
+        self.assertEqual(offline["scientific_acceptance"], "not_evaluated")
+        result = offline["result"]
+        self.assertEqual(hashlib.sha256((ROOT / result["path"]).read_bytes()).hexdigest(),
+                         result["sha256"])
+        all_ids = {row["id"] for row in self.registry("--json")}
+        self.assertTrue(set(ledger["new_case_ids"] + ledger["retained_distinct_case_ids"]) <= all_ids)
 
 
 if __name__ == "__main__":

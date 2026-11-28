@@ -193,7 +193,7 @@ PYTHONPATH=src python examples/sphere_flow_3d.py \
 ## Generate a lid-driven cavity demo GIF
 
 ```bash
-PYTHONPATH=src python scripts/make_demo_gif.py --overwrite
+PYTHONPATH=src python examples/make_demo_gif.py --overwrite
 ```
 
 This runs a 2000-step cavity simulation, saves one frame every 50 steps, and

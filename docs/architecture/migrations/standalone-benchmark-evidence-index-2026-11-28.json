@@ -762,5 +762,10 @@
       "original_sha256": "4e20734f2e44821b4562e0c84925ead1dcaa6661208457127d2103d443cb3f82",
       "byte_identical": true
     }
-  ]
+  ],
+  "candidate_base_at_refresh": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+  "candidate_base_tree_at_refresh": "acdb63dc4483cfdbc6a9e321336fb9b22dbc8834",
+  "registry_current_main_before": 263,
+  "registry_candidate_expected_after_refresh": 266,
+  "refresh_note": "Original source commit and 72 fingerprints remain the provenance baseline. PR #3088–#3092 now actually reside in main ancestry; their previously verified nonnative checks are not native CI completion. This candidate intentionally preserves their independent changes and historical statuses."
 }

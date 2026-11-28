@@ -52,7 +52,6 @@ from __future__ import annotations
 
 import math
 import time
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -281,33 +280,11 @@ def interface_diagnostics(profile: np.ndarray, y_int: float, first_row: int = 1)
 # ---------------------------------------------------------------------------
 
 
-_ROUND1_MODULE = None
-
-
 def _two_layer_analytic():
-    """Import the round-1 analytic reference (single implementation in-repo).
+    """Load the packaged round-1 reference; no source checkout is required."""
+    from . import two_phase_only
 
-    The study module is loaded by path because ``xval/`` is not an importable
-    package; it is registered in ``sys.modules`` under a private name before
-    execution so that its dataclasses can resolve their own module.
-    """
-    global _ROUND1_MODULE
-    if _ROUND1_MODULE is not None:
-        return _ROUND1_MODULE
-    import importlib.util
-    import sys
-
-    repo = Path(__file__).resolve().parents[3]
-    path = repo / "xval" / "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY" / "two_phase_only.py"
-    if not path.is_file():  # pragma: no cover - study directory not shipped
-        raise FileNotFoundError(f"round-1 analytic reference not found at {path}")
-    name = "_tensorlbm_round1_two_phase_only"
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
-    _ROUND1_MODULE = module
-    return module
+    return two_phase_only
 
 
 def run_two_phase_only_evolving(

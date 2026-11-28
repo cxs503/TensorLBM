@@ -80,6 +80,8 @@ RETIRED_FILES = {
     "scripts/xval_cudaphasefield_not_pseudopot.py",
     "scripts/audit_m17668_figure.py",
     "scripts/audit_m17668_report.py",
+    "scripts/digitize_martin_moyce.py",
+    "scripts/make_demo_gif.py",
     "scripts/p482_n05_publish_report.py",
     "scripts/p482_n05_write_docs.py",
     "src/tensorlbm/dg_verification.py",

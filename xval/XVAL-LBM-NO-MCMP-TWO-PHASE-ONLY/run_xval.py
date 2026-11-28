@@ -32,7 +32,7 @@ sys.path.insert(0, str(HERE))
 
 torch.set_num_threads(1)
 
-from two_phase_only import (  # noqa: E402
+from tensorlbm.verification.two_phase_only import (  # noqa: E402
     analytic_profile,
     run_mcmp_two_component,
     run_two_phase_only,
