@@ -1,0 +1,515 @@
+{
+  "source_commit": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+  "fresh_replay": true,
+  "result_sha256": "b05558a1b5ab6feece57a62affc4788e6736871211d23bd611a92ce48dcc294e",
+  "result_uncompressed_bytes": 387374,
+  "run_count": 21,
+  "converged_count": 21,
+  "all_declared_thresholds_pass": false,
+  "checks": {
+    "K1_analytic_selfcheck": {
+      "value": 5.551115123125783e-17,
+      "threshold": 1e-10,
+      "pass": true
+    },
+    "K2_l2_rel": {
+      "value": 0.05987703852044225,
+      "threshold": 0.15,
+      "worst_arm": "M1 ny=96 ratio=10 width=2 rule=linear",
+      "pass": true
+    },
+    "K3_max_rel_peak": {
+      "value": 0.07963180418875966,
+      "threshold": 0.15,
+      "worst_arm": "M1 ny=96 ratio=10 width=2 rule=linear",
+      "pass": true
+    },
+    "K4_flux_rel": {
+      "value": 0.06226592480193802,
+      "threshold": 0.15,
+      "worst_arm": "M1 ny=96 ratio=10 width=2 rule=linear",
+      "pass": true
+    },
+    "K5_uy_spurious_rel": {
+      "value": 0.002690348213867655,
+      "threshold": 0.01,
+      "pass": true
+    },
+    "K6_mass_drift_rel": {
+      "value": 0.00034608232214095746,
+      "threshold": 1e-06,
+      "pass": false
+    },
+    "H2_monotone_ratio": {
+      "ratios": [
+        1.0,
+        2.0,
+        4.0,
+        10.0
+      ],
+      "l2_rel": [
+        0.005026699968799812,
+        0.0057895875469279835,
+        0.006495531400888417,
+        0.008154782614266729
+      ],
+      "pass": true
+    },
+    "H3_rule_matters": {
+      "rows": [
+        {
+          "nu_ratio": 1.0,
+          "harmonic": 0.005026699968799812,
+          "geometric": 0.005026699968799812,
+          "linear": 0.005026699968799812,
+          "harmonic_better": true
+        },
+        {
+          "nu_ratio": 2.0,
+          "harmonic": 0.0057895875469279835,
+          "geometric": 0.006072052909722216,
+          "linear": 0.006406178642485851,
+          "harmonic_better": true
+        },
+        {
+          "nu_ratio": 4.0,
+          "harmonic": 0.006495531400888417,
+          "geometric": 0.010766492917468803,
+          "linear": 0.015979664008425622,
+          "harmonic_better": true
+        },
+        {
+          "nu_ratio": 10.0,
+          "harmonic": 0.008154782614266729,
+          "geometric": 0.030881540637950136,
+          "linear": 0.05987703852044225,
+          "harmonic_better": true
+        }
+      ],
+      "pass": true
+    },
+    "H4_high_ratio_breaks_band": {
+      "rows": {
+        "harmonic": 0.008154782614266729,
+        "geometric": 0.030881540637950136,
+        "linear": 0.05987703852044225
+      },
+      "pass": false
+    },
+    "K8_density_contrast": {
+      "rows": [
+        {
+          "l2_rel": 0.17353700976505124,
+          "max_rel_peak": 0.21945489965379283,
+          "interface_width_10_90": null,
+          "interface_centre_shift": null
+        }
+      ],
+      "threshold": 0.15,
+      "pass": false
+    },
+    "M5_comparison": {
+      "rows": [
+        {
+          "nu_ratio": 2.0,
+          "l2_rel": 0.15388046528817984,
+          "max_rel_peak": 0.19428596699332895,
+          "converged": true,
+          "finite": true
+        },
+        {
+          "nu_ratio": 4.0,
+          "l2_rel": 0.3618824242101359,
+          "max_rel_peak": 0.4405697707182838,
+          "converged": true,
+          "finite": true
+        }
+      ]
+    },
+    "K7_resolution": {
+      "rows": {
+        "48": 0.0068754709556135924,
+        "64": 0.006981560556468837,
+        "96": 0.0057895875469279835
+      }
+    }
+  },
+  "arms": [
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.5,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 1.0
+      },
+      "steps": 13000,
+      "converged": true,
+      "l2_rel": 0.005026699968799812
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.5,
+        "width": 2.0,
+        "rule": "geometric",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 1.0
+      },
+      "steps": 13000,
+      "converged": true,
+      "l2_rel": 0.005026699968799812
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.5,
+        "width": 2.0,
+        "rule": "linear",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 1.0
+      },
+      "steps": 13000,
+      "converged": true,
+      "l2_rel": 0.005026699968799812
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.25,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 2.0
+      },
+      "steps": 18500,
+      "converged": true,
+      "l2_rel": 0.0057895875469279835
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.25,
+        "width": 2.0,
+        "rule": "geometric",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 2.0
+      },
+      "steps": 19000,
+      "converged": true,
+      "l2_rel": 0.006072052909722216
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.25,
+        "width": 2.0,
+        "rule": "linear",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 2.0
+      },
+      "steps": 18000,
+      "converged": true,
+      "l2_rel": 0.006406178642485851
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.125,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 4.0
+      },
+      "steps": 23500,
+      "converged": true,
+      "l2_rel": 0.006495531400888417
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.125,
+        "width": 2.0,
+        "rule": "geometric",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 4.0
+      },
+      "steps": 23500,
+      "converged": true,
+      "l2_rel": 0.010766492917468803
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.125,
+        "width": 2.0,
+        "rule": "linear",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 4.0
+      },
+      "steps": 24500,
+      "converged": true,
+      "l2_rel": 0.015979664008425622
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.05,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 10.0
+      },
+      "steps": 46000,
+      "converged": true,
+      "l2_rel": 0.008154782614266729
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.05,
+        "width": 2.0,
+        "rule": "geometric",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 10.0
+      },
+      "steps": 48000,
+      "converged": true,
+      "l2_rel": 0.030881540637950136
+    },
+    {
+      "arm": {
+        "matrix": "M1",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.05,
+        "width": 2.0,
+        "rule": "linear",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 10.0
+      },
+      "steps": 46500,
+      "converged": true,
+      "l2_rel": 0.05987703852044225
+    },
+    {
+      "arm": {
+        "matrix": "M2",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.125,
+        "width": 1.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 4.0
+      },
+      "steps": 23000,
+      "converged": true,
+      "l2_rel": 0.00697591649137346
+    },
+    {
+      "arm": {
+        "matrix": "M2",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.125,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 4.0
+      },
+      "steps": 23500,
+      "converged": true,
+      "l2_rel": 0.006495531400888417
+    },
+    {
+      "arm": {
+        "matrix": "M2",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.125,
+        "width": 4.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 4.0
+      },
+      "steps": 25000,
+      "converged": true,
+      "l2_rel": 0.007319928686294654
+    },
+    {
+      "arm": {
+        "matrix": "M3",
+        "kind": "two_phase",
+        "ny": 48,
+        "nu_lo": 0.5,
+        "nu_hi": 0.25,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 2.0
+      },
+      "steps": 5000,
+      "converged": true,
+      "l2_rel": 0.0068754709556135924
+    },
+    {
+      "arm": {
+        "matrix": "M3",
+        "kind": "two_phase",
+        "ny": 64,
+        "nu_lo": 0.5,
+        "nu_hi": 0.25,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 2.0
+      },
+      "steps": 9500,
+      "converged": true,
+      "l2_rel": 0.006981560556468837
+    },
+    {
+      "arm": {
+        "matrix": "M3",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.25,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 2.0
+      },
+      "steps": 18500,
+      "converged": true,
+      "l2_rel": 0.0057895875469279835
+    },
+    {
+      "arm": {
+        "matrix": "M4",
+        "kind": "two_phase",
+        "ny": 96,
+        "nu_lo": 0.5,
+        "nu_hi": 0.25,
+        "width": 2.0,
+        "rule": "harmonic",
+        "rho_hi": 0.25,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_ratio": 2.0
+      },
+      "steps": 27000,
+      "converged": true,
+      "l2_rel": 0.17353700976505124
+    },
+    {
+      "arm": {
+        "matrix": "M5",
+        "kind": "mcmp",
+        "ny": 96,
+        "tau_lo": 2.0,
+        "tau_hi": 1.25,
+        "nu_ratio": 2.0,
+        "G_12": -1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_hi": 0.25
+      },
+      "steps": 31500,
+      "converged": true,
+      "l2_rel": 0.15388046528817984
+    },
+    {
+      "arm": {
+        "matrix": "M5",
+        "kind": "mcmp",
+        "ny": 96,
+        "tau_lo": 2.0,
+        "tau_hi": 0.875,
+        "nu_ratio": 4.0,
+        "G_12": -1.0,
+        "G": 4e-06,
+        "nx": 4,
+        "nu_hi": 0.125
+      },
+      "steps": 26500,
+      "converged": true,
+      "l2_rel": 0.3618824242101359
+    }
+  ]
+}

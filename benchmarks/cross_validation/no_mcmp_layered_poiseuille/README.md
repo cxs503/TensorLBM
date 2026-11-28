@@ -19,6 +19,8 @@ and [machine-rendered report](../../../xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPO
   [round-three evolving-interface case](../no_mcmp_phase_field_round3/benchmark_case.json)
   are distinct protocols, not substitutes for the missing full matrix.
 
-No new scientific result has been generated. Do not treat the historical
-one-pager's 21-arm assertion as a complete current artifact. Original paths,
-thresholds, failure and compatibility alias remain unchanged.
+The historical full matrix has not been recovered. A separate
+[fresh 21-arm replay](evidence/replay-2026-11-28-ca2a9e50/README.md) was executed
+on main at `ca2a9e50`: all arms converged, but the original aggregate gate failed
+(K6 and K8). This is not historical recovery or a Verified promotion.
+Original paths, thresholds, historical failure and compatibility alias remain unchanged.
