@@ -40,7 +40,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 
 
 def _load_verifier():
-    path = _ROOT / "scripts" / "verify_lid_wall_diff_m17147.py"
+    path = _ROOT / "development" / "verification" / "lid_wall_diff_anchor_history" / "verify_lid_wall_diff_m17147.py"
     spec = importlib.util.spec_from_file_location("verify_m17147", path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module

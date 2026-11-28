@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "base_main": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+  "base_tree": "acdb63dc4483cfdbc6a9e321336fb9b22dbc8834",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "scripts_tracked_before": 557,
+  "scripts_tracked_after": 554,
+  "retired_top_level_directories": [],
+  "entries": [
+    {
+      "old_path": "scripts/anchor_migration_m17788.py",
+      "new_path": "development/verification/lid_wall_diff_anchor_history/anchor_migration_m17788.py",
+      "git_mode": "100644",
+      "original_git_blob": "452df00dba7b02934b99f833b257e229a805cea5",
+      "original_sha256": "7bc0b05718eccb0876da20b2e32c3c1b98fb79fb42577e5b34825dce051935be",
+      "size_bytes": 10693,
+      "current_git_blob": "4992b8777370cd4d8e1a5f83abd48be933343831",
+      "current_sha256": "077ae35b3d1c1f2ee256729a6cc75bbbcf262281fc647db535012cea3a816d1d",
+      "current_size_bytes": 10739,
+      "path_only_edits": [
+        {
+          "old": "scripts/anchor_migration_m17788.py",
+          "new": "development/verification/lid_wall_diff_anchor_history/anchor_migration_m17788.py",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "scripts/gen_anchor_migration_report_m17788.py",
+      "new_path": "development/verification/lid_wall_diff_anchor_history/gen_anchor_migration_report_m17788.py",
+      "git_mode": "100644",
+      "original_git_blob": "e7d30c73f926c953ae54314241bc3460ab7d3fd6",
+      "original_sha256": "9d5badd267adf1c157b02183698d39b41550daa42b33938ab9fadb5497afc62b",
+      "size_bytes": 4694,
+      "current_git_blob": "3242a109291da7b2d4fa3ffa974c5baf5ebc6b11",
+      "current_sha256": "99b13f78c5a992f10f0560740569111182bf92dba0887307883e380213c3f0bb",
+      "current_size_bytes": 4740,
+      "path_only_edits": [
+        {
+          "old": "scripts/gen_anchor_migration_report_m17788.py",
+          "new": "development/verification/lid_wall_diff_anchor_history/gen_anchor_migration_report_m17788.py",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "scripts/verify_lid_wall_diff_m17147.py",
+      "new_path": "development/verification/lid_wall_diff_anchor_history/verify_lid_wall_diff_m17147.py",
+      "git_mode": "100644",
+      "original_git_blob": "6d26f7a7cbe3351b97e5b03e4bd832b9d3115393",
+      "original_sha256": "c220c166ccc5d4979b80d55805a309a3dd2c5751e8bbb7dbae0b2855130f9dbb",
+      "size_bytes": 22744,
+      "current_git_blob": "a2f24c3d463bfce0f9ce083e33158f51823b312c",
+      "current_sha256": "0a05d503dceb6f0a16f32ce082266561a960be77c1fe45d4c482f39bc7c01c6c",
+      "current_size_bytes": 22836,
+      "path_only_edits": [
+        {
+          "old": "scripts/verify_lid_wall_diff_m17147.py",
+          "new": "development/verification/lid_wall_diff_anchor_history/verify_lid_wall_diff_m17147.py",
+          "count": 2
+        }
+      ],
+      "byte_identical": false
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/ANCHOR_MIGRATION_m17788.md",
+      "new_path": "docs/ANCHOR_MIGRATION_m17788.md",
+      "git_mode": "100644",
+      "original_git_blob": "3fe33c89ec21cde2129e57d214a180ebb9e3459a",
+      "original_sha256": "bf013cbba1893c8f7d0541b19fa9c111df726e98a372e554116ad9e947bd8b26",
+      "size_bytes": 4657,
+      "current_git_blob": "8da4c547f8c6ea2dda6a60b9cdc9b3c3485996b8",
+      "current_sha256": "2ad0534753e287a0625f640ad099bbdf5d4851d4cf1e073bb003a6170c849ef2",
+      "current_size_bytes": 4749,
+      "path_only_edits": [
+        {
+          "old": "scripts/anchor_migration_m17788.py",
+          "new": "development/verification/lid_wall_diff_anchor_history/anchor_migration_m17788.py",
+          "count": 1
+        },
+        {
+          "old": "scripts/gen_anchor_migration_report_m17788.py",
+          "new": "development/verification/lid_wall_diff_anchor_history/gen_anchor_migration_report_m17788.py",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "docs/AUDIT_m17147_GAP_PP_2_LID_WALL_DIFF.md",
+      "new_path": "docs/AUDIT_m17147_GAP_PP_2_LID_WALL_DIFF.md",
+      "git_mode": "100644",
+      "original_git_blob": "e7883f9135a9bb09336e4f7cd8f429702d61030d",
+      "original_sha256": "6e967d79e3fb731ce33fa85c2f43cbe650ec7edcca2b0d42e57eba6acde5f3b3",
+      "size_bytes": 8365,
+      "current_git_blob": "34072fa1632b443d7ac5b9c78c08ab045bc1b47f",
+      "current_sha256": "29badabcb49b0febeb6b787d88076481ee4c3b8e018fe7fcc11aeb1848ee6333",
+      "current_size_bytes": 8549,
+      "path_only_edits": [
+        {
+          "old": "scripts/verify_lid_wall_diff_m17147.py",
+          "new": "development/verification/lid_wall_diff_anchor_history/verify_lid_wall_diff_m17147.py",
+          "count": 4
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "tests/test_anchor_migration_m17788.py",
+      "new_path": "tests/test_anchor_migration_m17788.py",
+      "git_mode": "100644",
+      "original_git_blob": "d869a26f5f683235256a51eb61accdc713979ef2",
+      "original_sha256": "a664c5ff38a3ad3b5a7389d882d1ed576053cf58887e8d75e628dd3828ad50e4",
+      "size_bytes": 4655,
+      "current_git_blob": "6a31297f05a102ba9283811a0bc634d4a3d278cd",
+      "current_sha256": "9ca850990d70e310ca84b72699fcd623e0a47a6a71032a4a772079ade7e2996d",
+      "current_size_bytes": 4755,
+      "path_only_edits": [
+        {
+          "old": "scripts/anchor_migration_m17788.py",
+          "new": "development/verification/lid_wall_diff_anchor_history/anchor_migration_m17788.py",
+          "count": 1
+        },
+        {
+          "old": "_ROOT / \"scripts\"",
+          "new": "_ROOT / \"development\" / \"verification\" / \"lid_wall_diff_anchor_history\"",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "tests/test_verify_lid_wall_diff_m17147.py",
+      "new_path": "tests/test_verify_lid_wall_diff_m17147.py",
+      "git_mode": "100644",
+      "original_git_blob": "6fd62c13af963134d91f3f90d70861dd1e13e7bf",
+      "original_sha256": "95bce7dd09c18e545e3da0378062b712b3b25d58152bf01908117e736ffe4b5c",
+      "size_bytes": 6477,
+      "current_git_blob": "ec86c61832ebe2ba67b389f37463c5c792e5e7c5",
+      "current_sha256": "ba4f7a92c171bd2535340c17001248eac903c1370f6bd794cdf821a05052b5a0",
+      "current_size_bytes": 6531,
+      "path_only_edits": [
+        {
+          "old": "_ROOT / \"scripts\"",
+          "new": "_ROOT / \"development\" / \"verification\" / \"lid_wall_diff_anchor_history\"",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    }
+  ],
+  "compatibility": {
+    "scope": "Archived historical m17147 independent verifier and m17788 follow-up experiment/report generator as one dependency group. Two test loaders use the archive paths; two public report URLs retain their existing locations and numeric content. Other active GAP-PP-2 verification drivers remain unchanged; only this historical group moved.",
+    "environment": {
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "numpy": "2.5.5",
+      "matplotlib": "3.11.2",
+      "machine": "x86_64",
+      "OMP_NUM_THREADS": "1",
+      "MPLBACKEND": "Agg"
+    },
+    "actual_targeted_tests": {
+      "before_passed": 13,
+      "after_passed": 13,
+      "test_paths": [
+        "tests/test_anchor_migration_m17788.py",
+        "tests/test_verify_lid_wall_diff_m17147.py"
+      ],
+      "before_log_sha256": "eb7b014e4f95de447551fa417e00fba36f970db03b03033ff0472a3ff3e57327",
+      "after_log_sha256": "7a9e01f92bc2bc77f7de821c02d04f5463fdfbcf9f1fbb88f085fb1c8f187f58"
+    },
+    "actual_smoke": {
+      "args": [
+        "--n",
+        "65",
+        "--steps",
+        "200",
+        "--u-lid",
+        "0.08",
+        "--re",
+        "100",
+        "--max-iter",
+        "2",
+        "--re-grid",
+        "75",
+        "100",
+        "125",
+        "--threads",
+        "1"
+      ],
+      "scope": "Abbreviated current-main run for relocation compatibility, not the original n65/n129 full campaigns and not current scientific acceptance.",
+      "actual_raw_results": [
+        {
+          "path": "development/verification/lid_wall_diff_anchor_history/compatibility/anchor-n65-before.json",
+          "sha256": "26f8462d35d616e71522d02f8b2e0a0bbda415aa6f64f4eddeb8a55db357ad55",
+          "size_bytes": 3087,
+          "git_blob": "8027d74ee874445b7c45b5eb781cca6763bf79ba"
+        },
+        {
+          "path": "development/verification/lid_wall_diff_anchor_history/compatibility/anchor-n65-after.json",
+          "sha256": "1120a79ac7c89266f41e49dcbedf0a5a0ba824406d4d81b8b04896ef15ce6b79",
+          "size_bytes": 3085,
+          "git_blob": "daae7396f6e452e745bcf53e88aa7833a975318d"
+        }
+      ],
+      "same_non_timing_fields": true,
+      "excluded_timing_fields": [
+        "sweep.wall_time_s",
+        "inversion_wall_time_s",
+        "total_wall_time_s"
+      ],
+      "normalized_sha256": "7e781214f69d1b18436b94d31d70809310235c79fd79ce1733d12d94bd48c671",
+      "criterion_re_lt_15pct": false,
+      "historical_original_full_campaigns_recovered": false
+    },
+    "actual_report_render": {
+      "same_real_input": "development/verification/lid_wall_diff_anchor_history/compatibility/anchor-n65-before.json",
+      "after_read_same_before_input": true,
+      "files": [
+        {
+          "name": "ghia_mse_vs_re.png",
+          "sha256_before": "c0b381a9bc09d5b0d28fc34321a5c7bfee09998f8a6a8027488852bbe27d2bda",
+          "sha256_after": "c0b381a9bc09d5b0d28fc34321a5c7bfee09998f8a6a8027488852bbe27d2bda",
+          "size_bytes": 70070,
+          "byte_identical": true
+        },
+        {
+          "name": "re_error_ladder.png",
+          "sha256_before": "0956cc9d27802263b1ccf9fe1cc0c28a9f8b93f03d40a4688bf57f5fdef18412",
+          "sha256_after": "0956cc9d27802263b1ccf9fe1cc0c28a9f8b93f03d40a4688bf57f5fdef18412",
+          "size_bytes": 32397,
+          "byte_identical": true
+        },
+        {
+          "name": "report_payload.json",
+          "sha256_before": "c29e325e119aeaf0508a1702510d47c601e7d3cc9a5001a68bd7b0186ab40855",
+          "sha256_after": "c29e325e119aeaf0508a1702510d47c601e7d3cc9a5001a68bd7b0186ab40855",
+          "size_bytes": 140264,
+          "byte_identical": true
+        }
+      ],
+      "scope": "Rendered only in scratch; the generated figures are not published or scientific evidence. Existing historical n33 value is retained by the unchanged generator. The actual n65 smoke input is abbreviated, and n129 input was not supplied."
+    },
+    "verifier_cli_help": {
+      "before_sha256": "602eb60de4f4c3ba8c0448937b3f4e39ac17d12d5cc92db4935ecf14036f5b5c",
+      "after_sha256": "1b78c27171fdfd819dafc17ec77c1d2d2931d461bafaca7b0e6203f488880297",
+      "identical_after_declared_path_replacements": true,
+      "columns": 1000,
+      "scope": "Only location text differs; wide terminal avoids unrelated argparse wrapping."
+    },
+    "retained_root_constraints": {
+      "scripts": "Other active launchers and historical dependencies still require compatibility review; no root is retired.",
+      "xval": "Original missing artifacts and baseline failures still retain the root.",
+      "models": "Published checkpoint unchanged; no unchecked removal."
+    }
+  },
+  "science": {
+    "algorithm_changed": false,
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated"
+  }
+}

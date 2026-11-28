@@ -84,6 +84,8 @@ and [EDT geometry tagging](../../development/verification/edt_two_segment_geomet
 
 The [portable benchmark source-entrypoint ledger](migrations/portable-benchmark-source-entrypoints-2026-11-28.json) replaces eight fixed workstation source paths with the canonical checkout source for existing case runners. The actual CLI contract is checked separately from scientific acceptance.
 
+The [lid-wall anchor history ledger](migrations/lid-wall-anchor-history-handoff-2026-11-28.json) archives three historical verifier/report helpers as a tested dependency group, preserves their public report URLs and records real compatibility evidence without promoting the abbreviated run.
+
 The [historical collision-matrix ledger](migrations/historical-collision-matrix-2026-11-28.json) retires two internal mission folders and the old collision-operator replay folder. The two frozen-source runners are archived, not active benchmark entries; their original results and legacy source tree remain unchanged.
 
 The [kernel and preprocessing ledger](migrations/kernel-preprocess-xval-2026-11-26.json)

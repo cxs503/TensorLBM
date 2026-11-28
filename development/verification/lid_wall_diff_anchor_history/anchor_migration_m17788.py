@@ -31,7 +31,7 @@ This script answers exactly that, at two resolutions, with Ma controlled to
 Every number is written to JSON by the code path that computed it (no
 hand-copying).  Usage::
 
-    PYTHONPATH=src python scripts/anchor_migration_m17788.py \
+    PYTHONPATH=src python development/verification/lid_wall_diff_anchor_history/anchor_migration_m17788.py \
         --n 129 --steps 16000 --u-lid 0.08 --re 100 \
         --tau-init 0.81 --max-iter 12 --threads 16 \
         --out artifacts/anchor_migration_m17788/anchor_n129.json
