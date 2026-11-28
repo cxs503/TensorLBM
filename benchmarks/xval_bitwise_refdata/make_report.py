@@ -15,7 +15,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
-OUT = REPO / "docs" / "xval_bitwise_refdata_m17718" / "REPORT.md"
+OUT = REPO / "outputs" / "historical" / "m17718" / "REPORT.md"
 
 
 def main() -> int:

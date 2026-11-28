@@ -216,3 +216,8 @@ separately from this migration.
 4. Remove a retired root from the policy when its tracked contents are accounted
    for and its consumers are updated. Run directory, manual and registry checks
    on every batch. This pilot performs structural checks only.
+
+The [bitwise and capillary audit navigation ledger](migrations/bitwise-capillary-audit-navigation-2026-11-28.json)
+archives two internal reports, registers the existing bitwise reference-data benchmark,
+and attaches the independent capillary-rise audit to its existing case without
+changing archived verdicts or published manual URLs.

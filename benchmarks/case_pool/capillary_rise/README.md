@@ -137,3 +137,12 @@ Verdict: the neutral-wall control now gives h = 0.87 lattice (5.2 % of the
 theta=60 Jurin scale) with 1 % mass drift; the theta=60 gate case still **fails**
 (wetting wall absorbs phase, mass -14.1 %, blow-up at step ~440).  Details and
 numbers: `docs/reports/m15917/CASE_MCMP_CAPILLARY_RISE.md`.
+
+## Historical independent audit navigation
+
+The [m15893 board audit](../../../development/audit/m15893/M15893_BOARD_AUDIT.md) and its
+[archived replay inputs and results](../../../development/audit/m15893/repro/)
+retain the original negative verdict. See the
+[original revision](https://github.com/cxs503/TensorLBM/blob/3ca9e48646d81beba843dca38b73a7d59539b1bc/docs/board_audit_m15893/M15893_BOARD_AUDIT.md)
+for the pre-migration report bytes. The original referenced PNG remains missing
+from the tracked tree. This navigation does not reevaluate the case.
