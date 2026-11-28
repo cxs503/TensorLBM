@@ -18,7 +18,7 @@
   ② 可微 Illinois 求根反演（`invert_relaxation_time_rootfind`，宽 bracket 覆盖 Re 50–200）。
 
 ## 2 方法
-`scripts/anchor_migration_m17788.py`（自包含，Ghia 表→探针布局转换与 m17147 逐位一致，
+`development/verification/lid_wall_diff_anchor_history/anchor_migration_m17788.py`（自包含，Ghia 表→探针布局转换与 m17147 逐位一致，
 `tests/test_anchor_migration_m17788.py::test_ghia_target_matches_m17147_verifier` 钉住）：
 - 参数化 `Re = u_lid·(n−1)/ν`，`ν=(τ−0.5)/3`；扫描在 **Re 空间**均匀布点（50–200，10 点），
   每点 no_grad rollout + `centreline_probes` 对 Ghia 目标算 MSE；
@@ -42,7 +42,7 @@
 ```
 run_cluster fetch --jid cj1675   # -> artifacts/anchor_migration_m17788/anchor_n65.json
 run_cluster fetch --jid cj1676   # -> artifacts/anchor_migration_m17788/anchor_n129.json
-PYTHONPATH=src python scripts/gen_anchor_migration_report_m17788.py \
+PYTHONPATH=src python development/verification/lid_wall_diff_anchor_history/gen_anchor_migration_report_m17788.py \
   --n65 artifacts/anchor_migration_m17788/anchor_n65.json \
   --n129 artifacts/anchor_migration_m17788/anchor_n129.json \
   --outdir artifacts/anchor_migration_m17788

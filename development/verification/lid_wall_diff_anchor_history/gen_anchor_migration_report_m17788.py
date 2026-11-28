@@ -5,7 +5,7 @@ computed it).
 
 Usage::
 
-    PYTHONPATH=src python scripts/gen_anchor_migration_report_m17788.py \
+    PYTHONPATH=src python development/verification/lid_wall_diff_anchor_history/gen_anchor_migration_report_m17788.py \
         --n65 artifacts/anchor_migration_m17788/anchor_n65.json \
         --n129 artifacts/anchor_migration_m17788/anchor_n129.json \
         --outdir artifacts/anchor_migration_m17788

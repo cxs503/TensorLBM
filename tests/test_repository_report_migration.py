@@ -227,6 +227,51 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertEqual({row["kind"] for row in cells}, {"unit_toml", "unit_json"})
         self.assertTrue(all(row["dir"].startswith("benchmarks/model_units/") for row in cells))
 
+    def test_lid_wall_anchor_history_keeps_originals_and_real_smoke_receipts(self):
+        path = LEDGER_PATH.parent / "lid-wall-anchor-history-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        self.assertEqual(len(ledger["entries"]), 3)
+        self.assertEqual(ledger["scripts_tracked_before"] - ledger["scripts_tracked_after"], 3)
+        self.assertEqual(ledger["top_level_directories_before"], ledger["top_level_directories_after"])
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        for row in ledger["entries"] + ledger["consumer_edits"]:
+            data = (REPO / row["new_path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["current_sha256"])
+            for edit in reversed(row["path_only_edits"]):
+                self.assertEqual(data.count(edit["new"].encode()), edit["count"])
+                data = data.replace(edit["new"].encode(), edit["old"].encode())
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["original_sha256"])
+            self.assertEqual(hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest(),
+                             row["original_git_blob"])
+        for row in ledger["entries"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", row["old_path"]], cwd=REPO))
+        comp = ledger["compatibility"]
+        self.assertEqual(comp["actual_targeted_tests"]["before_passed"], 13)
+        self.assertEqual(comp["actual_targeted_tests"]["after_passed"], 13)
+        smoke = comp["actual_smoke"]
+        data = []
+        for row in smoke["actual_raw_results"]:
+            self.assert_fingerprint(REPO / row["path"], row["sha256"], row["size_bytes"])
+            result = json.loads((REPO / row["path"]).read_text())
+            self.assertEqual((result["n"], result["steps"]), (65, 200))
+            self.assertFalse(result["summary"]["criterion_re_lt_15pct"])
+            result["sweep"].pop("wall_time_s")
+            result.pop("inversion_wall_time_s")
+            result.pop("total_wall_time_s")
+            data.append(result)
+        self.assertEqual(data[0], data[1])
+        self.assertEqual(hashlib.sha256(json.dumps(data[0], sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+                         smoke["normalized_sha256"])
+        self.assertFalse(smoke["historical_original_full_campaigns_recovered"])
+        self.assertEqual(len(comp["actual_report_render"]["files"]), 3)
+        self.assertTrue(all(row["sha256_before"] == row["sha256_after"]
+                            for row in comp["actual_report_render"]["files"]))
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_retired_xval_design_directories_and_preserved_assets(self):
         path = LEDGER_PATH.parent / "xval-reference-designs-2026-11-23.json"
         ledger = json.loads(path.read_text(encoding="utf-8"))

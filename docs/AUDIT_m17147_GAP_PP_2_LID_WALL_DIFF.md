@@ -9,7 +9,7 @@
 
 ## 1 独立性声明与范围
 * 本次核验**不使用**实施方驱动脚本 `scripts/run_gap_pp2_lid_wall_diff.py`，另写
-  `scripts/verify_lid_wall_diff_m17147.py`（同一模块，独立功能量/独立算例参数）。
+  `development/verification/lid_wall_diff_anchor_history/verify_lid_wall_diff_m17147.py`（同一模块，独立功能量/独立算例参数）。
 * 工件目录 `artifacts/gap_pp2_lid_wall_diff/`（实施方声称的 steady/sweep/fdcheck/invert 全部
   JSON/pt）**在本分支不存在**（`ls` = No such file），即原判据证据链**不可复算**，
   本轮全部数字由本单脚本重新生成并落 `artifacts/verify_m17147/`。
@@ -102,11 +102,11 @@ Re≥171 的点因 n=33 欠分辨发散为 NaN，已如实记录）。
 
 ## 7 复现
 ```
-PYTHONPATH=src python scripts/verify_lid_wall_diff_m17147.py fd \
+PYTHONPATH=src python development/verification/lid_wall_diff_anchor_history/verify_lid_wall_diff_m17147.py fd \
   --n 32 --steps 600 --threads 8 --out artifacts/verify_m17147/fd_n32_t600.json
-PYTHONPATH=src python scripts/verify_lid_wall_diff_m17147.py repro \
+PYTHONPATH=src python development/verification/lid_wall_diff_anchor_history/verify_lid_wall_diff_m17147.py repro \
   --n 33 --steps 1500 --tau-init 0.60 --max-iter 8 --out artifacts/verify_m17147/repro_n33_t1500.json
-PYTHONPATH=src python scripts/verify_lid_wall_diff_m17147.py anchor \
+PYTHONPATH=src python development/verification/lid_wall_diff_anchor_history/verify_lid_wall_diff_m17147.py anchor \
   --n 33 --steps 1500 --tau-init 0.60 --max-iter 8 --out artifacts/verify_m17147/anchor_n33_t1500.json
 python -m pytest tests/test_verify_lid_wall_diff_m17147.py -q     # 6 passed
 ```

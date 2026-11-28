@@ -1,6 +1,6 @@
 """Tests for the external-anchor migration study (m17788).
 
-These pin the invariants the study in ``scripts/anchor_migration_m17788.py``
+These pin the invariants the study in ``development/verification/lid_wall_diff_anchor_history/anchor_migration_m17788.py``
 relies on, so its numbers are machine-checkable:
 
 1. the Ghia (1982) table -> probe-layout conversion in the *new* script is
@@ -35,7 +35,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 
 
 def _load(name: str, filename: str):
-    path = _ROOT / "scripts" / filename
+    path = _ROOT / "development" / "verification" / "lid_wall_diff_anchor_history" / filename
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
