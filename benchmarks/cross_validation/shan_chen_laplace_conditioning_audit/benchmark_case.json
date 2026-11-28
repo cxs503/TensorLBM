@@ -1,0 +1,27 @@
+{
+  "scope": "Separate archived conditioning audit and radius-independent readout comparison. Existing JSON carries fit and per-radius diagnostic differences. Its report states the owner 15% band and tighter 3% target; this index does not turn the diagnostic results into a single verdict.",
+  "criteria": {
+    "documented_owner_error_band_pct_strictly_below": 15,
+    "documented_tight_target_pct_strictly_below": 3,
+    "interpretation": "Historical reported audit criteria, not a fresh or aggregate acceptance."
+  },
+  "source": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/run_audit.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/make_report.py"
+  ],
+  "config": [],
+  "documentation": [
+    "benchmarks/cross_validation/shan_chen_laplace_conditioning_audit/README.md",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/REPORT_AUDIT_R2.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/audit_r2/artifacts/audit_r2.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/shan-chen-laplace-evidence-index-2026-11-28.json"
+  ],
+  "references": [
+    "Archived conditioning and radius-independent diagnostic report."
+  ]
+}

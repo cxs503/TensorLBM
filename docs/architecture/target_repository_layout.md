@@ -100,6 +100,11 @@ kernel comparison under development with its independent audits.
 
 ## Second-level placement
 
+The [Shan–Chen Laplace evidence index ledger](migrations/shan-chen-laplace-evidence-index-2026-11-28.json)
+indexes four distinct historical rounds and audits and documents unrecovered
+original figure hashes. Its legacy XVAL directory remains pending artifact
+recovery; no scientific verdict is promoted.
+
 The [Stokes, Blockforest and Chapman–Enskog historical audit ledger](migrations/stokes-blockforest-ce-audits-2026-11-27.json) maps the retired mission folders to their archived evidence and stable case navigation. It is not a new scientific acceptance.
 
 | Area | Placement |

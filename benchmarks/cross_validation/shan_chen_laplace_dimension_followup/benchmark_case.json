@@ -1,0 +1,40 @@
+{
+  "scope": "R2 summary records protocol and reference metadata but no completed numerical legs; R3 tracked result records 2D partial verdicts, with all 3D legs and the cross-dimensional verdict NOT_RUN. One 2D gate is false. The three tracked R3 parts and original protocol are retained separately; no complete cross-dimensional acceptance.",
+  "criteria": {
+    "P1_tol": 0.15,
+    "P2_mech_balance_tol": 0.001,
+    "P3_radius_consistency_tol": 0.15,
+    "P4_sigmaK_vs_laplace_tol": 0.15,
+    "P5_coexist_vs_maxwell_tol": 0.15
+  },
+  "source": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/run_r2.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/run_r3_split.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_report_r3.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_figures_r2.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_figures_r2_theory.py",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/make_figures_r3.py"
+  ],
+  "config": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/shan_chen_laplace_dimension_followup/README.md",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/REPORT_VERIFY_R2.md",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/REPORT_VERIFY_R3.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r2_summary.json",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_summary.json"
+  ],
+  "evidence": [
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_parts/droplet_2d.json",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_parts/field_2d.json",
+    "xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/verify_r2/artifacts/r3_parts/flat_2d.json",
+    "docs/architecture/migrations/shan-chen-laplace-evidence-index-2026-11-28.json"
+  ],
+  "references": [
+    "Original R2 preregistered protocol and R3 split-run receipts."
+  ]
+}
