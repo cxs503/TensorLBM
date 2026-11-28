@@ -14,9 +14,10 @@ the pass/fail of the case (which is judged by the validation matrix):
   boundary/force/anisotropy bug.
 
 If a future change to the estimator, the geometry or the force kernel silently
-moves these numbers, the root-cause attribution in docs/m28104/ becomes wrong —
+moves these numbers, the root-cause attribution in development/audit/m28104/ becomes wrong —
 hence the lock.
 """
+
 from __future__ import annotations
 
 import json
@@ -25,14 +26,13 @@ import pathlib
 import sys
 
 import numpy as np
-import pytest
 import torch
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from tensorlbm.validation import cylinder_dfg as cdfg  # noqa: E402
 from tensorlbm.boundary.boundaries import cylinder_mask  # noqa: E402
+from tensorlbm.validation import cylinder_dfg as cdfg  # noqa: E402
 
 ART = REPO / "benchmarks/verified/cylinder/re100_dfg/artifacts"
 BANDS = cdfg.REFERENCE_BANDS["2D-2"]
@@ -45,8 +45,9 @@ def _rejudge(D: int, tag: str = "u0833") -> dict:
     assert spath.exists() and jpath.exists(), f"missing frozen series for D={D}"
     old = json.loads(jpath.read_text())
     z = np.load(spath)
-    T = cdfg.CaseConfig(D_cells=D, u_mean_lb=0.0833, n_steps=10**9,
-                        transient_periods=5.0, avg_periods=5.0).period_steps
+    T = cdfg.CaseConfig(
+        D_cells=D, u_mean_lb=0.0833, n_steps=10**9, transient_periods=5.0, avg_periods=5.0
+    ).period_steps
     skip = int(round(5.0 * T))
     cl = z["cl"].astype("float64")[skip:]
     cd = z["cd"].astype("float64")[skip:]
@@ -90,8 +91,9 @@ def test_residual_error_is_grid_resolution_not_estimator():
     span = abs(r40["cl_amp_fixed"] - r28["cl_amp_fixed"]) / r28["cl_amp_fixed"] * 100.0
     assert span > 3.0, f"D28→D40 cl_amp span {span:.1f}% <= 3%"
     # and the error drops monotonically with resolution after the fix
-    assert abs(cdfg.band_error(r40["cl_amp_fixed"], BANDS["cl_amp"])["err_pct_vs_mid"]) < \
-        abs(cdfg.band_error(r28["cl_amp_fixed"], BANDS["cl_amp"])["err_pct_vs_mid"])
+    assert abs(cdfg.band_error(r40["cl_amp_fixed"], BANDS["cl_amp"])["err_pct_vs_mid"]) < abs(
+        cdfg.band_error(r28["cl_amp_fixed"], BANDS["cl_amp"])["err_pct_vs_mid"]
+    )
 
 
 def test_lattice_is_isotropic_at_every_level():
@@ -108,12 +110,18 @@ def test_lattice_is_isotropic_at_every_level():
 def test_force_and_geometry_conventions_are_consistent():
     """Mean lift ≈ 0, mask area ≈ πr², blockage = spec — no boundary/force bug."""
     for D in (20, 28, 40):
-        r = _rejudge(D)
+        _rejudge(D)
         dx = cdfg.CYL_D / D
         nx = int(round(cdfg.LX / dx))
         ny = int(round(cdfg.LY / dx))
-        solid = cylinder_mask(nx, ny, round(cdfg.CYL_CX / dx), round(cdfg.CYL_CY / dx),
-                              0.5 * cdfg.CYL_D / dx, torch.device("cpu"))
+        solid = cylinder_mask(
+            nx,
+            ny,
+            round(cdfg.CYL_CX / dx),
+            round(cdfg.CYL_CY / dx),
+            0.5 * cdfg.CYL_D / dx,
+            torch.device("cpu"),
+        )
         area_circle = math.pi * (0.5 * cdfg.CYL_D / dx) ** 2
         assert abs(int(solid.sum()) / area_circle - 1.0) < 0.01
         assert abs(cdfg.CYL_D / cdfg.LY - 0.1 / 0.41) < 1e-9

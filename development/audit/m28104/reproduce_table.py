@@ -14,10 +14,10 @@ their artifacts exist.
 
 Usage
 -----
-    python docs/m28104/reproduce_table.py --levels 20 28 40 48 56
-    python docs/m28104/reproduce_table.py --rejudge-only
+    python development/audit/m28104/reproduce_table.py --levels 20 28 40 48 56
+    python development/audit/m28104/reproduce_table.py --levels 20 28 40
 
-The table is written to ``docs/m28104/cl_cd_table.json`` (and printed as text).
+The table is written to ``outputs/historical/m28104/cl_cd_table.json`` (and printed as text).
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ import sys
 import numpy as np
 import torch
 
-REPO = pathlib.Path(__file__).resolve().parents[2]
+REPO = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.validation import cylinder_dfg as cdfg  # noqa: E402
@@ -82,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     import torch  # noqa: PLC0415
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--levels", type=int, nargs="+", default=[20, 28, 40])
-    ap.add_argument("--out", default=str(pathlib.Path(__file__).parent / "cl_cd_table.json"))
+    ap.add_argument("--out", default=str(REPO / "outputs" / "historical" / "m28104" / "cl_cd_table.json"))
     a = ap.parse_args(argv)
 
     bands = cdfg.REFERENCE_BANDS["2D-2"]

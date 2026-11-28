@@ -238,6 +238,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "audit_m16237"),
     ("docs", "audit_m17596"),
     ("docs", "m23014"),
+    ("docs", "m28104"),
     ("docs", "audit_m17851"),
     ("docs", "audit_m17741"),
 }

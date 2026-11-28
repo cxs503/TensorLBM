@@ -1,0 +1,362 @@
+{
+  "schema_version": 1,
+  "base_main": "d8fa649255e58a7941fdd5e79c5e1b72eeb76abb",
+  "previous_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 54,
+  "docs_second_level_after": 53,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 586,
+  "retired_second_level_directories": [
+    "docs/m28104"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/m28104/REPORT.md",
+      "new_path": "development/audit/m28104/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "00f7f784c44f7be6c9fd2eff3a1352d6b13c87d6",
+      "original_sha256": "2e5572fff1bd276986dbcb0c00920d3d50ca8625ec0f95d8677419130f8b8b3e",
+      "size_bytes": 6604,
+      "current_sha256": "6c3f19601010fa70d1ff02352ef62eb5f0082423edfaa480ece648df16515354",
+      "current_size_bytes": 6656,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "docs/m28104/",
+          "new": "development/audit/m28104/",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "old_path": "docs/m28104/cl_cd_table.json",
+      "new_path": "development/audit/m28104/cl_cd_table.json",
+      "git_mode": "100644",
+      "original_git_blob": "2029c8f33bc65b65734405cc697e909360fdeefe",
+      "original_sha256": "0fc8942bbdebfdedb80ee9ae5bebd99780895094407cbbea4b7542c2f13fbf6d",
+      "size_bytes": 2089,
+      "current_sha256": "0fc8942bbdebfdedb80ee9ae5bebd99780895094407cbbea4b7542c2f13fbf6d",
+      "current_size_bytes": 2089,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m28104/m28104_dfg_cl_amp.png",
+      "new_path": "development/audit/m28104/m28104_dfg_cl_amp.png",
+      "git_mode": "100644",
+      "original_git_blob": "d4adb33c934faf2e15a8d79020b9fddf665ff1d5",
+      "original_sha256": "307f626b4cd040226109f62d1538c4ee8991af70ff6d0e07947024907efbde44",
+      "size_bytes": 102574,
+      "current_sha256": "307f626b4cd040226109f62d1538c4ee8991af70ff6d0e07947024907efbde44",
+      "current_size_bytes": 102574,
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/m28104/make_figs.py",
+      "new_path": "development/audit/m28104/make_figs.py",
+      "git_mode": "100644",
+      "original_git_blob": "ec8c49e8c7853122533350e2734c46770ea39372",
+      "original_sha256": "ea2cfc2fa5447395d651f88cd24fa5b6e5388383a44fa712b75795429b146bc4",
+      "size_bytes": 2251,
+      "current_sha256": "1aa86f979f9b2c056dae9d31b244df01d1aa7c4facbf79ad1407dc422bc2436c",
+      "current_size_bytes": 2310,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "pathlib.Path(__file__).resolve().parents[2]",
+          "new": "pathlib.Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "out = pathlib.Path(__file__).parent / \"m28104_dfg_cl_amp.png\"",
+          "new": "out = REPO / \"outputs\" / \"historical\" / \"m28104\" / \"m28104_dfg_cl_amp.png\"\nout.parent.mkdir(parents=True, exist_ok=True)",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/m28104/reproduce_table.py",
+      "new_path": "development/audit/m28104/reproduce_table.py",
+      "git_mode": "100644",
+      "original_git_blob": "4b53054683c67e9f23179a014f42b507acadd52a",
+      "original_sha256": "0cb6b1d7183205acaed02b9c79c480b9ef386f5e03de60a5276d0644c444610b",
+      "size_bytes": 5397,
+      "current_sha256": "fafdb7e741368ca50c1c4828f2cac25e5f617b07fea55225327cf5eddbeb6138",
+      "current_size_bytes": 5453,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "pathlib.Path(__file__).resolve().parents[2]",
+          "new": "pathlib.Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "docs/m28104/reproduce_table.py",
+          "new": "development/audit/m28104/reproduce_table.py",
+          "count": 2
+        },
+        {
+          "old": " --rejudge-only\n",
+          "new": " --levels 20 28 40\n",
+          "count": 1
+        },
+        {
+          "old": "docs/m28104/cl_cd_table.json",
+          "new": "outputs/historical/m28104/cl_cd_table.json",
+          "count": 1
+        },
+        {
+          "old": "default=str(pathlib.Path(__file__).parent / \"cl_cd_table.json\")",
+          "new": "default=str(REPO / \"outputs\" / \"historical\" / \"m28104\" / \"cl_cd_table.json\")",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/m28104/root_cause_isolate.py",
+      "new_path": "development/audit/m28104/root_cause_isolate.py",
+      "git_mode": "100644",
+      "original_git_blob": "3fa295bddfeee0ec2328745e3baa69ce83d7ef7e",
+      "original_sha256": "59d8ea9cbf9d06b6c44bbcd76a7dc49f1588befcd4ef7aa10e7b14d535747d42",
+      "size_bytes": 11068,
+      "current_sha256": "af383bc1f5d5c72cb0ce495d467c978827a35f8057957d7dff2bc1182ad2366b",
+      "current_size_bytes": 11146,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "pathlib.Path(__file__).resolve().parents[2]",
+          "new": "pathlib.Path(__file__).resolve().parents[3]",
+          "count": 1
+        },
+        {
+          "old": "docs/m28104/root_cause_verdict.json",
+          "new": "outputs/historical/m28104/root_cause_verdict.json",
+          "count": 1
+        },
+        {
+          "old": "path = pathlib.Path(__file__).parent / \"root_cause_verdict.json\"",
+          "new": "path = REPO / \"outputs\" / \"historical\" / \"m28104\" / \"root_cause_verdict.json\"\n    path.parent.mkdir(parents=True, exist_ok=True)",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/m28104/root_cause_verdict.json",
+      "new_path": "development/audit/m28104/root_cause_verdict.json",
+      "git_mode": "100644",
+      "original_git_blob": "edda9c65711607553e63c82fdd1fb3948d30a9a0",
+      "original_sha256": "c727b719251d490b8fc68e74b943a3bf95bebae08a1713fe44e9cc68fbcdb0b5",
+      "size_bytes": 4449,
+      "current_sha256": "c727b719251d490b8fc68e74b943a3bf95bebae08a1713fe44e9cc68fbcdb0b5",
+      "current_size_bytes": 4449,
+      "byte_identical": true
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "benchmarks/pending/cylinder_re100_dfg/benchmark_case.json",
+      "new_path": "benchmarks/pending/cylinder_re100_dfg/benchmark_case.json",
+      "git_mode": "100644",
+      "original_git_blob": "6920bde67dd01de59afa1e6eccb9760740a8ee5f",
+      "original_sha256": "8918a0ca080c595939dcc7ad06ab808f49940856602561f95608896bc49ac92a",
+      "size_bytes": 4783,
+      "current_sha256": "08bac284ddc14aabc3a74c1ee4fd90b04b46cd89dde8f5e3d8c30f15fab383d8",
+      "current_size_bytes": 5176,
+      "byte_identical": false,
+      "change_scope": "Append historical documentation/results/evidence only; no criteria, status, case ID or numerical changes"
+    },
+    {
+      "old_path": "tests/test_m28104_dfg_root_cause.py",
+      "new_path": "tests/test_m28104_dfg_root_cause.py",
+      "git_mode": "100644",
+      "original_git_blob": "36486add64903bb7595dcddd0e67e0a8c3ff9167",
+      "original_sha256": "56c76b694899c26f813e199e96d5cf55137b0768006911586bdbab173b810366",
+      "size_bytes": 5376,
+      "current_sha256": "f6a2805caac84b92d4d6b4c05adc3cd7a22abcbee92ea14caa78ed51bb6b4cc7",
+      "current_size_bytes": 5419,
+      "byte_identical": false,
+      "change_scope": "Archive docstring path; remove unused import, sort imports, remove unused assignment while retaining actual call; format only. All five original regression tests retained."
+    }
+  ],
+  "concurrent_path_corrections": [
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/rejudge_cl_amp.json",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/rejudge_cl_amp.json",
+      "git_mode": "100644",
+      "original_git_blob": "9013f53683170dcd69d4e495863ecdc4933c2b64",
+      "original_sha256": "7e68406817a1210ef527ec6bcc265e512dda0a967fc757abedf5b5252275f505",
+      "size_bytes": 6378,
+      "current_sha256": "59f64a0d0a3e8cfdde9f51331255b5f9e6d570552d2835dce03f34fa616718bc",
+      "current_size_bytes": 6411,
+      "byte_identical": false,
+      "current_git_blob": "66e34dda21897980cfabf69120edcda5c519674f",
+      "path_only_edits": [
+        {
+          "old": "\"series\": \"verified/cylinder/re100_dfg/artifacts/",
+          "new": "\"series\": \"benchmarks/verified/cylinder/re100_dfg/artifacts/",
+          "count": 3
+        }
+      ],
+      "introduced_by_pr": 3086,
+      "introduced_by_commit": "d8fa649255e58a7941fdd5e79c5e1b72eeb76abb"
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/run.py",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "560df5410a877aa1c9e82df7be4d2171e2ff3034",
+      "original_sha256": "6beef713a6b4e64a758b13bddfc10ef994b2612cfac32b32af67e3e13c6fb499",
+      "size_bytes": 15999,
+      "current_sha256": "06f9c318c62d074e0f5b17da5382f07b9dcfa68229d7f7434585c4cb341ebcc8",
+      "current_size_bytes": 15999,
+      "byte_identical": false,
+      "current_git_blob": "557715f06be79f6ea4779f30f51fec9b2516497c",
+      "path_only_edits": [
+        {
+          "old": "REPO_ROOT = HERE.parents[2]",
+          "new": "REPO_ROOT = HERE.parents[3]",
+          "count": 1
+        }
+      ],
+      "introduced_by_pr": 3086,
+      "introduced_by_commit": "d8fa649255e58a7941fdd5e79c5e1b72eeb76abb"
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0833.json",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0833.json",
+      "git_mode": "100644",
+      "original_git_blob": "07e241be8dc9145643d6d4725d6d720d13fdff60",
+      "original_sha256": "5a259f4bd059db9f3132bd8fe602bd1482a22d2027fad11755ea1f3aa4b41240",
+      "size_bytes": 3410,
+      "current_sha256": "5a259f4bd059db9f3132bd8fe602bd1482a22d2027fad11755ea1f3aa4b41240",
+      "current_size_bytes": 3410,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0833.series.npz",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D20_u0833.series.npz",
+      "git_mode": "100644",
+      "original_git_blob": "cb744d02218170b0fceb6c6a49274120606bda9a",
+      "original_sha256": "eeb33a294d756cc1e5aa28583a549f8148eb146e3b0f55609de3a02bcd65caa5",
+      "size_bytes": 170760,
+      "current_sha256": "eeb33a294d756cc1e5aa28583a549f8148eb146e3b0f55609de3a02bcd65caa5",
+      "current_size_bytes": 170760,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D28_u0833.json",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D28_u0833.json",
+      "git_mode": "100644",
+      "original_git_blob": "ae066c7a4d511a726c2a0fd43c02a1ed5afcd87a",
+      "original_sha256": "bf42b62eb713a1c66b8762de7b30d1db1d2debe9f86ad1f87fb3c9bdc3f5cf68",
+      "size_bytes": 3739,
+      "current_sha256": "bf42b62eb713a1c66b8762de7b30d1db1d2debe9f86ad1f87fb3c9bdc3f5cf68",
+      "current_size_bytes": 3739,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D28_u0833.series.npz",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D28_u0833.series.npz",
+      "git_mode": "100644",
+      "original_git_blob": "0613e1baa38d70dcc7a4e6fddeb495762227da32",
+      "original_sha256": "6df4187a39cf359a94f97237fb23ade30f65c2b0b337cf9106e80268f3bfe42b",
+      "size_bytes": 243464,
+      "current_sha256": "6df4187a39cf359a94f97237fb23ade30f65c2b0b337cf9106e80268f3bfe42b",
+      "current_size_bytes": 243464,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.json",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.json",
+      "git_mode": "100644",
+      "original_git_blob": "64bf8a6f9276bf499f6b2d7ce45b8ba8b92851eb",
+      "original_sha256": "755c439b47a68961e1b2b90433d77ae8fab64714b5bfbd5685f556a3f94f0663",
+      "size_bytes": 3838,
+      "current_sha256": "755c439b47a68961e1b2b90433d77ae8fab64714b5bfbd5685f556a3f94f0663",
+      "current_size_bytes": 3838,
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.series.npz",
+      "new_path": "benchmarks/verified/cylinder/re100_dfg/artifacts/level_D40_u0833.series.npz",
+      "git_mode": "100644",
+      "original_git_blob": "207fb75367805d89b7046405ba58466feb3060b5",
+      "original_sha256": "59c0a113e7c28ef52384ec6a1a4609599df5116c6cafcf51e0f4f3db1f46e7a5",
+      "size_bytes": 330920,
+      "current_sha256": "59c0a113e7c28ef52384ec6a1a4609599df5116c6cafcf51e0f4f3db1f46e7a5",
+      "current_size_bytes": 330920,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact paths reviewed on current main and six open governance heads; no tracked live path consumer other than mission docstrings and test prose. Three indexed external searches across TensorKnowledge/TensorPhysics/TensorPlatform/TensorBench found no matches. External bookmarks are not exhaustively verifiable; original internal report URL preserved at immutable base revision. Formal manual URLs unchanged.",
+    "navigation_indexes": [
+      "development/audit/m28104/README.md"
+    ],
+    "new_case_ids": 0,
+    "existing_case_manifest": "benchmarks/pending/cylinder_re100_dfg/benchmark_case.json",
+    "replay_output_directory": "outputs/historical/m28104",
+    "scope": "Frozen-series post-processing only; no solver, no mock, no new physical acceptance.",
+    "replay_parity": {
+      "outputs": [
+        {
+          "filename": "cl_cd_table.json",
+          "sha256": "772b564baba7787db3c06f2b326968ec53b0dd39530eb3d133c6bf7988818300",
+          "size_bytes": 2089,
+          "before_after_byte_identical": true
+        },
+        {
+          "filename": "m28104_dfg_cl_amp.png",
+          "sha256": "3782fb9cab957db66371250a889c29314678111d843804562a4e350e0106482f",
+          "size_bytes": 109655,
+          "before_after_byte_identical": true
+        }
+      ],
+      "regression_tests_before": 5,
+      "regression_tests_after": 5,
+      "canonical_case_help_byte_identical": true,
+      "root_cause_probe_import_only": true,
+      "root_cause_import_receipt": {
+        "repo_relative_art": "benchmarks/verified/cylinder/re100_dfg/artifacts",
+        "package": "src/tensorlbm/__init__.py",
+        "main_invoked": false
+      },
+      "solver_invoked": false,
+      "python": "3.12.14"
+    }
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  }
+}

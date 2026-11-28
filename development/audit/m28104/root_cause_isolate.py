@@ -15,7 +15,7 @@ Candidates (predeclared, from the LBM-P0-DFG ledger):
   C7  collision operator (MRT vs BGK — same ν, different non-hydro modes)
   C8  force extraction (Ladd momentum exchange — sign/scale check)
 
-Output: ``docs/m28104/root_cause_verdict.json`` — one verdict per candidate.
+Output: ``outputs/historical/m28104/root_cause_verdict.json`` — one verdict per candidate.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ import sys
 import numpy as np
 import torch
 
-REPO = pathlib.Path(__file__).resolve().parents[2]
+REPO = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.validation import cylinder_dfg as cdfg  # noqa: E402
@@ -239,7 +239,8 @@ def main() -> int:
 
     out = {"case": "CASE-CYLINDER-DRAG-RE100 (DFG 2D-2, Re=100)",
            "verdicts": verdicts}
-    path = pathlib.Path(__file__).parent / "root_cause_verdict.json"
+    path = REPO / "outputs" / "historical" / "m28104" / "root_cause_verdict.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=2))
     print(json.dumps({k: v["verdict"] for k, v in verdicts.items()}, indent=2))
     return 0

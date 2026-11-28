@@ -143,6 +143,8 @@ byte-identical to their retained `docs/mission_summaries/` copies.
 
 The [oracle and Norberg audit ledger](migrations/oracle-and-square-cylinder-audit-docs-2026-11-27.json) archives historical audit records and connects them to the existing cases without changing their criteria or results.
 
+The [m28104 concurrent DFG correction ledger](migrations/m28104-dfg-concurrent-path-corrections-2026-11-28.json) archives the new internal mission directory, extends the existing pending case evidence, and records the exact reversible path-only changes introduced by #3086 without replacing the prior provenance.
+
 The [DFG and Cartesian MPI audit ledger](migrations/dfg-and-cartesian-mpi-audits-2026-11-27.json) preserves two mission archives, the original DFG evidence and figures, and records historical-input reanalysis parity without scientific promotion.
 
 The [historical publication script handoff ledger](migrations/historical-publication-script-handoff-2026-11-28.json) archives one-off report helpers, preserves stable report URLs, and records local build compatibility and original input gaps without publishing externally.
