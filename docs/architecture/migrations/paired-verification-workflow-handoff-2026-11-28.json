@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "base_main": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+  "base_tree": "acdb63dc4483cfdbc6a9e321336fb9b22dbc8834",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "scripts_tracked_before": 557,
+  "scripts_tracked_after": 553,
+  "retired_top_level_directories": [],
+  "entries": [
+    {
+      "old_path": "scripts/units_bootstrap_gate_figures.py",
+      "new_path": "development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "38940f22f12389a8ef983899b5cc76e910c918c2",
+      "original_sha256": "2ebaf4936ca19a0f86ab65f7933fe11da1da21efc4cb39a431168ca4b3846237",
+      "size_bytes": 6126,
+      "current_git_blob": "8cf81496cd13158df6606a7d4b61ec12b5fc985a",
+      "current_sha256": "6b315f3551d135f5244c0b0b65967d2caf787ba698b180cf2c95e593f7d8da08",
+      "current_size_bytes": 6164,
+      "path_only_edits": [
+        {
+          "old": "scripts/units_bootstrap_gate_figures.py",
+          "new": "development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "scripts/units_bootstrap_gate_report.py",
+      "new_path": "development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "28eccfe460c2cab60e9c4756b9665a14c702ec77",
+      "original_sha256": "bcbbff5d79a4b76ab0739c2c70501421cfea8ddb8fc514614cff9db7c12e4f67",
+      "size_bytes": 16052,
+      "current_git_blob": "104474870d05a3e2c82f5392cece8592d55dbf37",
+      "current_sha256": "dd34b29150f948479ccaae51e41ec2e5bdd147df0f8d1ca84dd8d2626d61d292",
+      "current_size_bytes": 16242,
+      "path_only_edits": [
+        {
+          "old": "scripts/units_bootstrap_gate_figures.py",
+          "new": "development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py",
+          "count": 2
+        },
+        {
+          "old": "scripts/units_bootstrap_gate_report.py",
+          "new": "development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py",
+          "count": 3
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "scripts/operator_ladder_report.py",
+      "new_path": "development/verification/operator_ladder/operator_ladder_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "5b0fb6ab4eb7d147be46aa1842cc8f03d9c1e0ba",
+      "original_sha256": "de38fe262f00cf3e76634b2d9536dd1326c2405fa859b2faa70adb4f58a5259b",
+      "size_bytes": 9771,
+      "current_git_blob": "d3d581fbcb5825d5d88a9feae091973b909cd7fb",
+      "current_sha256": "78e072c5ce57b62b2a44cc06a7e7013e7be0ee2e1cba58ac16a88da6a2121795",
+      "current_size_bytes": 9804,
+      "path_only_edits": [
+        {
+          "old": "scripts/operator_ladder_report.py",
+          "new": "development/verification/operator_ladder/operator_ladder_report.py",
+          "count": 1
+        },
+        {
+          "old": "Path(__file__).resolve().parents[1]",
+          "new": "Path(__file__).resolve().parents[3]",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "scripts/gen_operator_ladder_doc.py",
+      "new_path": "development/verification/operator_ladder/gen_operator_ladder_doc.py",
+      "git_mode": "100644",
+      "original_git_blob": "2f2d15754a63145cbc4cb253017bd9a6a5e84633",
+      "original_sha256": "d43dac06301c44211cc553d39ccd6b349852f2f7460cc9331e104e3706bf083c",
+      "size_bytes": 12871,
+      "current_git_blob": "eeb4fe2a50bae8764db17516f915305e4410ff83",
+      "current_sha256": "8e51e355f979a81743d5cc9a5cb6c86d6964d5023cafaa1b4de902d79cb07c78",
+      "current_size_bytes": 13201,
+      "path_only_edits": [
+        {
+          "old": "scripts/operator_ladder_report.py",
+          "new": "development/verification/operator_ladder/operator_ladder_report.py",
+          "count": 5
+        },
+        {
+          "old": "scripts/gen_operator_ladder_doc.py",
+          "new": "development/verification/operator_ladder/gen_operator_ladder_doc.py",
+          "count": 5
+        },
+        {
+          "old": "Path(__file__).resolve().parents[1]",
+          "new": "Path(__file__).resolve().parents[3]",
+          "count": 1
+        }
+      ],
+      "byte_identical": false
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/operator_ladder_20261108.md",
+      "new_path": "docs/operator_ladder_20261108.md",
+      "git_mode": "100644",
+      "original_git_blob": "ac5b525547a881c9952a16c927dfba8a065071e9",
+      "original_sha256": "b046db7114fdf9e8bb392e2a9ac693cca9eda1fb777192b6a451300aecc06821",
+      "size_bytes": 12353,
+      "current_git_blob": "2349650489beb7dd13c29a7ffc8383c4502b9289",
+      "current_sha256": "3b335f44d9edf9bc731bb6f2d54e607eed67004d918c1a50ba4d855a4e49474d",
+      "current_size_bytes": 12617,
+      "path_only_edits": [
+        {
+          "old": "scripts/operator_ladder_report.py",
+          "new": "development/verification/operator_ladder/operator_ladder_report.py",
+          "count": 4
+        },
+        {
+          "old": "scripts/gen_operator_ladder_doc.py",
+          "new": "development/verification/operator_ladder/gen_operator_ladder_doc.py",
+          "count": 4
+        }
+      ],
+      "byte_identical": false
+    },
+    {
+      "old_path": "docs/units_bootstrap_gate.md",
+      "new_path": "docs/units_bootstrap_gate.md",
+      "git_mode": "100644",
+      "original_git_blob": "1521b592544f6938b8eef6ff82822d86b75800c9",
+      "original_sha256": "73fa651fced73260837d63660a2b969c178ce8ef90f2f98107280ff458f77a7c",
+      "size_bytes": 13042,
+      "current_git_blob": "63c7793b0834169b9ec628d5640786eabd43a45b",
+      "current_sha256": "cbf6211f4239485641d4b9434b2e32e3e13cf82b9bc3e3f581895cde7275a40f",
+      "current_size_bytes": 13194,
+      "path_only_edits": [
+        {
+          "old": "scripts/units_bootstrap_gate_figures.py",
+          "new": "development/verification/units_bootstrap_gate/units_bootstrap_gate_figures.py",
+          "count": 2
+        },
+        {
+          "old": "scripts/units_bootstrap_gate_report.py",
+          "new": "development/verification/units_bootstrap_gate/units_bootstrap_gate_report.py",
+          "count": 2
+        }
+      ],
+      "byte_identical": false
+    }
+  ],
+  "compatibility": {
+    "environment": {
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "numpy": "2.5.5",
+      "matplotlib": "3.11.2",
+      "machine": "x86_64",
+      "threads": 1,
+      "MPLBACKEND": "Agg"
+    },
+    "actual_evidence": [
+      {
+        "path": "development/verification/units_bootstrap_gate/compatibility/gate_report-main-ca2a9e50.json",
+        "sha256": "4b4b166028d636855362ce89e57d45a7b8a1f8296b3f73d8520331e5eeae0a83",
+        "size_bytes": 17106,
+        "git_blob": "65dc7ca0825d1553345e72d54b29cff4274efdec"
+      },
+      {
+        "path": "development/verification/operator_ladder/compatibility/quick-before-main-ca2a9e50.json",
+        "sha256": "bda2ef9680d5baedcd347eb339056ff2bf3a59a311271849428abcf7337d2e36",
+        "size_bytes": 71813,
+        "git_blob": "a24135dd25b08783bbdc4f113c70a7b79304cec5"
+      },
+      {
+        "path": "development/verification/operator_ladder/compatibility/quick-after-relocation.json",
+        "sha256": "e1fa7a3dcbbb02d8c070586c764498e11b49f5b8301863b1bb7a77cad90aea0f",
+        "size_bytes": 71815,
+        "git_blob": "c33ae5439fe1e235f3716bb2b896c0f5bc1b2736"
+      }
+    ],
+    "unit_bootstrap_gate": {
+      "generated_input_source_commit": "ca2a9e5092a4e60368723ac5f38b9ce92f2548c0",
+      "actual_gate_overall_passed": true,
+      "actual_input_reused_byte_identically_for_both_renderers": true,
+      "figures": [
+        {
+          "name": "fig_anchor_errors.png",
+          "sha256_before": "e015931e20f7071a0bfe0f1ed6b4fbb5ac0e51b27219c0cbfb41dd2d3942b1e2",
+          "sha256_after": "e015931e20f7071a0bfe0f1ed6b4fbb5ac0e51b27219c0cbfb41dd2d3942b1e2",
+          "size_bytes": 61791,
+          "byte_identical": true
+        },
+        {
+          "name": "fig_grid_invariance.png",
+          "sha256_before": "139ed61fac47cfd458c921a78a66d3104ebbab0be8eeeb16965944c5d27508ed",
+          "sha256_after": "139ed61fac47cfd458c921a78a66d3104ebbab0be8eeeb16965944c5d27508ed",
+          "size_bytes": 66199,
+          "byte_identical": true
+        },
+        {
+          "name": "fig_mutation_battery.png",
+          "sha256_before": "3194018b51187ab08b9c1aec80dc69914620413325b92837bd398a31a24d51e7",
+          "sha256_after": "3194018b51187ab08b9c1aec80dc69914620413325b92837bd398a31a24d51e7",
+          "size_bytes": 72092,
+          "byte_identical": true
+        },
+        {
+          "name": "fig_poiseuille_profile.png",
+          "sha256_before": "922e5b2b11660e3d3e385df928e394fba6076d4a8e891134d04b72c53c0834b0",
+          "sha256_after": "922e5b2b11660e3d3e385df928e394fba6076d4a8e891134d04b72c53c0834b0",
+          "size_bytes": 101442,
+          "byte_identical": true
+        }
+      ]
+    },
+    "operator_ladder_quick": {
+      "arms": 16,
+      "mode": "--quick (explicitly not formal scientific evidence)",
+      "before_after_all_fields_equal_excluding_wall_time_s": true,
+      "excluded_fields": [
+        "wall_time_s"
+      ],
+      "normalized_metrics_sha256": "6f09c1de276df46e4c7411e9805f8940c5f2c42eb105e0a2fda61f5979662ccd",
+      "quick_arms_below_one_percent": 8,
+      "figures": [
+        {
+          "name": "fig_operator_ladder.png",
+          "sha256_before": "134824a11ff47cae10859039aa495db7f64b1f575e281b782ea11ebb3b110415",
+          "sha256_after": "134824a11ff47cae10859039aa495db7f64b1f575e281b782ea11ebb3b110415",
+          "size_bytes": 51391,
+          "byte_identical": true
+        },
+        {
+          "name": "fig_poiseuille_error.png",
+          "sha256_before": "adcbf8ea396f2a76e256c2412d724fd91d6ae33b254c6c8e9beb563b753f333b",
+          "sha256_after": "adcbf8ea396f2a76e256c2412d724fd91d6ae33b254c6c8e9beb563b753f333b",
+          "size_bytes": 111252,
+          "byte_identical": true
+        }
+      ]
+    },
+    "renderer_receipts": [
+      {
+        "path": "units_bootstrap_gate.md",
+        "before_sha256": "ad5335db26a827e2d213deb6f241264b0f8c642a1bff63646ec91fa6c4e25561",
+        "after_sha256": "c93a1f0273c4cfbfebb5a186622909ab7114532effc67b26e2771f9d29b33af0",
+        "expected_after_path_replacements_sha256": "c93a1f0273c4cfbfebb5a186622909ab7114532effc67b26e2771f9d29b33af0",
+        "same_real_input": true,
+        "exact_except_declared_path_replacements": true
+      },
+      {
+        "path": "operator_ladder_20261108.md",
+        "before_sha256": "72f1df5387744d93e0a774a8608e34b126ba83b8257904ab5f51594c23d53407",
+        "after_sha256": "a2bf5f1a5eb29f6119338aa8249bc07766be8b9cf910c2721bd9eadb4dba2d3a",
+        "expected_after_path_replacements_sha256": "a2bf5f1a5eb29f6119338aa8249bc07766be8b9cf910c2721bd9eadb4dba2d3a",
+        "same_real_input": true,
+        "exact_except_declared_path_replacements": true
+      }
+    ],
+    "scope": "Actual canonical source and tests from main with real installed dependencies, isolated before/after checkouts. Unit gate executed once to supply actual input; the figure scripts run against identical real input and existing profile execution. Operator ladder executed both paths in quick mode; document renderer used the same original real metrics and tables. Two report outputs match exactly after only the declared navigation substitutions. Historical published reports are not regenerated from the quick or fresh input. API calls, publication and mock not used.",
+    "retained_root_constraints": {
+      "scripts": "Other active launchers and historical dependencies need compatibility review; no entire root retired.",
+      "xval": "Original missing artifacts and baseline failing tests retained in prior ledgers; no unverified removal.",
+      "models": "Only existing published checkpoint remains; retrieval and runtime compatibility remain outside this migration."
+    }
+  },
+  "science": {
+    "algorithm_changed": false,
+    "full_scientific_replay_performed": false,
+    "current_acceptance": "not_evaluated"
+  }
+}

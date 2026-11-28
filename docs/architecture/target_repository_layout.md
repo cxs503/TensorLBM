@@ -203,6 +203,8 @@ a compatibility alias for the legacy study. The legacy xval directory remains
 pending recovery of the incomplete historical result and full compatibility checks.
 
 
+The [paired verification-workflow ledger](migrations/paired-verification-workflow-handoff-2026-11-28.json) archives the unit-bootstrap and operator-ladder report helpers together with their checked dependencies and actual compatibility inputs. The public report URLs and declared scientific thresholds remain unchanged.
+
 The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.json)
 preserves the hardware scripts alongside their verification records and
 identifies the maintained baseline launcher.

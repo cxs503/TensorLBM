@@ -213,6 +213,49 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertEqual(record["id"], owner)
                 self.assertIn("development/audit/m17888/AUDIT_m17888.md", variant["documentation"])
 
+    def test_paired_verification_workflows_keep_real_compatibility_evidence(self):
+        path = LEDGER_PATH.parent / "paired-verification-workflow-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        self.assertEqual(len(ledger["entries"]), 4)
+        self.assertEqual(ledger["scripts_tracked_before"] - ledger["scripts_tracked_after"], 4)
+        self.assertEqual(ledger["top_level_directories_before"], ledger["top_level_directories_after"])
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        for row in ledger["entries"] + ledger["consumer_edits"]:
+            data = (REPO / row["new_path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["current_sha256"])
+            for edit in reversed(row["path_only_edits"]):
+                self.assertEqual(data.count(edit["new"].encode()), edit["count"])
+                data = data.replace(edit["new"].encode(), edit["old"].encode())
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["original_sha256"])
+            self.assertEqual(hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest(),
+                             row["original_git_blob"])
+        for row in ledger["entries"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", row["old_path"]], cwd=REPO))
+        comp = ledger["compatibility"]
+        for row in comp["actual_evidence"]:
+            self.assert_fingerprint(REPO / row["path"], row["sha256"], row["size_bytes"])
+        unit, before, after = [json.loads((REPO / row["path"]).read_text())
+                               for row in comp["actual_evidence"]]
+        self.assertEqual(unit["overall_passed"], comp["unit_bootstrap_gate"]["actual_gate_overall_passed"])
+        for records in (before, after):
+            self.assertEqual(len(records), 16)
+            for record in records.values():
+                self.assertTrue(record["quick"])
+                record.pop("wall_time_s")
+        self.assertEqual(before, after)
+        self.assertEqual(hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+                         comp["operator_ladder_quick"]["normalized_metrics_sha256"])
+        figures = comp["unit_bootstrap_gate"]["figures"] + comp["operator_ladder_quick"]["figures"]
+        self.assertEqual(len(figures), 6)
+        self.assertTrue(all(row["sha256_before"] == row["sha256_after"] for row in figures))
+        for row in comp["renderer_receipts"]:
+            self.assertEqual(row["after_sha256"], row["expected_after_path_replacements_sha256"])
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_model_unit_matrix_supports_legacy_roots_and_both_dialects(self):
         command = [sys.executable, "-m", "tensorlbm.model_units"]
         env = {**os.environ, "PYTHONPATH": str(REPO / "src")}

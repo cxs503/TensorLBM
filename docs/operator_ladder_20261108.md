@@ -1,9 +1,9 @@
 # Step F：解析解梯的算子不变量（BGK / MRT / TRT / 正则化 BGK）
 
-> 生成方式：本文件的数字与表格由 `scripts/gen_operator_ladder_doc.py` 从
+> 生成方式：本文件的数字与表格由 `development/verification/operator_ladder/gen_operator_ladder_doc.py` 从
 > `artifacts/operator_ladder_20261108/metrics.json` 程序化注入（零手抄），
-> 图由 `scripts/operator_ladder_report.py` 生成。
-> 复现：`PYTHONPATH=src python scripts/operator_ladder_report.py` → `python scripts/gen_operator_ladder_doc.py`。
+> 图由 `development/verification/operator_ladder/operator_ladder_report.py` 生成。
+> 复现：`PYTHONPATH=src python development/verification/operator_ladder/operator_ladder_report.py` → `python development/verification/operator_ladder/gen_operator_ladder_doc.py`。
 
 ## 0. 结论（一句话）
 
@@ -63,9 +63,9 @@ D3Q19、格子单位（ρ=1、τ=1 ⇒ ν=(τ−½)/3=1/6），四算子共享�
    * `test_step_f_trt_reduces_duct_corner_error`：三维角区 TRT/BGK 误差比 < 0.75；
    * `test_step_f_trt_shear_wave_error_is_second_order_in_k`：TRT 剪切波偏差的 k 收敛阶
      （nx=64→128 误差比落在 [2.5, 6]），把"偏差来自 τ₋ 通道"变成被判据约束的事实。
-3. `scripts/operator_ladder_report.py`：跑 4×4 组合 → `metrics.json`
+3. `development/verification/operator_ladder/operator_ladder_report.py`：跑 4×4 组合 → `metrics.json`
    （每个组合含关键量、误差、运行时长）+ `tables.md` + 两张图。
-4. `scripts/gen_operator_ladder_doc.py`：只读 `metrics.json` 写本 md（数字零手抄）。
+4. `development/verification/operator_ladder/gen_operator_ladder_doc.py`：只读 `metrics.json` 写本 md（数字零手抄）。
 5. 环境：CPU、`torch.set_num_threads(1)`、`torch.set_default_dtype(float64)`
    ——裁决的是数值方法本身，不让 float32 舍入地板淹没方法误差。
 
@@ -173,7 +173,7 @@ D3Q19、格子单位（ρ=1、τ=1 ⇒ ν=(τ−½)/3=1/6），四算子共享�
 | 文件 | 变更 |
 |---|---|
 | `tests/test_lbm_verification.py` | 新增 `COLLISIONS` / `collide()`；A/B/C/E 四个 `*_case()` 加 `collision` 关键字（缺省 bgk，数值不变）；新增 Step F 五条用例（含双向判据与 k 阶守卫） |
-| `scripts/operator_ladder_report.py` | 新增：4×4 组合重算 → `metrics.json`/`tables.md`/两张图 |
-| `scripts/gen_operator_ladder_doc.py` | 新增：只读 metrics 生成本文档 |
+| `development/verification/operator_ladder/operator_ladder_report.py` | 新增：4×4 组合重算 → `metrics.json`/`tables.md`/两张图 |
+| `development/verification/operator_ladder/gen_operator_ladder_doc.py` | 新增：只读 metrics 生成本文档 |
 | `artifacts/operator_ladder_20261108/*` | metrics / tables / 图 |
 | `docs/lbm_verification_ladder_r2.md` | §10.6「未覆盖：MRT/正则化碰撞」加一行指回本文件（覆盖面已补） |

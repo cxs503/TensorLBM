@@ -22,7 +22,7 @@
 
 用法::
 
-    PYTHONPATH=src python scripts/operator_ladder_report.py [--quick]
+    PYTHONPATH=src python development/verification/operator_ladder/operator_ladder_report.py [--quick]
 
 ``--quick`` 把步数降到 1/4（仅用于脚本自检，产出不得作为证据发布）。
 """
@@ -35,7 +35,7 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "artifacts" / "operator_ladder_20261108"
 
 sys.path.insert(0, str(ROOT / "src"))
