@@ -111,6 +111,28 @@ class BenchmarkRegistryTests(unittest.TestCase):
         )
         self.assertEqual(record["current_acceptance"], "not_evaluated")
 
+    def test_standalone_historical_evidence_is_indexed_without_promotion(self):
+        ledger = json.loads((ROOT / "docs/architecture/migrations/"
+                             "standalone-benchmark-evidence-index-2026-11-28.json").read_text())
+        records = {row["id"]: row for row in self.registry("--json")}
+        owners = {}
+        for case in ledger["cases"]:
+            record = records[case["case_id"]]
+            self.assertEqual(record["current_acceptance"], "not_evaluated")
+            results = record["variants"][0]["results"]
+            self.assertEqual(results, case["result_paths"])
+            for path in results:
+                self.assertNotIn(path, owners)
+                owners[path] = case["case_id"]
+        for row in ledger["entries"]:
+            self.assertEqual(row["old_path"], row["new_path"])
+            self.assertTrue(row["byte_identical"])
+            data = (ROOT / row["new_path"]).read_bytes()
+            self.assertEqual(len(data), row["size_bytes"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["original_sha256"])
+            blob = b"blob %d\0" % len(data) + data
+            self.assertEqual(hashlib.sha1(blob).hexdigest(), row["original_git_blob"])
+
     def test_periodic_channel_benchmark_retains_historical_replays(self):
         directory = "benchmarks/cross_validation/periodic_channel_dpdx"
         (record,) = self.registry("--case", "xval:periodic_channel_dpdx")

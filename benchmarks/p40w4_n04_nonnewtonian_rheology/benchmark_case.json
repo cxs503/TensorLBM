@@ -1,0 +1,25 @@
+{
+  "scope": "Historical production non-Newtonian rheology verification surface (power-law, Carreau–Yasuda, Cross and Herschel–Bulkley). G5 failed and the archived gates are not current scientific acceptance.",
+  "criteria": {
+    "source": "benchmarks/p40w4_n04_nonnewtonian_rheology/gates.json",
+    "historical_outcome": "all_passed=false; consult the six archived gate records for thresholds and individual verdicts."
+  },
+  "source": [
+    "benchmarks/p40w4_n04_nonnewtonian_rheology/run.py"
+  ],
+  "config": [
+    "benchmarks/p40w4_n04_nonnewtonian_rheology/gates.json"
+  ],
+  "documentation": [
+    "benchmarks/p40w4_n04_nonnewtonian_rheology/README.md",
+    "benchmarks/p40w4_n04_nonnewtonian_rheology/RESULTS.md",
+    "docs/P40W4_N04_NONNEWTONIAN_RHEOLOGY.md"
+  ],
+  "reference_files": [
+    "benchmarks/p40w4_n04_nonnewtonian_rheology/README.md"
+  ],
+  "results": [
+    "benchmarks/p40w4_n04_nonnewtonian_rheology/result.json",
+    "benchmarks/p40w4_n04_nonnewtonian_rheology/gates.json"
+  ]
+}

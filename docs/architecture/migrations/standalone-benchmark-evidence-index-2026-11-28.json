@@ -1,0 +1,766 @@
+{
+  "source_commit": "3ca9e48646d81beba843dca38b73a7d59539b1bc",
+  "source_tree": "114803e3120485f52d64a449d3d652b637a64927",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "roots_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "roots_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "retired_paths": [],
+  "note": "Discovery-only index; no moves, deletion, solver edit, historical verdict promotion or scientific rerun. Three distinct original campaigns registered; existing Taylor-Green case-pool record enriched instead of duplicating its case identity. Published URLs unchanged. No migration CSV rows because no existing paths moved.",
+  "registry_count_before": 256,
+  "registry_count_expected_after": 259,
+  "cases": [
+    {
+      "case_id": "benchmarks/case_pool/taylor_green_3d",
+      "manifest": "benchmarks/case_pool/taylor_green_3d/benchmark_case.json",
+      "criteria": {
+        "early_rounds": "Original M1–M5 and S1 metrics in prereg.json; separate round-2 R1–R5 in prereg_round2.json. Round-2 attribution_summary.json reports failed gates.",
+        "pool_round": "Use refs.json and artifacts/summary.json for the distinct series-reference case-pool protocol.",
+        "reference_audit": "Read docs/CASE-TAYLOR-GREEN-3D-reference-audit.md for limitations."
+      },
+      "result_paths": [
+        "benchmarks/case_pool/taylor_green_3d/artifacts/legs/anchor.json",
+        "benchmarks/case_pool/taylor_green_3d/artifacts/legs/convergence.json",
+        "benchmarks/case_pool/taylor_green_3d/artifacts/legs/dns.json",
+        "benchmarks/case_pool/taylor_green_3d/artifacts/legs/exactness.json",
+        "benchmarks/case_pool/taylor_green_3d/artifacts/legs/grid.json",
+        "benchmarks/case_pool/taylor_green_3d/artifacts/legs/primary.json",
+        "benchmarks/case_pool/taylor_green_3d/artifacts/summary.json",
+        "benchmarks/case_taylor_green_3d/artifacts/abc_zdependent.json",
+        "benchmarks/case_taylor_green_3d/artifacts/amp_sensitivity.json",
+        "benchmarks/case_taylor_green_3d/artifacts/attribution_grid.json",
+        "benchmarks/case_taylor_green_3d/artifacts/attribution_rate.json",
+        "benchmarks/case_taylor_green_3d/artifacts/attribution_summary.json",
+        "benchmarks/case_taylor_green_3d/artifacts/attribution_tables.json",
+        "benchmarks/case_taylor_green_3d/artifacts/attribution_traces.json",
+        "benchmarks/case_taylor_green_3d/artifacts/convergence.json",
+        "benchmarks/case_taylor_green_3d/artifacts/exactness_verification.json",
+        "benchmarks/case_taylor_green_3d/artifacts/snapshot_N32.json",
+        "benchmarks/case_taylor_green_3d/artifacts/tau_sensitivity.json"
+      ],
+      "current_acceptance": "not_evaluated"
+    },
+    {
+      "case_id": "campaign:rayleigh_taylor",
+      "manifest": "benchmarks/rayleigh_taylor/benchmark_case.json",
+      "criteria": {
+        "source": "benchmarks/rayleigh_taylor/result.json",
+        "growth_rate_rel_error_le_pct": 3.0,
+        "observed_order_ge": 1.5,
+        "historical_outcome": "FAIL; both gates false. Non-finite convergence values retained as archived."
+      },
+      "result_paths": [
+        "benchmarks/rayleigh_taylor/result.json"
+      ],
+      "current_acceptance": "not_evaluated"
+    },
+    {
+      "case_id": "campaign:p40w4_n04_nonnewtonian_rheology",
+      "manifest": "benchmarks/p40w4_n04_nonnewtonian_rheology/benchmark_case.json",
+      "criteria": {
+        "source": "benchmarks/p40w4_n04_nonnewtonian_rheology/gates.json",
+        "historical_outcome": "all_passed=false; consult the six archived gate records for thresholds and individual verdicts."
+      },
+      "result_paths": [
+        "benchmarks/p40w4_n04_nonnewtonian_rheology/result.json",
+        "benchmarks/p40w4_n04_nonnewtonian_rheology/gates.json"
+      ],
+      "current_acceptance": "not_evaluated"
+    },
+    {
+      "case_id": "campaign:xval_abb_inamuro_wetnode",
+      "manifest": "benchmarks/xval_abb_inamuro_wetnode/benchmark_case.json",
+      "criteria": {
+        "historical_delivery": "L2 relative error <15% per delivery report.",
+        "audit_outcome": "L1 request_changes/reopen; kernel identity and reference alignment invalidated the delivery claim. No registered machine-referee tolerance per audit.",
+        "source": "docs/board_audit/m17492/AUDIT_m17450.md"
+      },
+      "result_paths": [
+        "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_inamuro_wetnode.json",
+        "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_standard.json",
+        "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_inamuro_wetnode.json",
+        "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_standard.json",
+        "benchmarks/xval_abb_inamuro_wetnode/out/summary.json",
+        "docs/board_audit/m17492/audit_xval_abb_results.json",
+        "docs/board_audit/m17492/audit_p6_kernel_swap.json"
+      ],
+      "current_acceptance": "not_evaluated"
+    }
+  ],
+  "entries": [
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/README.md",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "23d4210b4e6e9511cc738ab8ed6f55314965b975",
+      "size_bytes": 3292,
+      "original_sha256": "af809e17ba332a21b81c454668605b78d0859e24879cdf2df4e54119d41a9f75",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/__init__.py",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "2b487a878e3b025ddff08c131116787adc399de3",
+      "size_bytes": 242,
+      "original_sha256": "62ab298586747ef7c73012c42f7d9dc1e59adbd312828ccdd6821abbde47c0a6",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/field_primary.npz",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/field_primary.npz",
+      "git_mode": "100644",
+      "original_git_blob": "ca8229e1516c49003c65dd8bdb6da9b38604ac68",
+      "size_bytes": 32691,
+      "original_sha256": "88d4d360e99fa1a1aa631ee1149ed9eaf57e52e174159855ab655dd416307903",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/anchor.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/anchor.json",
+      "git_mode": "100644",
+      "original_git_blob": "df14b11c1088a12177f59b7191a2020e2a70f834",
+      "size_bytes": 453,
+      "original_sha256": "82657d54767ba8cee1aa54b7e44f52792f4821bafe4ca7b0a6356808ad0d67f2",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/convergence.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/convergence.json",
+      "git_mode": "100644",
+      "original_git_blob": "bd36d31edc57b96e9f6a6568cc99b12696302bee",
+      "size_bytes": 2287,
+      "original_sha256": "e09e5ee660c4bac78578f39630dea926515ada51b383c3cee1eba414e35c9fb2",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/dns.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/dns.json",
+      "git_mode": "100644",
+      "original_git_blob": "2f3f660433cf46b10198009f09c718f5714b7fa0",
+      "size_bytes": 1373,
+      "original_sha256": "8c1a6c37ebf8dc6b9d550b17d4686334d4d55978401791a9ba8821de414efec1",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/exactness.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/exactness.json",
+      "git_mode": "100644",
+      "original_git_blob": "ec1ba000969865dfd04f6cae361c017790d48755",
+      "size_bytes": 1782,
+      "original_sha256": "1abd3cb46be7b9ea0d9f5c897d806e7b75f0e429200e9daa6e03788edd729801",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/grid.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/grid.json",
+      "git_mode": "100644",
+      "original_git_blob": "dd23978a37b9f045173a6a5d12445a3070fcab9e",
+      "size_bytes": 11846,
+      "original_sha256": "5ab3794889eaa2f99d1a5c9e08a2b9d4ef62a8221252656be5e63141bd3437dd",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/primary.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/legs/primary.json",
+      "git_mode": "100644",
+      "original_git_blob": "4d602695e388ff93322cbeb5cf9f327d005f47df",
+      "size_bytes": 5173,
+      "original_sha256": "329e762d2ed931d3ee0f8e47bd35bc0d6de1fe31a48a96b5eb9bba42c3c1824b",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/summary.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "848bd8ba834b9a5823cd1c57041c85e8b450821b",
+      "size_bytes": 17202,
+      "original_sha256": "f482688d952d2d9b28c6f7351a57951ec3fe3f0fdd52a6c69cc2c6b991cc4eb3",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/artifacts/summary.md",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/artifacts/summary.md",
+      "git_mode": "100644",
+      "original_git_blob": "7ce3e5dab25eff80e9830de1ef5197b310a18866",
+      "size_bytes": 1918,
+      "original_sha256": "3392d1f0b931bdb4d4db1c2c621fe93410d963dbc348d50d27af09c9549def1f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/make_report.py",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "3328a5de4b6c31194914b03076cb37cae93a34a0",
+      "size_bytes": 7954,
+      "original_sha256": "a6e722985e1faabdd7d9fadfcd02c31e7846fe9e41b916ddc8ebd774be5a960e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/refs.json",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/refs.json",
+      "git_mode": "100644",
+      "original_git_blob": "e463d8c82b0f79cf185773b97f184d57ce2592ed",
+      "size_bytes": 4992,
+      "original_sha256": "41255d0dfb04f29e99ce2b302620fed2eba2cd17f00db89184c4b0ba4894fb56",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_pool/taylor_green_3d/run_case.py",
+      "new_path": "benchmarks/case_pool/taylor_green_3d/run_case.py",
+      "git_mode": "100644",
+      "original_git_blob": "95b30422e711c7bdb79a75a819a0a12b2e58085c",
+      "size_bytes": 35643,
+      "original_sha256": "1d2a0274e25418f45dba7e33188e38036b30bb578a44c736431cfa287cbc257f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/README.md",
+      "new_path": "benchmarks/case_taylor_green_3d/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "47d34b1e750fcb29251598e329681a0912e893fb",
+      "size_bytes": 4166,
+      "original_sha256": "4845377e607fb1e97c109459725c921fc125e67111ef19e611fa21c32ad2e46f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/abc_zdependent.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/abc_zdependent.json",
+      "git_mode": "100644",
+      "original_git_blob": "6795feb22a5733d953855ea96a3087847bc35395",
+      "size_bytes": 12321,
+      "original_sha256": "a23df3935767962e8dc68d410071e1166e48c7ee5a005c308919c970c450f4cb",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/amp_sensitivity.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/amp_sensitivity.json",
+      "git_mode": "100644",
+      "original_git_blob": "cda399d793f11b9bd54ca24b05db932ab9fdcdea",
+      "size_bytes": 12484,
+      "original_sha256": "8392fc29afea95917e36c6917da060a44f249913ac82820b0a662558dc4f7ad4",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_grid.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_grid.json",
+      "git_mode": "100644",
+      "original_git_blob": "41ccd43a82168f0c514974c8d7a3a5366e5d889d",
+      "size_bytes": 14425,
+      "original_sha256": "d0ae0013906cb2ad46dc026f9f285177ecb10c7a154317bda7ee2c25f7b6df14",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_rate.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_rate.json",
+      "git_mode": "100644",
+      "original_git_blob": "ea013f47aa3e308b865d21af8790a08a205bad75",
+      "size_bytes": 53836,
+      "original_sha256": "c969e279e98939dac3c826f6a20aca74e47eb2c461e774661485d79619efe937",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_summary.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "a19a0c66c044d17e8f3324a8ba1c17dc62d150a9",
+      "size_bytes": 1443,
+      "original_sha256": "8463ed175d1377854a706c442d6955ea380b92f65cdd875183c7e767b95315b8",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_tables.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_tables.json",
+      "git_mode": "100644",
+      "original_git_blob": "7d8a241a25f58ca64fc3a9679d61a2b0fd56d6fc",
+      "size_bytes": 3699,
+      "original_sha256": "1e3027a8372c5919592ff6338d6c7c0042895682fa8caa97b566425165113705",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_traces.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/attribution_traces.json",
+      "git_mode": "100644",
+      "original_git_blob": "a16ae503498c15395b1dd754eeb9e4de9e0464dd",
+      "size_bytes": 96567,
+      "original_sha256": "30527ec3fa87c6be7718c669223adef1c670d507eb819c9850c99faa59c6d36c",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/convergence.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/convergence.json",
+      "git_mode": "100644",
+      "original_git_blob": "3e10838a0031afad6af8a95563d45745ed92b134",
+      "size_bytes": 9749,
+      "original_sha256": "04dfdac0db10a2c19942bdeb01b7c7f7b1d421253dce3336a3a316e03f429fd1",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/exactness_verification.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/exactness_verification.json",
+      "git_mode": "100644",
+      "original_git_blob": "1c4d9caad90c2780a9679d2b0d3a9027d7554ede",
+      "size_bytes": 1030,
+      "original_sha256": "83d2992dda79f0a73f7ef21c5505ccb6e215800b7a8120959b2fcf7ed12f7156",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/prereg_round2.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/prereg_round2.json",
+      "git_mode": "100644",
+      "original_git_blob": "d8ce4cd5467f3f49369a18209c9ce6117ed47b65",
+      "size_bytes": 4294,
+      "original_sha256": "8282c5ca29f0e867888a65d9f7f93e2754937bb9c668382d0650ef3b4f14b9f9",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/snapshot_N32.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/snapshot_N32.json",
+      "git_mode": "100644",
+      "original_git_blob": "ec7b2c159b51f6cd085ad48bf5f8d4334ed63bd4",
+      "size_bytes": 1629,
+      "original_sha256": "c27e357dc8d8997b9fc0d3ae015d7326999e81d0b556df5176700f925423f159",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/summary.md",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/summary.md",
+      "git_mode": "100644",
+      "original_git_blob": "d3c757925c5b511fe65bb89d58c451b4206437e1",
+      "size_bytes": 2396,
+      "original_sha256": "d32c355363cd61c81e0f74579e31efc0eee664f8c901415d73eee88981311228",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/artifacts/tau_sensitivity.json",
+      "new_path": "benchmarks/case_taylor_green_3d/artifacts/tau_sensitivity.json",
+      "git_mode": "100644",
+      "original_git_blob": "0f65993be5e522e425bac3f8004379a1806161e9",
+      "size_bytes": 12513,
+      "original_sha256": "597cbec6314377acfe82cff908f18345a48f819737273d707962e881d72c7401",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/make_report.py",
+      "new_path": "benchmarks/case_taylor_green_3d/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "5a9f6dc18d5996b920b731a78b1f4db41fb9e086",
+      "size_bytes": 11763,
+      "original_sha256": "81f40fd84eff93403a9999be4e5099594bace009edc519515e37182802c04644",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/make_report_round2.py",
+      "new_path": "benchmarks/case_taylor_green_3d/make_report_round2.py",
+      "git_mode": "100644",
+      "original_git_blob": "6d56e78dc9c3770575899af720a6119254f1efd2",
+      "size_bytes": 21360,
+      "original_sha256": "aecd3de427f0e5cdd9a208410d823e6dfd7a9c5a3117b43a5d2818069de5af2f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/make_report_series.py",
+      "new_path": "benchmarks/case_taylor_green_3d/make_report_series.py",
+      "git_mode": "100644",
+      "original_git_blob": "19d83f340a834b2f18e3cb1c6384503ba7270e00",
+      "size_bytes": 12146,
+      "original_sha256": "bea40725744efee613deaf9ef0605fc5166bf5c2fb239a4448d9866fbb469088",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/make_round4_figures.py",
+      "new_path": "benchmarks/case_taylor_green_3d/make_round4_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "ab5f8111635e187ea6af00c8e50457f7c1ee0016",
+      "size_bytes": 11813,
+      "original_sha256": "976d7e8aa33c80fde336a0618b4140292bb75f0a9dabaa83f3a0a2004cb15eda",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/prereg.json",
+      "new_path": "benchmarks/case_taylor_green_3d/prereg.json",
+      "git_mode": "100644",
+      "original_git_blob": "5f24c595fa5736515811d13fc34eb4b55de4ce83",
+      "size_bytes": 4615,
+      "original_sha256": "00e481be9c1d6c35604b6ccf4f14bd8c17c877b93661fbeacbd432cc023a2959",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/prereg_round2.json",
+      "new_path": "benchmarks/case_taylor_green_3d/prereg_round2.json",
+      "git_mode": "100644",
+      "original_git_blob": "d8ce4cd5467f3f49369a18209c9ce6117ed47b65",
+      "size_bytes": 4294,
+      "original_sha256": "8282c5ca29f0e867888a65d9f7f93e2754937bb9c668382d0650ef3b4f14b9f9",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/publish_round4.py",
+      "new_path": "benchmarks/case_taylor_green_3d/publish_round4.py",
+      "git_mode": "100644",
+      "original_git_blob": "b6b2aabba8c8cfa97638e274139e3fccae91a8d9",
+      "size_bytes": 24694,
+      "original_sha256": "23f0be64fa0c2e06276af4eedfc9850ee672cceb3e99475cd2a385e7d430533a",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/run_attribution.py",
+      "new_path": "benchmarks/case_taylor_green_3d/run_attribution.py",
+      "git_mode": "100644",
+      "original_git_blob": "aa7c227aacafe2dc5c7ff14e09c23df74826c25e",
+      "size_bytes": 14438,
+      "original_sha256": "30187a0245231a3fe77d73c62076cd2993d1f7acb2afda09ffd7326373fbbb6b",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/run_case.py",
+      "new_path": "benchmarks/case_taylor_green_3d/run_case.py",
+      "git_mode": "100644",
+      "original_git_blob": "ed4a0a337577eb12ab018113ed5f393518e6d288",
+      "size_bytes": 20973,
+      "original_sha256": "7ed21a7a4d54faacee3f6a2b649be60087c2e657ef3dc4641c46a2bb6d24d211",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/run_round4.py",
+      "new_path": "benchmarks/case_taylor_green_3d/run_round4.py",
+      "git_mode": "100644",
+      "original_git_blob": "5be1bafafc4f2e9b6d7b4c9909dcd9e1c42f84e1",
+      "size_bytes": 26003,
+      "original_sha256": "3b5f76836393b90418cb57d59ec127734f2d92ceb479e31433c2821442f0be38",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/case_taylor_green_3d/run_series_case.py",
+      "new_path": "benchmarks/case_taylor_green_3d/run_series_case.py",
+      "git_mode": "100644",
+      "original_git_blob": "f142b843de6b66a0836655b5ccc549c3311c8a85",
+      "size_bytes": 20254,
+      "original_sha256": "5a869e31e1cc0e10d36e3c177485447b33d5ae768eac0be5d9009efa79cb0283",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/README.md",
+      "new_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "2c69681b32d18f469ff646659afe1902a94afb1b",
+      "size_bytes": 2426,
+      "original_sha256": "9fa9a8bb2f2b9ab02973c4c70336462ed61d1ecb417138e80d007a6842034fc7",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/RESULTS.md",
+      "new_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/RESULTS.md",
+      "git_mode": "100644",
+      "original_git_blob": "d439587b791df4a1536d8d44ee73aaf784597c9c",
+      "size_bytes": 2435,
+      "original_sha256": "56937477405ec1bfe4af953cc2b896c2d479e910fd073ad0ce01933d957f94d9",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/gates.json",
+      "new_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/gates.json",
+      "git_mode": "100644",
+      "original_git_blob": "abadb03c7244a346793a12d1a1dc702c4630c46a",
+      "size_bytes": 2776,
+      "original_sha256": "745605db49a61909dfda325bb26910d89d52b9afa64f7f7e8d4713a7f077dcfa",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/result.json",
+      "new_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "214c7d1e56e704fa7316f60c0a7f890cc6330401",
+      "size_bytes": 47917,
+      "original_sha256": "1f54bf05e18686ac8a0bf3b3c04c08d9102eafaa52cccfed0d0e03226c985b7f",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/run.py",
+      "new_path": "benchmarks/p40w4_n04_nonnewtonian_rheology/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "bbe12595c7ef0467c382484f5bdcebceb3df11ff",
+      "size_bytes": 35409,
+      "original_sha256": "f22d108e493c86a8b43b3ba819914510cb6c0c87579232baa157f4726fb7200d",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/rayleigh_taylor/README.md",
+      "new_path": "benchmarks/rayleigh_taylor/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "b0e0be28ce3c29e7569bfb398f6e4415541193ee",
+      "size_bytes": 4038,
+      "original_sha256": "3a148eeddc0ac2d421848bb34ded5acb82ed7e884d74c91e70f0401a22cf3255",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/rayleigh_taylor/growth_rate.py",
+      "new_path": "benchmarks/rayleigh_taylor/growth_rate.py",
+      "git_mode": "100644",
+      "original_git_blob": "a388f9edcde599d55e3b77039bac8b031099bc93",
+      "size_bytes": 6901,
+      "original_sha256": "8dd5b5e2c60aab62ba33105c60fb3f2e4aed7d552c392971ee62d7075a0fe8ee",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/rayleigh_taylor/make_figures.py",
+      "new_path": "benchmarks/rayleigh_taylor/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "61fd35727130d7ef86c52bf463a62af04251add7",
+      "size_bytes": 4256,
+      "original_sha256": "fee34bd7fcaf2b201e80142a2183a3274a184156dc90b7e1768d47b40cb04343",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/rayleigh_taylor/result.json",
+      "new_path": "benchmarks/rayleigh_taylor/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "11160c9a4059540259fe480e53c325e93d46725d",
+      "size_bytes": 3780,
+      "original_sha256": "eacdcfe5963d6d1a408de782ed598232e7ef6cc17b5d8b2471cf474ab119adc4",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_inamuro_wetnode.json",
+      "new_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_inamuro_wetnode.json",
+      "git_mode": "100644",
+      "original_git_blob": "25cdaa87cd211493b10c22b4de9e44adbfd15a66",
+      "size_bytes": 1364,
+      "original_sha256": "3f7a7dbb10287aa0ba19292e926470abd135c83491aef07307beb4ba20c736fb",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_standard.json",
+      "new_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_standard.json",
+      "git_mode": "100644",
+      "original_git_blob": "b75f16fcee20af082320ebeb45a3a7607b9ad48e",
+      "size_bytes": 1342,
+      "original_sha256": "060cc758e7ea86fa1b5707a6281b5520c8d13886dd1229d6b6f56921124dc0b8",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_inamuro_wetnode.json",
+      "new_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_inamuro_wetnode.json",
+      "git_mode": "100644",
+      "original_git_blob": "bcecdf583c2ce3d3683f236479282c5ca47d4676",
+      "size_bytes": 1937,
+      "original_sha256": "1f0013fecf7a153d76177f5de03f87040660ba17e1900ffd6e112282a36680d7",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_standard.json",
+      "new_path": "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_standard.json",
+      "git_mode": "100644",
+      "original_git_blob": "42654f8f2f6adc412758aa67cf97c72444ef0fb7",
+      "size_bytes": 1925,
+      "original_sha256": "138374725d3e9dea2fa2a2063debec7f4effb835703007479c48a9f17dad12e6",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/xval_abb_inamuro_wetnode/out/summary.json",
+      "new_path": "benchmarks/xval_abb_inamuro_wetnode/out/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "de1722ef216b99db4f2c9bad4a3be7e02c5896bf",
+      "size_bytes": 9733,
+      "original_sha256": "19c3f472bd3a4d803253549ba5b4630f08dc7d7613523829e3468d6e411f64f9",
+      "byte_identical": true
+    },
+    {
+      "old_path": "benchmarks/xval_abb_inamuro_wetnode/run.py",
+      "new_path": "benchmarks/xval_abb_inamuro_wetnode/run.py",
+      "git_mode": "100644",
+      "original_git_blob": "e15c5e2138ab5fd02346181e0bfb3ee93c38f708",
+      "size_bytes": 11931,
+      "original_sha256": "94cb63e6ff82cdfbe09fa86480d7d6812c6d2cccaaa4de7ebc9f91415b7479dd",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/CASE-TAYLOR-GREEN-3D-reference-audit.md",
+      "new_path": "docs/CASE-TAYLOR-GREEN-3D-reference-audit.md",
+      "git_mode": "100644",
+      "original_git_blob": "23fdfa8d57594e4ab7f3cbc7ecec6500cd358800",
+      "size_bytes": 6511,
+      "original_sha256": "35f1cf74e056c333ca084b1c3ac204ca2b22af252d03153899c45bb1efa03003",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/CASE_TAYLOR_GREEN_3D.md",
+      "new_path": "docs/CASE_TAYLOR_GREEN_3D.md",
+      "git_mode": "100644",
+      "original_git_blob": "6771e021ef927c592e2db5bba14e93da40af8fa5",
+      "size_bytes": 13441,
+      "original_sha256": "cc54a25288e8751a7384457ed406d6740a290a9f816bc212cbf01dace17ee801",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/CASE_TAYLOR_GREEN_3D_POOL.md",
+      "new_path": "docs/CASE_TAYLOR_GREEN_3D_POOL.md",
+      "git_mode": "100644",
+      "original_git_blob": "e43bb902db91efa82aad106c1c09682c11f1f6c4",
+      "size_bytes": 5196,
+      "original_sha256": "8d721531c50f47c5d09ee5854a3499acb05a5741b851110456f67d25d036b275",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/CASE_TAYLOR_GREEN_3D_round2_IC_attribution.md",
+      "new_path": "docs/CASE_TAYLOR_GREEN_3D_round2_IC_attribution.md",
+      "git_mode": "100644",
+      "original_git_blob": "d7b7c03936b82234568791a7aaa90aed6292cf44",
+      "size_bytes": 9679,
+      "original_sha256": "c525f7f7f60861fb8b48c97df0d4db1900c4443560a001bef9d6d5d75c66b4d4",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/CASE_TAYLOR_GREEN_3D_round3_series_exact.md",
+      "new_path": "docs/CASE_TAYLOR_GREEN_3D_round3_series_exact.md",
+      "git_mode": "100644",
+      "original_git_blob": "eb1f1385f44487af7d07e542ae749d6ad752364d",
+      "size_bytes": 9375,
+      "original_sha256": "d6af8e40046ff9cf34c355ee12f1ffa3738f770352298e0e1ea96781ff74f171",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/CASE_TAYLOR_GREEN_3D_round4_field_metrics_and_attribution.md",
+      "new_path": "docs/CASE_TAYLOR_GREEN_3D_round4_field_metrics_and_attribution.md",
+      "git_mode": "100644",
+      "original_git_blob": "4a149ef5ddc9c6eda8bbc9df67f31969da352c5a",
+      "size_bytes": 9381,
+      "original_sha256": "424470630cbf2d1d439ef7447b809b3addfcf47511e92ad3b982e91473abf9e8",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/P40W4_N04_NONNEWTONIAN_RHEOLOGY.md",
+      "new_path": "docs/P40W4_N04_NONNEWTONIAN_RHEOLOGY.md",
+      "git_mode": "100644",
+      "original_git_blob": "c34a798395d7e9eef4c9b546805af3d3e77d5fb5",
+      "size_bytes": 12372,
+      "original_sha256": "2e30411e8dc57a6d79fc573c8eea611878608f570523f82ea5e7a5b40e56ba22",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/AUDIT_m17450.md",
+      "new_path": "docs/board_audit/m17492/AUDIT_m17450.md",
+      "git_mode": "100644",
+      "original_git_blob": "773a522719fb5ed5f1e2560cd6e81a8a231d928b",
+      "size_bytes": 13800,
+      "original_sha256": "17a468eeb2f8d578d9eb163481cf7009002257aa2f3aaf82730336bab4441946",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/audit_p6_kernel_swap.json",
+      "new_path": "docs/board_audit/m17492/audit_p6_kernel_swap.json",
+      "git_mode": "100644",
+      "original_git_blob": "5a89d5ba1f5b7b02e6c14e0dfdfe15a67867d4b6",
+      "size_bytes": 2987,
+      "original_sha256": "7c88a385f72867e0ba76850edc7e0994503aff0258174b51373d9a957235d705",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/audit_p6_kernel_swap.py",
+      "new_path": "docs/board_audit/m17492/audit_p6_kernel_swap.py",
+      "git_mode": "100644",
+      "original_git_blob": "4405bc40c1401e816837d8cba0980edc05ea3cd1",
+      "size_bytes": 4480,
+      "original_sha256": "89e902add91301c8acb799566c8957016c8a6a9a8cfa717974d2269329ceb685",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/audit_xval_abb.py",
+      "new_path": "docs/board_audit/m17492/audit_xval_abb.py",
+      "git_mode": "100644",
+      "original_git_blob": "22a14d12f6873a4f44422ad66a3797db2c52c421",
+      "size_bytes": 10471,
+      "original_sha256": "08d1500c60691bb938b63c404e39b42da4a327aae2add7242208d5b6cd41da62",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/audit_xval_abb_results.json",
+      "new_path": "docs/board_audit/m17492/audit_xval_abb_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "455a93907eb3544dd27e88ad3850f4f05d9187de",
+      "size_bytes": 9455,
+      "original_sha256": "d78df4450afb20fa574aaea2711102884b0477dcda57199f69b02f9a294e84bd",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/delivered_run_sha_94cb63e6ff82.py",
+      "new_path": "docs/board_audit/m17492/delivered_run_sha_94cb63e6ff82.py",
+      "git_mode": "100644",
+      "original_git_blob": "e15c5e2138ab5fd02346181e0bfb3ee93c38f708",
+      "size_bytes": 11931,
+      "original_sha256": "94cb63e6ff82cdfbe09fa86480d7d6812c6d2cccaaa4de7ebc9f91415b7479dd",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/figs/fig1_profile_H40.png",
+      "new_path": "docs/board_audit/m17492/figs/fig1_profile_H40.png",
+      "git_mode": "100644",
+      "original_git_blob": "706fe5c5adda6f6576192ab9a3a6bfc0a13cceac",
+      "size_bytes": 106612,
+      "original_sha256": "ab88176aa50ecda2467b08a900035e4ffa760eb8cf645277babc15b0805206c7",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/figs/fig2_convergence.png",
+      "new_path": "docs/board_audit/m17492/figs/fig2_convergence.png",
+      "git_mode": "100644",
+      "original_git_blob": "4679eaeed92255fff2ecf3d714ccf47e1bba580d",
+      "size_bytes": 70788,
+      "original_sha256": "b60194190440cad015f9ae594b4cbe5e8f99ef1f636c815a058e6bcdea557b66",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/figs/fig3_kernel_identity.png",
+      "new_path": "docs/board_audit/m17492/figs/fig3_kernel_identity.png",
+      "git_mode": "100644",
+      "original_git_blob": "66ec7ffd68454e24b3f5975983762071f01de180",
+      "size_bytes": 86634,
+      "original_sha256": "1a3190940148bd9f4afaece62e60e73a89bcbe8f43bda0226571a6af8c24717d",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/board_audit/m17492/verdict_m17492.sql",
+      "new_path": "docs/board_audit/m17492/verdict_m17492.sql",
+      "git_mode": "100644",
+      "original_git_blob": "309335add4a2352d54bc7beddf5d64fe61f0f17e",
+      "size_bytes": 11823,
+      "original_sha256": "60eaeaf54bfab45352615e46bc1ee8b777306afd574e0e60e94bd381972a065e",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/xval_abb_inamuro_wetnode_report.md",
+      "new_path": "docs/xval_abb_inamuro_wetnode_report.md",
+      "git_mode": "100644",
+      "original_git_blob": "f5b8b9f0e3331c729b209669cb9c44f9cd379efc",
+      "size_bytes": 4849,
+      "original_sha256": "4e20734f2e44821b4562e0c84925ead1dcaa6661208457127d2103d443cb3f82",
+      "byte_identical": true
+    }
+  ]
+}

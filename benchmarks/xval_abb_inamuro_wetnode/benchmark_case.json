@@ -1,0 +1,38 @@
+{
+  "scope": "Historical original scalar ABB/Inamuro delivery and m17492 independent audit. Distinct from later velocity/film wet-node verification. The audit explicitly rejected the delivery capability claim; preserve both outputs without promotion.",
+  "criteria": {
+    "historical_delivery": "L2 relative error <15% per delivery report.",
+    "audit_outcome": "L1 request_changes/reopen; kernel identity and reference alignment invalidated the delivery claim. No registered machine-referee tolerance per audit.",
+    "source": "docs/board_audit/m17492/AUDIT_m17450.md"
+  },
+  "source": [
+    "benchmarks/xval_abb_inamuro_wetnode/run.py",
+    "docs/board_audit/m17492/audit_xval_abb.py",
+    "docs/board_audit/m17492/audit_p6_kernel_swap.py",
+    "docs/board_audit/m17492/delivered_run_sha_94cb63e6ff82.py"
+  ],
+  "config": [],
+  "documentation": [
+    "docs/xval_abb_inamuro_wetnode_report.md",
+    "docs/board_audit/m17492/AUDIT_m17450.md"
+  ],
+  "reference_files": [
+    "docs/xval_abb_inamuro_wetnode_report.md"
+  ],
+  "results": [
+    "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_inamuro_wetnode.json",
+    "benchmarks/xval_abb_inamuro_wetnode/out/case_H20_standard.json",
+    "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_inamuro_wetnode.json",
+    "benchmarks/xval_abb_inamuro_wetnode/out/case_H40_standard.json",
+    "benchmarks/xval_abb_inamuro_wetnode/out/summary.json",
+    "docs/board_audit/m17492/audit_xval_abb_results.json",
+    "docs/board_audit/m17492/audit_p6_kernel_swap.json"
+  ],
+  "evidence": [
+    "docs/board_audit/m17492/figs/fig1_profile_H40.png",
+    "docs/board_audit/m17492/figs/fig2_convergence.png",
+    "docs/board_audit/m17492/figs/fig3_kernel_identity.png",
+    "docs/board_audit/m17492/AUDIT_m17450.md",
+    "docs/board_audit/m17492/verdict_m17492.sql"
+  ]
+}
