@@ -108,6 +108,57 @@ class SourceAuthorityTests(unittest.TestCase):
             )
         )
 
+    def test_round1_reference_has_one_packaged_authority(self) -> None:
+        import ast
+        import hashlib
+        import json
+        import subprocess
+
+        ledger_path = (
+            ROOT / "docs/architecture/migrations/round1-two-phase-package-authority-2026-11-28.json"
+        )
+        ledger = json.loads(ledger_path.read_text())
+        (entry,) = ledger["entries"]
+        canonical = ROOT / entry["new_path"]
+        data = canonical.read_bytes()
+        self.assertEqual(hashlib.sha256(data).hexdigest(), entry["original_sha256"])
+        self.assertEqual(len(data), entry["size_bytes"])
+        self.assertEqual(
+            hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest(),
+            entry["original_git_blob"],
+        )
+        shim = ROOT / ledger["compatibility_shim"]["path"]
+        self.assertEqual(
+            hashlib.sha256(shim.read_bytes()).hexdigest(), ledger["compatibility_shim"]["sha256"]
+        )
+        functions = [
+            node.name
+            for node in ast.walk(ast.parse(shim.read_text()))
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ]
+        self.assertEqual(functions, ["__getattr__", "__dir__"])
+        self.assertIn("sys.modules[__name__] = _canonical", shim.read_text())
+        for row in ledger["consumer_edits"]:
+            original = (ROOT / row["new_path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["current_sha256"])
+            for edit in reversed(row["path_only_edits"]):
+                self.assertEqual(original.count(edit["new"].encode()), edit["count"])
+                original = original.replace(edit["new"].encode(), edit["old"].encode())
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+        for row in ledger["unchanged_historical_assets"]:
+            self.assertEqual(
+                hashlib.sha256((ROOT / row["old_path"]).read_bytes()).hexdigest(),
+                row["original_sha256"],
+            )
+        rows = subprocess.check_output(
+            ["git", "ls-files", "--", entry["new_path"], entry["old_path"]],
+            cwd=ROOT,
+            text=True,
+        ).splitlines()
+        self.assertEqual(set(rows), {entry["new_path"], entry["old_path"]})
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
 
 if __name__ == "__main__":
     unittest.main()
