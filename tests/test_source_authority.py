@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import unittest
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -15,6 +15,39 @@ SPEC.loader.exec_module(CHECKER)
 
 
 class SourceAuthorityTests(unittest.TestCase):
+    def test_portable_benchmark_entrypoints_use_canonical_source(self) -> None:
+        ledger = json.loads(
+            (
+                ROOT
+                / "docs/architecture/migrations/portable-benchmark-source-entrypoints-2026-11-28.json"
+            ).read_text(encoding="utf-8")
+        )
+        policy = CHECKER.load_policy()
+        self.assertEqual(len(ledger["entries"]), 8)
+        self.assertEqual(
+            policy["historical_tree_oid"], ledger["source_authority"]["unchanged_frozen_tree"]
+        )
+        for row in ledger["entries"]:
+            with self.subTest(path=row["new_path"]):
+                path = ROOT / row["new_path"]
+                source = path.read_text(encoding="utf-8")
+                self.assertNotIn(row["new_path"], policy["allowed_active_references"])
+                self.assertNotIn(row["old_source_path"], source)
+                depth = row["canonical_parent_depth"]
+                self.assertEqual(path.resolve().parents[depth] / "src", ROOT / "src")
+                self.assertIn(f'Path(__file__).resolve().parents[{depth}] / "src"', source)
+        receipts = ledger["compatibility"]["actual_receipts"]
+        self.assertEqual(
+            {row["path"] for row in receipts}, {row["new_path"] for row in ledger["entries"]}
+        )
+        for receipt in receipts:
+            self.assertEqual(receipt["new_isolated_help_exit"], 0)
+            self.assertTrue(receipt["help_byte_identical"])
+            self.assertEqual(receipt["actual_imported_package"], "src/tensorlbm/__init__.py")
+            self.assertFalse(receipt["main_invoked"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+
     def test_split_path_forms_are_detected(self) -> None:
         checkout, source = CHECKER.TOKEN.split("/")
         examples = [
