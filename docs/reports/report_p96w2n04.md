@@ -121,5 +121,5 @@ All existing `test_thermal*.py` tests pass (12 tests). ✓ PASS
 
 - `src/tensorlbm/thermal_verification.py`: New verification module with RB/DHC simulators
 - `tests/test_thermal_verification_p96w2n04.py`: New test suite (19 tests)
-- `scripts/gen_verification_figures.py`: Figure generation script
+- [development/verification/historical_figure_helpers/gen_verification_figures.py](../../development/verification/historical_figure_helpers/gen_verification_figures.py): Figure generation script
 - `figures/*.png`: Verification figures

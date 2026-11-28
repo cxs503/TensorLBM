@@ -2694,6 +2694,45 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertFalse(ledger["science"]["rerun_performed"])
         self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
 
+    def test_offline_figure_helpers_retain_originals_and_parity_receipts(self):
+        path = LEDGER_PATH.parent / "offline-figure-helper-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        self.assertEqual(len(ledger["entries"]), 4)
+        self.assertEqual(ledger["scripts_tracked_before"] - ledger["scripts_tracked_after"], 4)
+        self.assertEqual(ledger["top_level_directories_before"], ledger["top_level_directories_after"])
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        for row in ledger["entries"] + ledger["consumer_edits"]:
+            data = (REPO / row["new_path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["current_sha256"])
+            original = data
+            for edit in reversed(row["path_only_edits"]):
+                self.assertEqual(original.count(edit["new"].encode()), edit["count"])
+                original = original.replace(edit["new"].encode(), edit["old"].encode())
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(hashlib.sha1(f"blob {len(original)}\0".encode() + original).hexdigest(),
+                             row["original_git_blob"])
+        count = 0
+        for row in ledger["entries"]:
+            self.assertFalse(subprocess.check_output(["git", "ls-files", "--", row["old_path"]], cwd=REPO))
+            self.assertTrue((REPO / row["new_path"]).is_file())
+            parity = row["output_parity"]
+            self.assertEqual(parity["before_returncode"], 0)
+            self.assertEqual(parity["after_returncode"], 0)
+            self.assertEqual(parity["files_before"], parity["files_after"])
+            self.assertTrue(parity["stdout_identical"] and parity["stderr_identical"])
+            count += parity["file_count"]
+        self.assertEqual(count, 14)
+        for row in ledger["consumer_edits"]:
+            document = REPO / row["new_path"]
+            links = re.findall(r"\]\(([^)]+/historical_figure_helpers/[^)]+)\)", document.read_text())
+            self.assertEqual(len(links), 1)
+            self.assertTrue((document.parent / links[0]).is_file())
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+
     def test_experiment_archive_tree_and_navigation_survive_root_retirement(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "experiment-root-retirement-2026-11-21.json").read_text()

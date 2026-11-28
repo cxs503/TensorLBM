@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 from tensorlbm.contact_line.wetting_dynamics import (
     DEG, RAD, GAMMA_WATER, G_SI, MU_WATER, RHO_WATER,
