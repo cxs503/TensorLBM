@@ -1445,6 +1445,52 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertTrue(any(row["id"] == "matrix:cylinder_re100_dfg" for row in registry))
         self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
 
+    def test_zero_solver_audit_handoff_preserves_inputs_and_replay_scope(self):
+        path = LEDGER_PATH.parent / "zero-solver-audit-handoff-2026-11-28.json"
+        ledger = json.loads(path.read_text())
+        with (path.parent.parent / "migration_manifest.csv").open(newline="") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)
+                        if row["verification"] == path.relative_to(REPO).as_posix()}
+        self.assertEqual(manifest, {row["old_path"]: row["new_path"] for row in ledger["entries"]})
+        self.assertEqual(len(manifest), 2)
+        for row in ledger["entries"] + ledger["consumer_edits"]:
+            dest = REPO / row["new_path"]
+            self.assert_fingerprint(dest, row["current_sha256"], row["current_size_bytes"])
+            original = dest.read_bytes()
+            for edit in reversed(row["path_only_edits"]):
+                old, new = edit["old"].encode(), edit["new"].encode()
+                self.assertEqual(original.count(new), edit["count"])
+                original = original.replace(new, old)
+            self.assertEqual(hashlib.sha256(original).hexdigest(), row["original_sha256"])
+            self.assertEqual(len(original), row["size_bytes"])
+            if row["old_path"] != row["new_path"]:
+                self.assertFalse((REPO / row["old_path"]).exists())
+        for row in ledger["unchanged_related_assets_at_migration"]:
+            self.assert_fingerprint(REPO / row["new_path"], row["original_sha256"], row["size_bytes"])
+        for name in ledger["compatibility"]["navigation_indexes"]:
+            index = REPO / name
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+                self.assertTrue((index.parent / target).is_file(), target)
+        registry = json.loads(subprocess.check_output(
+            [sys.executable, "tools/benchmark_registry.py", "--json"], cwd=REPO,
+        ))["cases"]
+        case_ids = {row["id"] for row in registry}
+        for audit in ledger["compatibility"]["historical_dependencies"]:
+            self.assertTrue(set(audit["case_ids"]) <= case_ids)
+        for row in ledger["entries"]:
+            found = json.loads(subprocess.check_output(
+                [sys.executable, "tools/benchmark_registry.py", "--find-asset",
+                 Path(row["new_path"]).name], cwd=REPO,
+            ))["paths"]
+            self.assertIn(row["new_path"], found)
+        parity = ledger["compatibility"]["replay_parity"]
+        self.assertEqual(len(parity["outputs"]), 5)
+        self.assertEqual(len(parity["stdout"]), 2)
+        self.assertTrue(all(row["before_after_byte_identical"] for row in parity["outputs"] + parity["stdout"]))
+        self.assertEqual(ledger["science"]["current_acceptance"], "not_evaluated")
+        self.assertFalse(ledger["science"]["algorithm_changed"])
+        self.assertFalse(ledger["science"]["full_scientific_replay_performed"])
+
     def test_drop_entry_indexes_keep_original_assets_and_case_navigation(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "drop-entry-indexes-2026-11-23.json").read_text(

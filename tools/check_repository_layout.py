@@ -66,6 +66,8 @@ RETIRED_FILES = {
     "scripts/_build_report_payload_p493.py",
     "scripts/post_curved_wall_report.py",
     "xval/xval_figure_b64.json",
+    "scripts/audit_cavity_metric_geometry.py",
+    "scripts/array_drag_reference_audit.py",
     "xval/xval_phasefield_mcmp_poiseuille.py",
     "xval/xval_fingering_dynamics.py",
     "scripts/publish_couette_2d_r2_report.py",

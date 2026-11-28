@@ -1,12 +1,14 @@
 # Periodic-array (Hasimoto) drag reference — cross-module audit and repair
 
+> Repository layout note (2026-11-28): [archived audit, current replay path and retained evidence](../development/audit/m16754/README.md). Historical report and verdict are unchanged; this relocation is not new scientific acceptance.
+
 **Anchor**: `GAP-LBM-SPHERE` (in_progress) — the sphere case is judged by a *third,
 correlation-free* force instrument whose confinement factor **is** the Hasimoto
 periodic-array series; a defective judge silently moves the verdict. Second
 beneficiary: `CASE-LBM-CUBIC-ARRAY-DRAG`, which uses the same series as its
 analytic cross-check.
 **Mission**: m16754 · branch `agent/m16754` · 2026-11-12.
-**All numbers**: `scripts/array_drag_reference_audit.py` →
+**All numbers**: `development/audit/m16754/array_drag_reference_audit.py` →
 `artifacts/array_drag_reference/{audit.json,tables.md,fig.png}` (nothing typed
 by hand here; the tables file is machine-generated).
 
@@ -154,7 +156,7 @@ was **not** obtained (the attempt exceeded the shell timeout), so its status is
 ## 7. Reproduction
 
 ```
-python scripts/array_drag_reference_audit.py               # regenerates §3 tables + figure
+python development/audit/m16754/array_drag_reference_audit.py               # regenerates §3 tables + figure
 python -m pytest tests/test_array_drag_reference.py -q     # 15 passed
 python -m pytest tests/test_sphere_curved_drag.py tests/test_force_control_surface.py -q
 ```

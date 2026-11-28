@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "base_main": "e67120224a4eb641060ba13fd271ca2e0b0a099e",
+  "top_level_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "top_level_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "docs_second_level_before": 53,
+  "docs_second_level_after": 53,
+  "scripts_tracked_before": 586,
+  "scripts_tracked_after": 584,
+  "entries": [
+    {
+      "old_path": "scripts/audit_cavity_metric_geometry.py",
+      "new_path": "development/audit/m16740/audit_cavity_metric_geometry.py",
+      "git_mode": "100644",
+      "original_git_blob": "162fd853d55fe543256b35b7937735f99e87028b",
+      "original_sha256": "9c1555dfc5428636eeca3b49a8fa7e6269fb74a9d4aab2b327b2a9275e4f69d9",
+      "size_bytes": 5934,
+      "current_sha256": "6d4aea8ab72c9ba6ab85918b1b210c12c464bebffa6256a7ba69f566fa09151d",
+      "current_size_bytes": 5951,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/audit_cavity_metric_geometry.py",
+          "new": "development/audit/m16740/audit_cavity_metric_geometry.py",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "scripts/array_drag_reference_audit.py",
+      "new_path": "development/audit/m16754/array_drag_reference_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "a12ffa911f7a95a5725f6f8406d5348b5bc26ec4",
+      "original_sha256": "1fcf50b76ae1d5fec02d2fb7fa53665cb52a6714c4418a7e3d51542b63f9886f",
+      "size_bytes": 8897,
+      "current_sha256": "acf4bd54046f5c7ecb1766261b21af593de9ac40c74367d312e4ab6665a6b235",
+      "current_size_bytes": 8914,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/array_drag_reference_audit.py",
+          "new": "development/audit/m16754/array_drag_reference_audit.py",
+          "count": 1
+        },
+        {
+          "old": "Path(__file__).resolve().parents[1]",
+          "new": "Path(__file__).resolve().parents[3]",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "consumer_edits": [
+    {
+      "old_path": "docs/CAVITY_METRIC_GEOMETRY_AUDIT.md",
+      "new_path": "docs/CAVITY_METRIC_GEOMETRY_AUDIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "66e342f68020071f68bd53cdc9a3e6dd3cc1bc88",
+      "original_sha256": "938a5eb30f5f636f49ee3cc2bece6c33d8394c778833301bdae61f6ce6784f5b",
+      "size_bytes": 11376,
+      "current_sha256": "2a53302072e47b9c3ee4d0f25754568ea7cbc8f579767a2ab6490f03daa174fa",
+      "current_size_bytes": 11645,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/audit_cavity_metric_geometry.py",
+          "new": "development/audit/m16740/audit_cavity_metric_geometry.py",
+          "count": 2
+        },
+        {
+          "old": "# 方腔 Ghia 度量的「几何本体」审计与约定落盘（m16740）\n",
+          "new": "# 方腔 Ghia 度量的「几何本体」审计与约定落盘（m16740）\n\n> Repository layout note (2026-11-28): [archived audit, current replay path and retained evidence](../development/audit/m16740/README.md). Historical report and verdict are unchanged; this relocation is not new scientific acceptance.\n",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "old_path": "docs/ARRAY_DRAG_REFERENCE_AUDIT.md",
+      "new_path": "docs/ARRAY_DRAG_REFERENCE_AUDIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "18f352c8e36d8279b562771bc73d25a505bc4f3c",
+      "original_sha256": "76d10d71fcb2fe2b7c7a230b14cd4e3cfb1ccbd50646947dbed22a347746d2f0",
+      "size_bytes": 8714,
+      "current_sha256": "e209c8c4538a1a6533f79ae22c492c55a6dedd74e31d4d5539a0aff1a9b802e5",
+      "current_size_bytes": 8983,
+      "byte_identical": false,
+      "path_only_edits": [
+        {
+          "old": "scripts/array_drag_reference_audit.py",
+          "new": "development/audit/m16754/array_drag_reference_audit.py",
+          "count": 2
+        },
+        {
+          "old": "# Periodic-array (Hasimoto) drag reference — cross-module audit and repair\n",
+          "new": "# Periodic-array (Hasimoto) drag reference — cross-module audit and repair\n\n> Repository layout note (2026-11-28): [archived audit, current replay path and retained evidence](../development/audit/m16754/README.md). Historical report and verdict are unchanged; this relocation is not new scientific acceptance.\n",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "unchanged_related_assets_at_migration": [
+    {
+      "old_path": "development/audit/m16740/cavity_metric_geometry.json",
+      "new_path": "development/audit/m16740/cavity_metric_geometry.json",
+      "git_mode": "100644",
+      "original_git_blob": "ba89caf600e0bc3984bd6eee4d8b68107240eecd",
+      "original_sha256": "a6bca2135e0d7cde18c2e3df08a48e7eee85de27a111c4b1d195f697ef4c183d",
+      "size_bytes": 17575,
+      "current_sha256": "a6bca2135e0d7cde18c2e3df08a48e7eee85de27a111c4b1d195f697ef4c183d",
+      "current_size_bytes": 17575,
+      "byte_identical": true
+    }
+  ],
+  "compatibility": {
+    "reference_scan": "Exact basenames and paths reviewed against actual main and open governance PR heads. Two default-branch indexed searches across TensorKnowledge/TensorPhysics/TensorPlatform/TensorBench produced no hits; not exhaustive of external bookmarks. Two stable report URLs retained. The separate m15891 migration and evidence are already proposed in #3080 and deliberately excluded.",
+    "navigation_indexes": [
+      "development/audit/m16740/README.md",
+      "development/audit/m16754/README.md"
+    ],
+    "new_case_ids": 0,
+    "historical_dependencies": [
+      {
+        "mission": "m16740",
+        "case_ids": [
+          "cavity_re100",
+          "cavity_re400",
+          "cavity_re1000"
+        ],
+        "tracked_dependencies": [
+          "src/tensorlbm/lid_driven_cavity.py"
+        ],
+        "unchanged_historical_assets": [
+          "development/audit/m16740/cavity_metric_geometry.json"
+        ],
+        "generated_outputs": [
+          "outputs/audit/m16740/cavity_metric_geometry.json",
+          "outputs/figures/m16740_cavity_metric_geometry.png"
+        ],
+        "limitation": "Uses embedded Ghia reference tables and cavity geometry helpers; writes ignored outputs relative to checkout root."
+      },
+      {
+        "mission": "m16754",
+        "case_ids": [
+          "benchmarks/case_pool/sc_sphere_array_drag"
+        ],
+        "tracked_dependencies": [
+          "src/tensorlbm/array_drag_reference.py",
+          "src/tensorlbm/d3q27_recovery.py"
+        ],
+        "unchanged_historical_assets": [],
+        "generated_outputs": [
+          "artifacts/array_drag_reference/audit.json",
+          "artifacts/array_drag_reference/tables.md",
+          "artifacts/array_drag_reference/fig.png"
+        ],
+        "limitation": "Uses the existing analytical reference module; original local artifact directory is not tracked. Outputs stay in the same ignored path."
+      }
+    ],
+    "replay_parity": {
+      "scope": "Two existing offline post-hoc audit programs executed at original and relocated paths with the same real CPU dependencies; all five generated files and stdout matched. Not a solver run or scientific acceptance.",
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "numpy": "2.5.5",
+      "matplotlib": "3.11.2",
+      "outputs": [
+        {
+          "path": "artifacts/array_drag_reference/audit.json",
+          "sha256": "84cd07e13e3a5be8df8ccaa1ec740aa815d98380ad93133720cac3b10ee700e4",
+          "size_bytes": 5883,
+          "before_after_byte_identical": true
+        },
+        {
+          "path": "artifacts/array_drag_reference/fig.png",
+          "sha256": "21b0421678ccca31dc075a63e8ff9db4fa0965374e18aa142a0d8294747682e8",
+          "size_bytes": 132645,
+          "before_after_byte_identical": true
+        },
+        {
+          "path": "artifacts/array_drag_reference/tables.md",
+          "sha256": "4ec705165c86407f4e6ddbb918a3931f68eda58113429e7653b2d672e31041db",
+          "size_bytes": 2213,
+          "before_after_byte_identical": true
+        },
+        {
+          "path": "outputs/audit/m16740/cavity_metric_geometry.json",
+          "sha256": "c0c86b7f2186a47093be3a36a096dc60292879fbecbcf5ee86802e7191e57bdf",
+          "size_bytes": 17574,
+          "before_after_byte_identical": true
+        },
+        {
+          "path": "outputs/figures/m16740_cavity_metric_geometry.png",
+          "sha256": "f91730557c55e80732a75e286bd07e35699ffd641f4678954aae39be51450357",
+          "size_bytes": 228924,
+          "before_after_byte_identical": true
+        }
+      ],
+      "stdout": [
+        {
+          "old_path": "scripts/audit_cavity_metric_geometry.py",
+          "new_path": "development/audit/m16740/audit_cavity_metric_geometry.py",
+          "sha256": "c9c1680f7d0da10e917f68e1051f03a3859934da8cf2395282bef12f8f4af8b8",
+          "before_after_byte_identical": true
+        },
+        {
+          "old_path": "scripts/array_drag_reference_audit.py",
+          "new_path": "development/audit/m16754/array_drag_reference_audit.py",
+          "sha256": "d5b089e335c15b480cd2bdc748185cd491909fc1a089998e777a939817fb0fed",
+          "before_after_byte_identical": true
+        }
+      ]
+    }
+  },
+  "science": {
+    "algorithm_changed": false,
+    "current_acceptance": "not_evaluated",
+    "full_scientific_replay_performed": false
+  },
+  "runtime_dependencies_at_migration": [
+    {
+      "old_path": "src/tensorlbm/lid_driven_cavity.py",
+      "new_path": "src/tensorlbm/lid_driven_cavity.py",
+      "git_mode": "100644",
+      "original_git_blob": "a45a1fec5cc22869cf143b44339f9eadfaca6a3f",
+      "original_sha256": "a6e4a934856afdcd86a29ffb352057d87ca4f091e536b3b55c0f9df25ac950a8",
+      "size_bytes": 42854,
+      "current_sha256": "a6e4a934856afdcd86a29ffb352057d87ca4f091e536b3b55c0f9df25ac950a8",
+      "current_size_bytes": 42854,
+      "byte_identical": true
+    },
+    {
+      "old_path": "src/tensorlbm/array_drag_reference.py",
+      "new_path": "src/tensorlbm/array_drag_reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "8fe9e0f6c46dd645731ce31fabb9e9cbc990c2f1",
+      "original_sha256": "a027b8b7954db1beb93fb419ceed1a10faa9ee20728c00a843c88f4cfab6951f",
+      "size_bytes": 6337,
+      "current_sha256": "a027b8b7954db1beb93fb419ceed1a10faa9ee20728c00a843c88f4cfab6951f",
+      "current_size_bytes": 6337,
+      "byte_identical": true
+    },
+    {
+      "old_path": "src/tensorlbm/d3q27_recovery.py",
+      "new_path": "src/tensorlbm/d3q27_recovery.py",
+      "git_mode": "100644",
+      "original_git_blob": "e537df150f1ffd07727bc0e2c0ba27d0c6591023",
+      "original_sha256": "894872d606b10b54b75363858a098b03e133afebde7b52284245a2533e29a4ce",
+      "size_bytes": 42597,
+      "current_sha256": "894872d606b10b54b75363858a098b03e133afebde7b52284245a2533e29a4ce",
+      "current_size_bytes": 42597,
+      "byte_identical": true
+    }
+  ]
+}
